@@ -1,0 +1,74 @@
+{
+  "id": "page-1",
+  "title": "Home",
+  "slug": "home",
+  "siteId": "site-1",
+  "content": {
+    "sections": [
+      {
+        "id": "sec-1",
+        "type": "cover",
+        "settings": {
+          "bgColor": "#1a1a2e",
+          "padding": "4rem 2rem",
+          "minHeight": "100vh",
+          "textColor": "#ffffff"
+        },
+        "blocks": [
+          {
+            "id": "blk-1",
+            "type": "container",
+            "props": {
+              "width": "100%",
+              "maxWidth": "1200px",
+              "margin": "0 auto"
+            },
+            "styles": {
+              "display": "flex",
+              "flexDirection": "column",
+              "alignItems": "center",
+              "gap": "2rem"
+            },
+            "children": ["blk-2", "blk-3"]
+          },
+          {
+            "id": "blk-2",
+            "type": "text",
+            "props": {
+              "content": "Welcome to SUKIT",
+              "tag": "h1",
+              "align": "center"
+            },
+            "styles": {
+              "fontSize": "3rem",
+              "fontWeight": "700",
+              "color": "inherit",
+              "lineHeight": "1.2"
+            }
+          },
+          {
+            "id": "blk-3",
+            "type": "text",
+            "props": {
+              "content": "Build beautiful websites visually, export static HTML, deploy anywhere.",
+              "tag": "p",
+              "align": "center"
+            },
+            "styles": {
+              "fontSize": "1.25rem",
+              "opacity": "0.8",
+              "maxWidth": "600px"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "meta": {
+    "description": "Home page for SUKIT test site",
+    "ogImage": null
+  },
+  "status": "draft",
+  "createdAt": "2025-01-15T10:00:00.000Z",
+  "updatedAt": "2025-01-15T10:30:00.000Z"
+}

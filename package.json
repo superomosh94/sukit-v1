@@ -1,0 +1,47 @@
+{
+  "version": "1.0.0",
+  "packageManager": "pnpm@8.15.0",
+  "scripts": {
+    "sukit": "pnpm dev",
+
+    "dev:web": "pnpm --filter sukit-web dev",
+    "dev:server": "pnpm --filter @sukit/server dev",
+    "dev:watch": "concurrently -n web,server -c cyan,green \"pnpm dev:web\" \"pnpm dev:server\"",
+    "build": "turbo run build",
+    "start": "turbo run start",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "clean": "turbo run clean",
+    "setup": "bash scripts/setup.sh",
+    "db:generate": "turbo run db:generate",
+    "db:migrate": "turbo run db:migrate",
+    "db:push": "turbo run db:push",
+    "db:studio": "turbo run db:studio",
+    "db:seed": "turbo run db:seed",
+    "export": "turbo run export",
+    "docker:up": "docker compose -f docker/docker-compose.yml up -d",
+    "docker:down": "docker compose -f docker/docker-compose.yml down",
+    "dev:daemon": "pm2 start ecosystem.config.cjs && pm2 logs",
+    "dev:daemon:stop": "pm2 stop ecosystem.config.cjs && pm2 delete ecosystem.config.cjs",
+    "dev:daemon:status": "pm2 status",
+    "modules:install": "node scripts/module-install.mjs",
+    "modules:build": "turbo run build --filter=./modules/*",
+    "modules:link": "node scripts/link-modules.mjs",
+    "prepare": "husky"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "concurrently": "^10.0.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0",
+    "pm2": "^7.0.1",
+    "prettier": "^3.0.0",
+    "prisma": "^6.0.0",
+    "tsx": "^4.0.0",
+    "turbo": "^2.0.0",
+    "typescript": "^5.0.0"
+  }
+}

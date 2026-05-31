@@ -1,0 +1,19 @@
+{
+  "name": "@sukit/form-builder",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/index.ts",
+  "scripts": { "build": "tsc", "dev": "tsc --watch", "clean": "rm -rf dist" },
+  "dependencies": {
+    "@sukit/core": "workspace:*",
+    "@sukit/module-sdk": "workspace:*",
+    "react": "^19.0.0",
+    "react-hook-form": "^7.54.0",
+    "@hookform/resolvers": "^4.0.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "typescript": "^5.6.0"
+  }
+}

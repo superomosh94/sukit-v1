@@ -1,0 +1,21 @@
+{
+  "id": "@sukit/code-editor",
+  "name": "Code Editor",
+  "version": "1.0.0",
+  "description": "Monaco-based code editor with file tree, Git integration, and terminal",
+  "author": { "name": "SUKIT Core Team" },
+  "license": "MIT",
+  "icon": "Code",
+  "sukit": {
+    "minVersion": "1.0.0",
+    "capabilities": ["ui:sidebar", "ui:toolbar", "api:routes"],
+    "permissions": ["filesystem:read", "filesystem:write"],
+    "entrypoints": { "main": "./dist/index.js", "styles": "./dist/styles.css" },
+    "slots": {
+      "sidebar:left": { "component": "./dist/components/file-tree.jsx", "position": 30 },
+      "toolbar:top": { "component": "./dist/components/editor-toolbar.jsx", "position": 20 }
+    },
+    "dependencies": { "@sukit/core": "^1.0.0" },
+    "peerDependencies": { "react": "^19.0.0", "monaco-editor": "^0.52.0" }
+  }
+}

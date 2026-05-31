@@ -1,0 +1,115 @@
+.builder-canvas {
+  background-color: hsl(var(--builder-canvas));
+  background-image:
+    radial-gradient(circle, hsl(var(--builder-grid)) 1px, transparent 1px);
+  background-size: 20px 20px;
+  flex: 1;
+  overflow: auto;
+}
+
+.builder-section {
+  position: relative;
+  transition: box-shadow 0.15s ease, outline-color 0.15s ease;
+  outline: 2px solid transparent;
+}
+
+.builder-section:hover {
+  outline-color: hsl(var(--builder-hover));
+}
+
+.builder-section[data-selected="true"] {
+  outline-color: hsl(var(--builder-selected));
+  box-shadow: 0 0 0 4px hsla(var(--builder-selected), 0.15);
+}
+
+.builder-block {
+  position: relative;
+  min-height: 24px;
+  transition: outline-color 0.1s ease;
+  outline: 1px solid transparent;
+  cursor: pointer;
+}
+
+.builder-block:hover {
+  outline-color: hsl(var(--builder-hover));
+}
+
+.builder-block[data-selected="true"] {
+  outline-color: hsl(var(--builder-selected));
+  outline-width: 2px;
+}
+
+.builder-drop-zone {
+  min-height: 40px;
+  border: 2px dashed hsl(var(--border));
+  border-radius: calc(var(--radius) - 2px);
+  transition: all 0.15s ease;
+}
+
+.builder-drop-zone--active {
+  border-color: hsl(var(--builder-drop));
+  background-color: hsla(var(--builder-drop), 0.08);
+  min-height: 60px;
+}
+
+.builder-drop-zone--over {
+  border-color: hsl(var(--builder-drop));
+  background-color: hsla(var(--builder-drop), 0.15);
+  transform: scale(1.02);
+}
+
+.builder-column {
+  position: relative;
+  min-height: 40px;
+  transition: outline-color 0.1s ease;
+  outline: 1px solid transparent;
+}
+
+.builder-column:hover {
+  outline-color: hsl(var(--builder-hover));
+}
+
+.builder-column[data-selected="true"] {
+  outline-color: hsl(var(--builder-selected));
+  outline-width: 2px;
+}
+
+.builder-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  border: 2px dashed hsl(var(--border));
+  border-radius: var(--radius);
+  color: hsl(var(--muted-foreground));
+  font-size: 0.875rem;
+}
+
+.builder-drag-preview {
+  opacity: 0.9;
+  transform: rotate(3deg);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+}
+
+.builder-resize-handle {
+  position: absolute;
+  right: -3px;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  background: transparent;
+  z-index: 10;
+}
+
+.builder-resize-handle:hover,
+.builder-resize-handle--active {
+  background: hsl(var(--builder-selected));
+}
+
+@media (max-width: 768px) {
+  .builder-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

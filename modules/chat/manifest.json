@@ -1,0 +1,44 @@
+{
+  "id": "@sukit/chat",
+  "name": "AI Chat Assistant",
+  "version": "1.0.0",
+  "description": "AI-powered chat widget for your SUKIT websites",
+  "author": { "name": "SUKIT Core Team" },
+  "license": "MIT",
+  "icon": "MessageSquare",
+  "sukit": {
+    "minVersion": "1.0.0",
+    "capabilities": ["ui:widget", "api:routes"],
+    "permissions": ["http:outbound"],
+    "entrypoints": { "main": "./dist/index.js" },
+    "slots": {
+      "widget:bottom-right": { "component": "./dist/widget.jsx", "position": 10 }
+    },
+    "api": { "basePath": "/api/chat", "routes": "./dist/api.js" },
+    "dependencies": { "@sukit/core": "^1.0.0" },
+    "peerDependencies": { "react": "^19.0.0" }
+  },
+  "settings": {
+    "apiKey": { "type": "encrypted", "label": "OpenAI API Key", "required": true },
+    "model": {
+      "type": "select",
+      "label": "AI Model",
+      "default": "gpt-4-turbo",
+      "options": [
+        { "label": "GPT-4 Turbo", "value": "gpt-4-turbo" },
+        { "label": "GPT-4", "value": "gpt-4" },
+        { "label": "GPT-3.5 Turbo", "value": "gpt-3.5-turbo" }
+      ]
+    },
+    "welcomeMessage": { "type": "text", "label": "Welcome Message", "default": "Hello! How can I help you today?" },
+    "theme": {
+      "type": "select",
+      "label": "Widget Theme",
+      "default": "light",
+      "options": [
+        { "label": "Light", "value": "light" },
+        { "label": "Dark", "value": "dark" }
+      ]
+    }
+  }
+}

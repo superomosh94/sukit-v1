@@ -1,0 +1,18 @@
+{
+  "id": "@sukit/form-builder",
+  "name": "Form Builder",
+  "version": "1.0.0",
+  "description": "Drag-and-drop form builder with field types, validation, and submissions",
+  "author": { "name": "SUKIT Core Team" },
+  "license": "MIT",
+  "icon": "FileInput",
+  "sukit": {
+    "minVersion": "1.0.0",
+    "capabilities": ["ui:sidebar", "api:routes", "ui:toolbar"],
+    "permissions": ["database:read", "database:write"],
+    "entrypoints": { "main": "./dist/index.js" },
+    "api": { "basePath": "/api/forms", "routes": "./dist/routes.js" },
+    "dependencies": { "@sukit/core": "^1.0.0" },
+    "peerDependencies": { "react": "^19.0.0" }
+  }
+}

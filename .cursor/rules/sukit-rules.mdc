@@ -1,0 +1,58 @@
+---
+description: SUKIT Monorepo Project Conventions
+globs: ["**/*"]
+---
+
+# SUKIT Project Conventions
+
+## Architecture
+- **Monorepo** managed with Turborepo 2.x and pnpm 8.15
+- **Apps**: `apps/web` (Next.js), `apps/server` (Node.js backend), `apps/cli` (CLI tools)
+- **Packages**: `packages/shared` (types), `packages/ui` (components), `packages/blocks` (block components), `packages/modules-core` (plugin infrastructure)
+- **Database**: PostgreSQL with Prisma ORM
+- **UI**: Tailwind CSS + shadcn/ui components
+
+## Code Style
+### TypeScript
+- Strict mode enabled
+- Use `interface` over `type` for object shapes
+- Use `type` for unions, intersections, and primitives
+- Prefer `const` over `let`; avoid `var`
+- Use `async/await` over raw promises
+- Use `camelCase` for variables, functions, and methods
+- Use `PascalCase` for classes, interfaces, types, and components
+- Use `UPPER_CASE` for constants (only if truly constant at compile time)
+- Use `kebab-case` for file names (e.g., `user-profile.tsx`)
+
+### Imports
+- Use path aliases: `@sukit/shared`, `@sukit/ui`, etc.
+- Group imports: external → internal → relative
+- Prefer named exports over default exports
+
+### React / Next.js
+- Use React Server Components by default (app router)
+- Mark client components with `"use client"` directive
+- Use `shadcn/ui` components from `packages/ui`
+- Use Tailwind CSS for styling; avoid CSS modules or styled-components
+
+### Prisma / Database
+- All database access through Prisma Client
+- Migrations in `prisma/migrations/`
+- Use `prisma/schema.prisma` for schema definitions
+- Run `pnpm db:generate` after schema changes
+
+## Testing
+- Unit tests with Vitest
+- E2E tests with Playwright
+- Test files co-located with source files: `*.test.ts` or `*.spec.ts`
+
+## Git Workflow
+- Feature branches from `develop`
+- PRs squash-merge to `develop`
+- `main` is production; merges only from `develop`
+- Conventional commits encouraged: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`
+
+## Docker
+- Production: `docker/Dockerfile` (multi-stage)
+- Development: `docker/Dockerfile.dev` with volume mounts
+- Compose: `docker/docker-compose.yml` for production, `docker/docker-compose.dev.yml` for dev

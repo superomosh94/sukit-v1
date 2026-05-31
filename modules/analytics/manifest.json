@@ -1,0 +1,22 @@
+{
+  "id": "@sukit/analytics",
+  "name": "Analytics",
+  "version": "1.0.0",
+  "description": "Page views, events, and analytics dashboard",
+  "author": { "name": "SUKIT Core Team" },
+  "license": "MIT",
+  "icon": "BarChart3",
+  "sukit": {
+    "minVersion": "1.0.0",
+    "capabilities": ["settings:panel", "api:routes"],
+    "permissions": ["database:read"],
+    "entrypoints": { "main": "./dist/index.js" },
+    "settings": {
+      "googleAnalyticsId": { "type": "text", "label": "Google Analytics ID", "required": false },
+      "facebookPixelId": { "type": "text", "label": "Facebook Pixel ID", "required": false },
+      "customHead": { "type": "code", "label": "Custom Head HTML", "required": false }
+    },
+    "dependencies": { "@sukit/core": "^1.0.0" },
+    "peerDependencies": { "react": "^19.0.0" }
+  }
+}

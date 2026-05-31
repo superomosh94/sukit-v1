@@ -1,0 +1,37 @@
+{
+  "id": "@sukit/popup-builder",
+  "name": "Popup Builder",
+  "version": "1.0.0",
+  "description": "Create popups, modals, slide-ins, and floating bars with triggers, animations, and analytics",
+  "author": { "name": "SUKIT Core Team" },
+  "license": "MIT",
+  "icon": "SquareMousePointer",
+  "sukit": {
+    "minVersion": "1.0.0",
+    "capabilities": ["ui:sidebar", "api:routes", "hooks:page"],
+    "permissions": ["database:read", "database:write"],
+    "entrypoints": { "main": "./dist/index.js" },
+    "api": { "basePath": "/api/popups", "routes": "./dist/routes.js" },
+    "dependencies": { "@sukit/core": "^1.0.0" },
+    "peerDependencies": { "react": "^19.0.0" }
+  },
+  "settings": {
+    "defaultAnimation": {
+      "type": "select",
+      "label": "Default Animation",
+      "default": "fade",
+      "options": [
+        { "label": "Fade", "value": "fade" },
+        { "label": "Slide Up", "value": "slide-up" },
+        { "label": "Slide Down", "value": "slide-down" },
+        { "label": "Zoom", "value": "zoom" },
+        { "label": "Bounce", "value": "bounce" }
+      ]
+    },
+    "enableAnalytics": {
+      "type": "boolean",
+      "label": "Enable Analytics",
+      "default": true
+    }
+  }
+}

@@ -1,0 +1,1203 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PageStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+
+  @@map("page_status")
+}
+
+enum DeployStatus {
+  PENDING
+  BUILDING
+  SUCCESS
+  FAILED
+
+  @@map("deploy_status")
+}
+
+model User {
+  id             String    @id @default(cuid())
+  name           String?
+  email          String    @unique
+  hashedPassword String
+  image          String?
+  role           String    @default("user")
+  emailVerified  DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  accounts   Account[]
+  sessions   Session[]
+  sites      Site[]
+  activities UserActivity[]
+  siteRoleAssignments SiteRoleAssignment[]
+  collaborationLocks  CollaborationLock[]
+  presences           Presence[]
+  comments            Comment[]
+  posts               Post[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model SiteGroup {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  index       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sites Site[]
+
+  @@map("site_groups")
+}
+
+model Site {
+  id          String   @id @default(cuid())
+  name        String
+  description String   @default("")
+  host        String?  @unique
+  domain      String?
+  groupId     String?
+  settings    Json     @default("{}")
+  head        String   @default("")
+  foot        String   @default("")
+  preview     String?
+  index       Int      @default(0)
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group SiteGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+
+  pages             Page[]
+  media             Media[]
+  forms             Form[]
+  modules           Module[]
+  exports           Export[]
+  siteRoles         SiteRoleAssignment[]
+  activities        UserActivity[]
+  siteSymbols       SiteSymbol[]
+  siteFields        SiteField[]
+  siteEntries       SiteEntry[]
+  siteSnapshots     SiteSnapshot[]
+  siteUploads       SiteUpload[]
+  pageTypes         PageType[]
+  customSections    CustomSection[]
+  menus             Menu[]
+  collaborationLocks CollaborationLock[]
+  presence          Presence[]
+  deployments       Deployment[]
+  popups            Popup[]
+  comments          Comment[]
+  taxonomies        Taxonomy[]
+  posts             Post[]
+  options           Option[]
+  cronJobs          CronJob[]
+  widgetAreas       WidgetArea[]
+
+  @@map("sites")
+}
+
+model SiteRoleAssignment {
+  id        String   @id @default(cuid())
+  siteId    String
+  userId    String
+  role      String   @default("editor")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, siteId])
+  @@map("site_role_assignments")
+}
+
+model SiteSnapshot {
+  id        String   @id @default(cuid())
+  siteId    String
+  file      String
+  createdAt DateTime @default(now())
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId])
+  @@map("site_snapshots")
+}
+
+model SiteUpload {
+  id        String   @id @default(cuid())
+  siteId    String
+  file      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@map("site_uploads")
+}
+
+model UserActivity {
+  id        String   @id @default(cuid())
+  userId    String
+  siteId    String
+  action    String   @default("view")
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([siteId])
+  @@map("user_activities")
+}
+
+model Symbol {
+  id        String   @id @default(cuid())
+  name      String
+  html      String   @default("")
+  css       String   @default("")
+  js        String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  siteSymbols      SiteSymbol[]
+  librarySymbols   LibrarySymbol[]
+  pageSections     PageSection[]
+  pageTypeSections PageTypeSection[]
+  pageTypeSymbols  PageTypeSymbol[]
+
+  @@map("symbols")
+}
+
+model SiteSymbol {
+  id         String   @id @default(cuid())
+  siteId     String
+  symbolId   String
+  compiledJs String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  symbol Symbol @relation(fields: [symbolId], references: [id], onDelete: Cascade)
+
+  fields  SiteSymbolField[]
+  entries SiteSymbolEntry[]
+
+  @@unique([siteId, symbolId])
+  @@map("site_symbols")
+}
+
+model SiteSymbolField {
+  id        String   @id @default(cuid())
+  key       String
+  label     String
+  type      String
+  config    Json     @default("{}")
+  symbolId  String
+  parentId  String?
+  index     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  symbol   SiteSymbol         @relation(fields: [symbolId], references: [id], onDelete: Cascade)
+  parent   SiteSymbolField?   @relation("SiteSymbolFieldHierarchy", fields: [parentId], references: [id])
+  children SiteSymbolField[]  @relation("SiteSymbolFieldHierarchy")
+
+  entries SiteSymbolEntry[]
+
+  @@unique([key, symbolId, parentId])
+  @@map("site_symbol_fields")
+}
+
+model SiteSymbolEntry {
+  id        String   @id @default(cuid())
+  locale    String   @default("en")
+  value     Json     @default("{}")
+  fieldId   String
+  entityId  String?
+  parentId  String?
+  index     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  field  SiteSymbolField  @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  entity SiteSymbol?      @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  parent SiteSymbolEntry? @relation("SiteSymbolEntryHierarchy", fields: [parentId], references: [id])
+
+  children SiteSymbolEntry[] @relation("SiteSymbolEntryHierarchy")
+
+  @@index([fieldId])
+  @@index([entityId])
+  @@map("site_symbol_entries")
+}
+
+model LibrarySymbolGroup {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  index       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  symbols LibrarySymbol[]
+
+  @@map("library_symbol_groups")
+}
+
+model LibrarySymbol {
+  id        String   @id @default(cuid())
+  groupId   String
+  symbolId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  group  LibrarySymbolGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  symbol Symbol             @relation(fields: [symbolId], references: [id], onDelete: Cascade)
+
+  fields  LibrarySymbolField[]
+  entries LibrarySymbolEntry[]
+
+  @@map("library_symbols")
+}
+
+model LibrarySymbolField {
+  id        String   @id @default(cuid())
+  key       String
+  label     String
+  type      String
+  config    Json     @default("{}")
+  symbolId  String
+  parentId  String?
+  index     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  symbol   LibrarySymbol         @relation(fields: [symbolId], references: [id], onDelete: Cascade)
+  parent   LibrarySymbolField?   @relation("LibrarySymbolFieldHierarchy", fields: [parentId], references: [id])
+  children LibrarySymbolField[]  @relation("LibrarySymbolFieldHierarchy")
+
+  entries LibrarySymbolEntry[]
+
+  @@unique([key, symbolId, parentId])
+  @@map("library_symbol_fields")
+}
+
+model LibrarySymbolEntry {
+  id        String   @id @default(cuid())
+  locale    String   @default("en")
+  value     Json     @default("{}")
+  fieldId   String
+  entityId  String?
+  parentId  String?
+  index     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  field  LibrarySymbolField  @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  entity LibrarySymbol?      @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  parent LibrarySymbolEntry? @relation("LibrarySymbolEntryHierarchy", fields: [parentId], references: [id])
+
+  children LibrarySymbolEntry[] @relation("LibrarySymbolEntryHierarchy")
+
+  @@index([fieldId])
+  @@index([entityId])
+  @@map("library_symbol_entries")
+}
+
+model PageType {
+  id        String   @id @default(cuid())
+  siteId    String
+  name      String
+  head      String   @default("")
+  foot      String   @default("")
+  color     String?
+  icon      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site     Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  pages    Page[]
+  symbols  PageTypeSymbol[]
+  sections PageTypeSection[]
+
+  fields  PageTypeField[]
+  entries PageTypeEntry[]
+
+  @@unique([name, siteId])
+  @@map("page_types")
+}
+
+model PageTypeField {
+  id         String   @id @default(cuid())
+  key        String
+  label      String
+  type       String
+  config     Json     @default("{}")
+  pageTypeId String
+  parentId   String?
+  index      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  pageType PageType              @relation(fields: [pageTypeId], references: [id], onDelete: Cascade)
+  parent   PageTypeField?        @relation("PageTypeFieldHierarchy", fields: [parentId], references: [id])
+  children PageTypeField[]       @relation("PageTypeFieldHierarchy")
+
+  entries    PageTypeEntry[]
+  sections   PageTypeSectionEntry[]
+
+  @@unique([key, pageTypeId, parentId])
+  @@map("page_type_fields")
+}
+
+model PageTypeEntry {
+  id         String   @id @default(cuid())
+  locale     String   @default("en")
+  value      Json     @default("{}")
+  fieldId    String
+  entityId   String?
+  parentId   String?
+  index      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  field  PageTypeField  @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  entity PageType?      @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  parent PageTypeEntry? @relation("PageTypeEntryHierarchy", fields: [parentId], references: [id])
+
+  children PageTypeEntry[] @relation("PageTypeEntryHierarchy")
+
+  @@index([fieldId])
+  @@index([entityId])
+  @@map("page_type_entries")
+}
+
+model PageTypeSymbol {
+  id         String @id @default(cuid())
+  pageTypeId String
+  symbolId   String
+
+  pageType PageType @relation(fields: [pageTypeId], references: [id], onDelete: Cascade)
+  symbol   Symbol   @relation(fields: [symbolId], references: [id], onDelete: Cascade)
+
+  @@unique([pageTypeId, symbolId])
+  @@map("page_type_symbols")
+}
+
+model PageTypeSection {
+  id         String   @id @default(cuid())
+  pageTypeId String
+  symbolId   String
+  index      Int      @default(0)
+  zone       String   @default("body")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  pageType PageType @relation(fields: [pageTypeId], references: [id], onDelete: Cascade)
+  symbol   Symbol   @relation(fields: [symbolId], references: [id], onDelete: Cascade)
+
+  entries PageTypeSectionEntry[]
+
+  @@map("page_type_sections")
+}
+
+model PageTypeSectionEntry {
+  id                String   @id @default(cuid())
+  locale            String   @default("en")
+  value             Json     @default("{}")
+  fieldId           String
+  pageTypeSectionId String
+  parentId          String?
+  index             Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  field   PageTypeField       @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  section PageTypeSection     @relation(fields: [pageTypeSectionId], references: [id], onDelete: Cascade)
+  parent  PageTypeSectionEntry? @relation("PageTypeSectionEntryHierarchy", fields: [parentId], references: [id])
+
+  children PageTypeSectionEntry[] @relation("PageTypeSectionEntryHierarchy")
+
+  @@index([fieldId])
+  @@index([pageTypeSectionId])
+  @@map("page_type_section_entries")
+}
+
+model Page {
+  id           String      @id @default(cuid())
+  siteId       String
+  title        String
+  slug         String
+  isHome       Boolean     @default(false)
+  status       PageStatus  @default(DRAFT)
+  parentId     String?
+  pageTypeId   String?
+  sortOrder    Int         @default(0)
+  compiledHtml String?
+  pageSettings Json        @default("{}")
+  metadata     Json        @default("{}")
+  publishedAt  DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  site     Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  parent   Page?     @relation("PageHierarchy", fields: [parentId], references: [id])
+  pageType PageType? @relation(fields: [pageTypeId], references: [id], onDelete: SetNull)
+
+  children        Page[]           @relation("PageHierarchy")
+  sections        Section[]
+  publishedPages  PublishedPage[]
+  popups          Popup[]
+  pageFields      PageField[]
+  pageEntries     PageEntry[]
+  pageSections    PageSection[]
+  collaborationLocks CollaborationLock[]
+  presence        Presence[]
+  comments        Comment[]
+  taxonomies      PageTaxonomy[]
+
+  @@unique([siteId, slug])
+  @@map("pages")
+}
+
+model PageSection {
+  id         String   @id @default(cuid())
+  pageId     String
+  symbolId   String
+  index      Int      @default(0)
+  zone       String   @default("body")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  page   Page   @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  symbol Symbol @relation(fields: [symbolId], references: [id], onDelete: Cascade)
+
+  @@map("page_sections")
+}
+
+model PageField {
+  id        String   @id @default(cuid())
+  key       String
+  label     String
+  type      String
+  config    Json     @default("{}")
+  pageId    String
+  parentId  String?
+  index     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  page     Page             @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  parent   PageField?       @relation("PageFieldHierarchy", fields: [parentId], references: [id])
+  children PageField[]      @relation("PageFieldHierarchy")
+
+  entries    PageEntry[]
+  sections   PageSectionEntry[]
+
+  @@unique([key, pageId, parentId])
+  @@map("page_fields")
+}
+
+model PageEntry {
+  id        String   @id @default(cuid())
+  locale    String   @default("en")
+  value     Json     @default("{}")
+  fieldId   String
+  entityId  String?
+  parentId  String?
+  index     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  field  PageField  @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  entity Page?      @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  parent PageEntry? @relation("PageEntryHierarchy", fields: [parentId], references: [id])
+
+  children PageEntry[] @relation("PageEntryHierarchy")
+
+  @@index([fieldId])
+  @@index([entityId])
+  @@map("page_entries")
+}
+
+model Section {
+  id          String   @id @default(cuid())
+  pageId      String
+  sectionType String
+  sortOrder   Int
+  settings    Json     @default("{}")
+  responsive  Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  page    Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  columns Column[]
+
+  entries PageSectionEntry[]
+
+  @@map("sections")
+}
+
+model Column {
+  id        String   @id @default(cuid())
+  sectionId String
+  gridRow   Int      @default(1)
+  gridCol   Int      @default(1)
+  span      Int      @default(12)
+  sortOrder Int
+  settings  Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  section Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  blocks  Block[]
+
+  @@map("columns")
+}
+
+model Block {
+  id         String   @id @default(cuid())
+  columnId   String
+  blockType  String
+  sortOrder  Int
+  props      Json     @default("{}")
+  styles     Json     @default("{}")
+  responsive Json     @default("{}")
+  animation  Json     @default("{}")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  column Column @relation(fields: [columnId], references: [id], onDelete: Cascade)
+
+  collaborationLocks CollaborationLock[]
+
+  @@map("blocks")
+}
+
+model PageSectionEntry {
+  id        String   @id @default(cuid())
+  locale    String   @default("en")
+  value     Json     @default("{}")
+  fieldId   String
+  sectionId String
+  parentId  String?
+  index     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  field   PageField         @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  section Section           @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  parent  PageSectionEntry? @relation("PageSectionEntryHierarchy", fields: [parentId], references: [id])
+
+  children PageSectionEntry[] @relation("PageSectionEntryHierarchy")
+
+  @@index([fieldId])
+  @@index([sectionId])
+  @@map("page_section_entries")
+}
+
+model SiteField {
+  id        String   @id @default(cuid())
+  key       String
+  label     String
+  type      String
+  config    Json     @default("{}")
+  siteId    String
+  parentId  String?
+  index     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site     Site         @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  parent   SiteField?   @relation("SiteFieldHierarchy", fields: [parentId], references: [id])
+  children SiteField[]  @relation("SiteFieldHierarchy")
+
+  entries SiteEntry[]
+
+  @@unique([key, siteId, parentId])
+  @@map("site_fields")
+}
+
+model SiteEntry {
+  id        String   @id @default(cuid())
+  locale    String   @default("en")
+  value     Json     @default("{}")
+  fieldId   String
+  entityId  String?
+  parentId  String?
+  index     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  field  SiteField  @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  entity Site?      @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  parent SiteEntry? @relation("SiteEntryHierarchy", fields: [parentId], references: [id])
+
+  children SiteEntry[] @relation("SiteEntryHierarchy")
+
+  @@index([fieldId])
+  @@index([entityId])
+  @@map("site_entries")
+}
+
+model Media {
+  id        String   @id @default(cuid())
+  siteId    String
+  filename  String
+  url       String
+  mimeType  String
+  size      Int
+  width     Int?
+  height    Int?
+  alt       String?
+  folderId  String?
+  createdAt DateTime @default(now())
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@map("media")
+}
+
+model Form {
+  id        String   @id @default(cuid())
+  siteId    String
+  name      String
+  fields    Json     @default("[]")
+  settings  Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site        Site             @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  submissions FormSubmission[]
+
+  @@map("forms")
+}
+
+model FormSubmission {
+  id        String   @id @default(cuid())
+  formId    String
+  data      Json     @default("{}")
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  form Form @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@map("form_submissions")
+}
+
+model Module {
+  id        String   @id @default(cuid())
+  siteId    String
+  moduleId  String
+  enabled   Boolean  @default(false)
+  settings  Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([siteId, moduleId])
+  @@map("modules")
+}
+
+model Export {
+  id        String   @id @default(cuid())
+  siteId    String
+  status    String   @default("pending")
+  url       String?
+  size      Int?
+  createdAt DateTime @default(now())
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@map("exports")
+}
+
+model PublishedPage {
+  id        String   @id @default(cuid())
+  pageId    String
+  version   Int
+  content   Json
+  createdAt DateTime @default(now())
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, version])
+  @@map("published_pages")
+}
+
+model CustomSection {
+  id          String   @id @default(cuid())
+  siteId      String
+  name        String
+  slug        String
+  description String?
+  thumbnail   String?
+  category    String?
+  sectionData Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([siteId, slug])
+  @@map("custom_sections")
+}
+
+model Menu {
+  id        String   @id @default(cuid())
+  siteId    String
+  name      String
+  slug      String   @default("main")
+  items     Json     @default("[]")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@map("menus")
+}
+
+enum PopupType {
+  MODAL
+  SLIDE_IN
+  FLOATING_BAR
+  FULLSCREEN
+  NOTIFICATION
+  INLINE
+
+  @@map("popup_type")
+}
+
+enum TriggerType {
+  TIME
+  SCROLL
+  EXIT_INTENT
+  CLICK
+  INACTIVITY
+  PAGE_VIEWS
+  ELEMENT_VISIBILITY
+  ON_LOAD
+
+  @@map("trigger_type")
+}
+
+enum PopupStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+
+  @@map("popup_status")
+}
+
+enum EventType {
+  VIEW
+  CONVERSION
+  CLOSE
+
+  @@map("event_type")
+}
+
+model Popup {
+  id              String      @id @default(cuid())
+  pageId          String
+  siteId          String
+  name            String
+  description     String?
+  popupType       PopupType   @default(MODAL)
+  triggerType     TriggerType @default(TIME)
+  triggerValue    String?
+  triggerElement  String?
+  animation       String      @default("fade")
+  animationDuration Int       @default(300)
+  content         Json        @default("{}")
+  settings        Json        @default("{}")
+  pages           Json        @default("[]")
+  devices         Json        @default("[]")
+  userStatus      String?
+  showFrequency   String?
+  startDate       DateTime?
+  endDate         DateTime?
+  priority        Int         @default(0)
+  status          PopupStatus @default(DRAFT)
+  views           Int         @default(0)
+  conversions     Int         @default(0)
+  conversionRate  Float       @default(0)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  page   Page        @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  site   Site        @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  events PopupEvent[]
+  tests  PopupTest[]
+
+  @@map("popups")
+}
+
+model PopupEvent {
+  id        String    @id @default(cuid())
+  popupId   String
+  eventType EventType @default(VIEW)
+  sessionId String?
+  userId    String?
+  userAgent String?
+  ip        String?
+  createdAt DateTime  @default(now())
+
+  popup Popup @relation(fields: [popupId], references: [id], onDelete: Cascade)
+
+  @@map("popup_events")
+}
+
+model PopupTest {
+  id         String   @id @default(cuid())
+  popupId    String
+  name       String
+  variant    String
+  weight     Int      @default(50)
+  content    Json     @default("{}")
+  views      Int      @default(0)
+  conversions Int     @default(0)
+  createdAt  DateTime @default(now())
+
+  popup Popup @relation(fields: [popupId], references: [id], onDelete: Cascade)
+
+  @@map("popup_tests")
+}
+
+model Deployment {
+  id          String       @id @default(cuid())
+  siteId      String
+  status      DeployStatus @default(PENDING)
+  type        String       @default("static")
+  outputUrl   String?
+  error       String?
+  pages       Int          @default(0)
+  assets      Int          @default(0)
+  size        Int          @default(0)
+  createdAt   DateTime     @default(now())
+  completedAt DateTime?
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId])
+  @@map("deployments")
+}
+
+model CollaborationLock {
+  id         String   @id @default(cuid())
+  blockId    String   @unique
+  pageId     String?
+  siteId     String
+  userId     String
+  acquiredAt DateTime @default(now())
+  expiresAt  DateTime
+
+  block Block @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  page  Page? @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  site  Site  @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([siteId])
+  @@map("collaboration_locks")
+}
+
+model Presence {
+  id         String   @id @default(cuid())
+  siteId     String
+  userId     String
+  pageId     String
+  cursorPos  Json     @default("{}")
+  isEditing  Boolean  @default(false)
+  updatedAt  DateTime @updatedAt
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@map("presences")
+}
+
+enum CommentStatus {
+  APPROVED
+  PENDING
+  SPAM
+  TRASH
+
+  @@map("comment_status")
+}
+
+model Comment {
+  id             String        @id @default(cuid())
+  content        String
+  authorName     String
+  authorEmail    String
+  authorUrl      String?
+  authorIp       String?
+  userAgent      String?
+  status         CommentStatus @default(PENDING)
+  parentId       String?
+  siteId         String
+  pageId         String?
+  postId         String?
+  userId         String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  parent  Comment?  @relation("CommentParent", fields: [parentId], references: [id], onDelete: SetNull)
+  replies Comment[] @relation("CommentParent")
+  site    Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  page    Page?     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  post    Post?     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user    User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([siteId])
+  @@index([pageId])
+  @@index([postId])
+  @@index([status])
+  @@map("comments")
+}
+
+model Taxonomy {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String
+  description String   @default("")
+  type        String   @default("category")
+  siteId      String
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  site    Site          @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  terms   Term[]
+  pages   PageTaxonomy[]
+  posts   PostTaxonomy[]
+
+  @@unique([slug, siteId])
+  @@map("taxonomies")
+}
+
+model Term {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String
+  description String   @default("")
+  taxonomyId  String
+  parentId    String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  taxonomy Taxonomy  @relation(fields: [taxonomyId], references: [id], onDelete: Cascade)
+  parent   Term?     @relation("TermParent", fields: [parentId], references: [id], onDelete: SetNull)
+  children Term[]    @relation("TermParent")
+
+  @@unique([slug, taxonomyId])
+  @@map("terms")
+}
+
+model PageTaxonomy {
+  pageId     String
+  taxonomyId String
+
+  page     Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  taxonomy Taxonomy @relation(fields: [taxonomyId], references: [id], onDelete: Cascade)
+
+  @@id([pageId, taxonomyId])
+  @@map("page_taxonomies")
+}
+
+model PostTaxonomy {
+  postId     String
+  taxonomyId String
+
+  post     Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  taxonomy Taxonomy @relation(fields: [taxonomyId], references: [id], onDelete: Cascade)
+
+  @@id([postId, taxonomyId])
+  @@map("post_taxonomies")
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+
+  @@map("post_status")
+}
+
+model Post {
+  id          String     @id @default(cuid())
+  title       String
+  slug        String
+  content     String     @default("")
+  excerpt     String     @default("")
+  status      PostStatus @default(DRAFT)
+  featuredImage String?
+  commentCount Int       @default(0)
+  siteId      String
+  authorId    String
+  publishedAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  site     Site            @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  author   User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments Comment[]
+  taxonomies PostTaxonomy[]
+  revisions  PostRevision[]
+
+  @@unique([slug, siteId])
+  @@index([siteId, status])
+  @@map("posts")
+}
+
+model PostRevision {
+  id        String   @id @default(cuid())
+  postId    String
+  version   Int
+  title     String
+  content   String
+  excerpt   String
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, version])
+  @@map("post_revisions")
+}
+
+model Option {
+  id        String   @id @default(cuid())
+  key       String
+  value     Json     @default("{}")
+  autoload  Boolean  @default(true)
+  siteId    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site Site? @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([key, siteId])
+  @@map("options")
+}
+
+enum CronStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+
+  @@map("cron_status")
+}
+
+model CronJob {
+  id          String     @id @default(cuid())
+  name        String
+  hook        String
+  args        Json       @default("{}")
+  status      CronStatus @default(PENDING)
+  schedule    String?
+  nextRun     DateTime?
+  lastRun     DateTime?
+  retries     Int        @default(0)
+  maxRetries  Int        @default(3)
+  error       String?
+  siteId      String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  site Site? @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([nextRun])
+  @@map("cron_jobs")
+}
+
+model Theme {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String   @default("")
+  version     String   @default("1.0.0")
+  author      String   @default("")
+  uri         String?
+  active      Boolean  @default(false)
+  config      Json     @default("{}")
+  templates   Json     @default("[]")
+  styles      Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("themes")
+}
+
+model WidgetArea {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String
+  siteId    String
+  widgets   Json     @default("[]")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([slug, siteId])
+  @@map("widget_areas")
+}

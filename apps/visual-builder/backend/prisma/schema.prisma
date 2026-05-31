@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  password  String
+  name      String?
+  role      String    @default("USER")
+  createdAt DateTime  @default(now())
+  projects  Project[]
+}
+
+model Project {
+  id        Int      @id @default(autoincrement())
+  name      String
+  data      String   @default("{}")
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Plugin {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String   @default("")
+  version     String   @default("1.0.0")
+  downloads   Int      @default(0)
+  installs    Int      @default(0)
+  category    String   @default("general")
+  author      String   @default("Unknown")
+  createdAt   DateTime @default(now())
+}
+
+model Template {
+  id        Int      @id @default(autoincrement())
+  name      String
+  category  String   @default("general")
+  data      String   @default("{}")
+  userId    Int?
+  createdAt DateTime @default(now())
+}
+
+model FormSubmission {
+  id        Int      @id @default(autoincrement())
+  formId    Int
+  data      String   @default("{}")
+  createdAt DateTime @default(now())
+}
+
+model Deployment {
+  id         Int      @id @default(autoincrement())
+  projectId  Int
+  userId     Int
+  provider   String
+  status     String   @default("pending")
+  timestamp  DateTime @default(now())
+}

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Plugin Preview</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #f5f5f5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    #root { width: 100%; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+    .error { color: #ef4444; text-align: center; padding: 2rem; }
+    .loading { color: #6b7280; text-align: center; padding: 2rem; }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <div class="loading">Loading preview...</div>
+  </div>
+
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script>
+    (async function () {
+      const params = new URLSearchParams(window.location.search);
+      const plugin = params.get('plugin');
+      const component = params.get('component');
+
+      if (!plugin || !component) {
+        document.getElementById('root').innerHTML = '<div class="error">Missing plugin or component parameter</div>';
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/plugins/' + encodeURIComponent(plugin) + '/component/' + encodeURIComponent(component));
+        if (!res.ok) throw new Error('Component not found (' + res.status + ')');
+        let code = await res.text();
+
+        // Strip import/export statements (not supported in eval)
+        code = code.replace(/^import\s+.*$/gm, '');
+        code = code.replace(/^export\s+default\s+/gm, '');
+        code = code.replace(/\bexport\s+(const|let|var|function|class)\s+/g, '$1 ');
+
+        // Provide mocks for project dependencies and destructure React hooks
+        const preamble = `
+          const { useState, useEffect, useRef, useCallback, useMemo } = React;
+          function usePluginTheme(name) {
+            return {
+              surfaceColor: '#fff', textColor: '#1a1a2e', textSecondaryColor: '#374151',
+              borderColor: '#d1d5db', bgColor: '#fff', primaryBg: '#6366f1',
+              isDark: false, borderRadius: { lg: 12 },
+              shadows: { md: '0 2px 8px rgba(0,0,0,0.08)' },
+              colors: { gray: { 800: '#f8f9fa' } }
+            };
+          }
+        `;
+
+        const wrapped = preamble + code + '\nReactDOM.render(React.createElement(' + component + '), document.getElementById("root"));';
+        const result = Babel.transform(wrapped, { presets: ['react'] }).code;
+        eval(result);
+      } catch (err) {
+        document.getElementById('root').innerHTML = '<div class="error">' + err.message + '</div>';
+      }
+    })();
+  </script>
+</body>
+</html>

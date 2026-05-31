@@ -1,0 +1,12 @@
+{
+  "frontend": {
+    "zustand": "^5.0.0",
+    "lucide-react": "^0.400.0",
+    "framer-motion": "^11.0.0",
+    "recharts": "^2.12.0"
+  },
+  "backend": {
+    "@prisma/client": "^6.0.0",
+    "express": "^4.18.0"
+  }
+}

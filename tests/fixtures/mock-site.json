@@ -1,0 +1,38 @@
+{
+  "id": "site-1",
+  "name": "Test Site",
+  "domain": "test.example.com",
+  "settings": {
+    "theme": {
+      "primaryColor": "#6366f1",
+      "secondaryColor": "#ec4899",
+      "fontFamily": "Inter, sans-serif",
+      "headingFont": "Inter, sans-serif",
+      "borderRadius": "8px",
+      "containerWidth": "1200px"
+    },
+    "seo": {
+      "titleTemplate": "%s | Test Site",
+      "description": "A test site for SUKIT"
+    },
+    "favicon": "/uploads/favicon.ico",
+    "customCSS": "",
+    "customHead": ""
+  },
+  "pages": [
+    {
+      "id": "page-1",
+      "title": "Home",
+      "slug": "home",
+      "status": "published"
+    },
+    {
+      "id": "page-2",
+      "title": "About",
+      "slug": "about",
+      "status": "draft"
+    }
+  ],
+  "createdAt": "2025-01-01T00:00:00.000Z",
+  "updatedAt": "2025-01-15T10:30:00.000Z"
+}

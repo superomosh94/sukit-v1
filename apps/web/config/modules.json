@@ -1,0 +1,24 @@
+{
+  "enabled": [
+    {
+      "id": "@sukit/visual-builder",
+      "version": "1.0.0",
+      "settings": {
+        "defaultBlocks": ["hero", "features", "cta"]
+      }
+    },
+    {
+      "id": "@sukit/seo-module",
+      "version": "1.0.0",
+      "settings": {}
+    }
+  ],
+  "disabled": [],
+  "devModules": [
+    {
+      "id": "@sukit/form-builder",
+      "path": "../../modules/form-builder",
+      "version": "0.1.0"
+    }
+  ]
+}

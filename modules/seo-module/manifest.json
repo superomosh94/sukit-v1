@@ -1,0 +1,25 @@
+{
+  "id": "@sukit/seo-module",
+  "name": "SEO Module",
+  "version": "1.0.0",
+  "description": "Meta tags, sitemaps, structured data, and SEO analysis",
+  "author": { "name": "SUKIT Core Team" },
+  "license": "MIT",
+  "icon": "Search",
+  "sukit": {
+    "minVersion": "1.0.0",
+    "capabilities": ["ui:sidebar", "api:routes", "hooks:page", "settings:panel"],
+    "permissions": ["filesystem:read", "filesystem:write", "database:read", "http:outbound"],
+    "entrypoints": { "main": "./dist/index.js", "settings": "./dist/settings.jsx" },
+    "slots": {
+      "sidebar:right": { "component": "./dist/components/seo-panel.jsx", "position": 40 }
+    },
+    "hooks": {
+      "page:afterSave": "./dist/hooks/afterSave.js",
+      "site:export": "./dist/hooks/onExport.js"
+    },
+    "api": { "basePath": "/api/seo", "routes": "./dist/routes.js" },
+    "dependencies": { "@sukit/core": "^1.0.0" },
+    "peerDependencies": { "react": "^19.0.0" }
+  }
+}

@@ -1,0 +1,66 @@
+/* src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom utilities */
+.bg-primary { @apply bg-primary-500 text-white; }
+.text-primary { @apply text-primary-500; }
+
+/* Safe area padding for notched devices */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.safe-area-left {
+  padding-left: env(safe-area-inset-left, 0px);
+}
+.safe-area-right {
+  padding-right: env(safe-area-inset-right, 0px);
+}
+.safe-area-all {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* Fluid typography */
+.fluid-text-xs { font-size: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem); }
+.fluid-text-sm { font-size: clamp(0.875rem, 0.8rem + 0.3vw, 1rem); }
+.fluid-text-base { font-size: clamp(1rem, 0.9rem + 0.4vw, 1.125rem); }
+.fluid-text-lg { font-size: clamp(1.125rem, 1rem + 0.5vw, 1.25rem); }
+.fluid-text-xl { font-size: clamp(1.25rem, 1rem + 0.75vw, 1.5rem); }
+.fluid-text-2xl { font-size: clamp(1.5rem, 1.25rem + 1vw, 2rem); }
+.fluid-text-3xl { font-size: clamp(1.875rem, 1.5rem + 1.5vw, 2.5rem); }
+
+/* Stack on mobile helper */
+@media (max-width: 768px) {
+  .stack-on-mobile {
+    flex-direction: column !important;
+  }
+  .hide-on-mobile {
+    display: none !important;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .hide-on-tablet {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  .hide-on-desktop {
+    display: none !important;
+  }
+}
+
+/* Touch gesture indicator */
+.touch-hint {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}

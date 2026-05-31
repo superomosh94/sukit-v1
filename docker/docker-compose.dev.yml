@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: sukit-postgres-dev
+    environment:
+      POSTGRES_USER: sukite
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+      POSTGRES_DB: sukit
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - sukit-network-dev
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: sukit-redis-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data_dev:/data
+    networks:
+      - sukit-network-dev
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: sukit-mailpit-dev
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - sukit-network-dev
+    restart: unless-stopped
+
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+    container_name: sukit-app-dev
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://sukite:${DB_PASSWORD:-password}@postgres:5432/sukit
+      REDIS_URL: redis://redis:6379
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: dev-secret-key-change-in-production
+      STORAGE_PATH: /app/storage
+      NODE_ENV: development
+    volumes:
+      - ..:/app
+      - /app/node_modules
+      - /app/apps/web/.next
+      - ../storage:/app/storage
+      - ../modules:/app/modules
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - sukit-network-dev
+    restart: unless-stopped
+
+volumes:
+  postgres_data_dev:
+  redis_data_dev:
+
+networks:
+  sukit-network-dev:
+    driver: bridge

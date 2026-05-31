@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: sukit-postgres
+    environment:
+      POSTGRES_USER: sukite
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: sukit
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - sukit-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: sukit-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - sukit-network
+    restart: unless-stopped
+
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: sukit-app
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://sukite:${DB_PASSWORD}@postgres:5432/sukit
+      REDIS_URL: redis://redis:6379
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      STORAGE_PATH: /app/storage
+    volumes:
+      - ../storage:/app/storage
+      - ../modules:/app/modules
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - sukit-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  sukit-network:
+    driver: bridge
