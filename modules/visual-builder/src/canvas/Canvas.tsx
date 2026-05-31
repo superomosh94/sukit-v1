@@ -54,14 +54,9 @@ function DroppableColumn({
   return (
     <div
       ref={setNodeRef}
-      data-section-id={section.id}
-      style={style}
-      className={cn(
-        'builder-column col-span-12 min-h-[60px] rounded-md border-2 border-dashed p-2 transition-colors',
-        isOver
-          ? 'border-builder-drop bg-builder-drop/10'
-          : 'border-muted-foreground/20'
-      )}
+      // @ts-ignore
+      data-section-id={sectionId}
+      // @ts-ignore
       style={{ gridColumn: `span ${column.span}` }}
     >
       {children}
