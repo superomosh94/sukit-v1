@@ -1,4 +1,4 @@
-import type { Section, PageSettings } from './types';
+import type { Section, PageSettings, Block } from './types';
 
 interface ExportOptions {
   title?: string;
@@ -51,12 +51,25 @@ function renderTable(headers: unknown[], rows: unknown[][]): string {
   return `<table>${headerHtml}${bodyHtml}</table>`;
 }
 
-function renderBlock(block: {
-  blockType: string;
-  props: Record<string, unknown>;
-  styles: Record<string, string | number>;
-}): string {
-  const { blockType, props, styles } = block;
+function renderChildren(
+  props: Record<string, unknown>,
+  id: string,
+  cls: string,
+  blockChildren?: Block[]
+): string | null {
+  const childrenProp = props.children as string | undefined;
+  if (childrenProp) {
+    return id || cls ? `<div${id}${cls}>${childrenProp}</div>` : childrenProp;
+  }
+  if (blockChildren && blockChildren.length > 0) {
+    const html = blockChildren.map(renderBlock).join('\n');
+    return id || cls ? `<div${id}${cls}>${html}</div>` : html;
+  }
+  return null;
+}
+
+function renderBlock(block: Block): string {
+  const { blockType, props, styles, children } = block;
   const styleAttr = styleToString(styles);
   const baseStyle = styleAttr ? ` style="${styleAttr}"` : '';
   const id = props.htmlId ? ` id="${escapeHtml(String(props.htmlId))}"` : '';
@@ -101,6 +114,44 @@ function renderBlock(block: {
     }
     case 'divider':
       return `<hr${id}${cls}${baseStyle} />`;
+    case 'container': {
+      const maxWidth = (props.maxWidth as string) ?? '1200px';
+      const padding = (props.padding as string) ?? '0 24px';
+      const containerStyle = `max-width:${maxWidth};padding:${padding};margin:0 auto;width:100%${styleAttr ? '; ' + styleAttr : ''}`;
+      const childrenHtml = renderChildren(props, id, cls, children as Block[]);
+      if (childrenHtml) return childrenHtml;
+      return `<div${id}${cls} style="${containerStyle}"></div>`;
+    }
+    case 'row': {
+      const gap = (props.gap as string) ?? '16px';
+      const rowStyle = `display:flex;flex-wrap:wrap;gap:${gap}${styleAttr ? '; ' + styleAttr : ''}`;
+      const childrenHtml = renderChildren(props, id, cls, children as Block[]);
+      if (childrenHtml) return childrenHtml;
+      return `<div${id}${cls} style="${rowStyle}"></div>`;
+    }
+    case 'column': {
+      const span = (props.span as number) ?? 12;
+      const colStyle = `flex:${span};min-width:0${styleAttr ? '; ' + styleAttr : ''}`;
+      const childrenHtml = renderChildren(props, id, cls, children as Block[]);
+      if (childrenHtml) return childrenHtml;
+      return `<div${id}${cls} style="${colStyle}"></div>`;
+    }
+    case 'grid': {
+      const columns = (props.columns as number) ?? 2;
+      const gap = (props.gap as string) ?? '16px';
+      const gridStyle = `display:grid;grid-template-columns:repeat(${columns},1fr);gap:${gap}${styleAttr ? '; ' + styleAttr : ''}`;
+      const childrenHtml = renderChildren(props, id, cls, children as Block[]);
+      if (childrenHtml) return childrenHtml;
+      return `<div${id}${cls} style="${gridStyle}"></div>`;
+    }
+    case 'stack': {
+      const direction = (props.direction as string) ?? 'vertical';
+      const gap = (props.gap as string) ?? '8px';
+      const stackStyle = `display:flex;flex-direction:${direction === 'vertical' ? 'column' : 'row'};gap:${gap}${styleAttr ? '; ' + styleAttr : ''}`;
+      const childrenHtml = renderChildren(props, id, cls, children as Block[]);
+      if (childrenHtml) return childrenHtml;
+      return `<div${id}${cls} style="${stackStyle}"></div>`;
+    }
     case 'spacer': {
       const height = (props.height as number) ?? 32;
       return `<div${id}${cls} style="height:${height}px${styleAttr ? '; ' + styleAttr : ''}"></div>`;
@@ -259,17 +310,6 @@ function renderBlock(block: {
         .join('\n')}<button type="submit">${submitText}</button></form>`;
     }
     default: {
-      if (
-        (blockType === 'container' ||
-          blockType === 'section' ||
-          blockType === 'row' ||
-          blockType === 'column' ||
-          blockType === 'grid' ||
-          blockType === 'stack') &&
-        props.children
-      ) {
-        return `<div${id}${cls}${baseStyle}>${(props.children as string) ?? ''}</div>`;
-      }
       const text = escapeHtml((props.text as string) ?? '');
       return text
         ? `<div${id}${cls}${baseStyle}>${text}</div>`
@@ -281,11 +321,7 @@ function renderBlock(block: {
 function renderColumn(column: {
   span: number;
   settings: Record<string, unknown>;
-  blocks: Array<{
-    blockType: string;
-    props: Record<string, unknown>;
-    styles: Record<string, string | number>;
-  }>;
+  blocks: Block[];
 }): string {
   const blocksHtml = column.blocks.map(renderBlock).join('\n');
   const colStyle = column.settings
@@ -296,12 +332,22 @@ function renderColumn(column: {
 }
 
 function renderSection(section: Section): string {
+  const settings = section.settings as Record<string, unknown>;
+  const bgVideo = settings.backgroundVideoUrl as string | undefined;
+  const collapsed = settings.collapsed as boolean | undefined;
+
+  if (collapsed) return '';
+
   const columnsHtml = section.columns.map(renderColumn).join('\n');
-  const sectionStyle = section.settings
-    ? styleToString(section.settings as Record<string, string | number>)
+  const sectionStyle = settings
+    ? styleToString(settings as Record<string, string | number>)
     : '';
   const sectionStyleAttr = sectionStyle ? ` style="${sectionStyle}"` : '';
-  return `<section class="builder-section${section.sectionType ? ` section-type-${section.sectionType}` : ''}"${sectionStyleAttr}>${columnsHtml}</section>`;
+  const videoHtml = bgVideo
+    ? `<video autoplay muted loop playsinline class="builder-video-bg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none"><source src="${escapeHtml(bgVideo)}" type="video/mp4" /></video>`
+    : '';
+
+  return `<section class="builder-section${section.sectionType ? ` section-type-${section.sectionType}` : ''}"${sectionStyleAttr}>${videoHtml}<div class="builder-section-inner"${bgVideo ? ' style="position:relative;z-index:1"' : ''}>${columnsHtml}</div></section>`;
 }
 
 function collectAnimations(sections: Section[]): string {
@@ -335,17 +381,42 @@ function collectAnimations(sections: Section[]): string {
 
 function collectResponsiveCss(sections: Section[]): string {
   const rules: string[] = [];
+  const bp: Record<string, number> = { tablet: 810, phone: 390 };
+
   for (const s of sections) {
     for (const [vp, val] of Object.entries(s.responsive)) {
       const override = val as Record<string, unknown>;
-      const hidden = override.hidden;
-      if (vp === 'tablet') {
-        rules.push(
-          `@media(max-width:810px){[data-section-id="${s.id}"].section-type-${s.sectionType}${hidden ? '{display:none}' : ''}}`
+      const maxW = bp[vp];
+      if (!maxW) continue;
+      const sectionSelectors: string[] = [];
+
+      if (override.hidden) {
+        sectionSelectors.push(`display:none`);
+      }
+      if (override.fontSize != null) {
+        sectionSelectors.push(`font-size:${override.fontSize}px`);
+      }
+      if (override.padding != null) {
+        sectionSelectors.push(`padding:${override.padding}px`);
+      }
+      if (override.marginTop != null) {
+        sectionSelectors.push(`margin-top:${override.marginTop}px`);
+      }
+      if (override.marginBottom != null) {
+        sectionSelectors.push(`margin-bottom:${override.marginBottom}px`);
+      }
+      if (override.width != null && override.width !== 'auto') {
+        sectionSelectors.push(
+          `width:${override.width}${typeof override.width === 'number' ? 'px' : ''}`
         );
-      } else if (vp === 'phone') {
+      }
+      if (override.backgroundColor) {
+        sectionSelectors.push(`background-color:${override.backgroundColor}`);
+      }
+
+      if (sectionSelectors.length > 0) {
         rules.push(
-          `@media(max-width:390px){[data-section-id="${s.id}"].section-type-${s.sectionType}${hidden ? '{display:none}' : ''}}`
+          `@media(max-width:${maxW}px){[data-section-id="${s.id}"].section-type-${s.sectionType}{${sectionSelectors.join(';')}}}`
         );
       }
     }
@@ -353,13 +424,81 @@ function collectResponsiveCss(sections: Section[]): string {
       for (const b of c.blocks) {
         for (const [vp, val] of Object.entries(b.responsive)) {
           const override = val as Record<string, unknown>;
-          if (vp === 'tablet' && override.hidden) {
-            rules.push(
-              `@media(max-width:810px){[data-block-id="${b.id}"]{display:none}}`
+          const maxW = bp[vp];
+          if (!maxW) continue;
+          const selectors: string[] = [];
+
+          if (override.hidden) {
+            selectors.push('display:none');
+          }
+          if (override.fontSize != null) {
+            selectors.push(`font-size:${override.fontSize}px`);
+          }
+          if (override.padding != null) {
+            selectors.push(`padding:${override.padding}px`);
+          }
+          if (override.marginTop != null) {
+            selectors.push(`margin-top:${override.marginTop}px`);
+          }
+          if (override.marginBottom != null) {
+            selectors.push(`margin-bottom:${override.marginBottom}px`);
+          }
+          if (override.width != null && override.width !== 'auto') {
+            selectors.push(
+              `width:${override.width}${typeof override.width === 'number' ? 'px' : ''}`
             );
-          } else if (vp === 'phone' && override.hidden) {
+          }
+          if (override.backgroundColor) {
+            selectors.push(`background-color:${override.backgroundColor}`);
+          }
+          if (override.display) {
+            selectors.push(`display:${override.display}`);
+          }
+          if (override.borderWidth != null) {
+            selectors.push(`border-width:${override.borderWidth}px`);
+          }
+          if (override.borderRadius != null) {
+            selectors.push(`border-radius:${override.borderRadius}px`);
+          }
+          if (override.gap != null) {
+            selectors.push(`gap:${override.gap}px`);
+          }
+          if (override.flexDirection) {
+            selectors.push(`flex-direction:${override.flexDirection}`);
+          }
+          if (override.justifyContent) {
+            selectors.push(`justify-content:${override.justifyContent}`);
+          }
+          if (override.alignItems) {
+            selectors.push(`align-items:${override.alignItems}`);
+          }
+          if (override.position) {
+            selectors.push(`position:${override.position}`);
+          }
+          if (override.top != null) {
+            selectors.push(
+              `top:${override.top}${typeof override.top === 'number' ? 'px' : ''}`
+            );
+          }
+          if (override.right != null) {
+            selectors.push(
+              `right:${override.right}${typeof override.right === 'number' ? 'px' : ''}`
+            );
+          }
+          if (override.bottom != null) {
+            selectors.push(
+              `bottom:${override.bottom}${typeof override.bottom === 'number' ? 'px' : ''}`
+            );
+          }
+          if (override.left != null) {
+            selectors.push(
+              `left:${override.left}${typeof override.left === 'number' ? 'px' : ''}`
+            );
+          }
+
+          if (selectors.length > 0) {
             rules.push(
-              `@media(max-width:390px){[data-block-id="${b.id}"]{display:none}}`
+              `@media(max-width:${maxW}px){[data-block-id="${b.id}"]{${selectors.join(';')}}}`
             );
           }
         }

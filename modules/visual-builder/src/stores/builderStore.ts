@@ -104,6 +104,7 @@ function createBlock(blockType: string): Block {
       easing: 'ease-out',
       cascadeLevel: 0,
     },
+    children: [],
   };
 }
 
@@ -231,6 +232,12 @@ export const useBuilderStore = create<BuilderStore>()(
       pageTitle: '',
       isDirty: false,
       lastSaved: null as string | null,
+      isSaving: false,
+      isLoading: false,
+      loadingMessage: null as string | null,
+      sceneVersion: crypto.randomUUID().slice(0, 8),
+      remoteSceneVersion: null as string | null,
+      _abortController: null as AbortController | null,
 
       // Sections CRUD
       addSection: (sectionType: string, afterId?: string) => {
@@ -807,7 +814,19 @@ export const useBuilderStore = create<BuilderStore>()(
       },
 
       toggleFullscreen: () => {
-        set({ fullscreen: !get().fullscreen });
+        const fs = !get().fullscreen;
+        set({ fullscreen: fs });
+        try {
+          if (fs) {
+            document.documentElement.requestFullscreen();
+          } else {
+            if (document.fullscreenElement) {
+              document.exitFullscreen();
+            }
+          }
+        } catch (e) {
+          console.warn('Fullscreen API not available:', e);
+        }
       },
 
       setPanOffset: (offset: { x: number; y: number }) => {
@@ -1051,6 +1070,22 @@ export const useBuilderStore = create<BuilderStore>()(
         set({ debugMode: debug });
       },
 
+      setIsSaving: (saving: boolean) => {
+        set({ isSaving: saving });
+      },
+
+      setIsLoading: (loading: boolean, message?: string) => {
+        set({ isLoading: loading, loadingMessage: message ?? null });
+      },
+
+      abortPendingSaves: () => {
+        const ctrl = get()._abortController;
+        if (ctrl) {
+          ctrl.abort();
+          set({ _abortController: null, isSaving: false });
+        }
+      },
+
       setBuilderTheme: (theme: 'light' | 'dark' | 'system') => {
         set({ builderTheme: theme });
         const root = document.documentElement;
@@ -1064,6 +1099,194 @@ export const useBuilderStore = create<BuilderStore>()(
       setShowMargin: (show: boolean) => set({ showMargin: show }),
       setShowBorderRadius: (show: boolean) => set({ showBorderRadius: show }),
       setThemeColors: (colors: string[]) => set({ themeColors: colors }),
+
+      groupBlocks: (blockIds: string[]) => {
+        const { sections } = get();
+        const blocks: Block[] = [];
+        let targetSid = '';
+        let targetCid = '';
+
+        for (const s of sections) {
+          for (const c of s.columns) {
+            for (const b of c.blocks) {
+              if (blockIds.includes(b.id)) {
+                blocks.push(JSON.parse(JSON.stringify(b)));
+                targetSid = s.id;
+                targetCid = c.id;
+              }
+            }
+          }
+        }
+
+        if (blocks.length < 2) return;
+
+        const containerBlock: Block = {
+          id: crypto.randomUUID(),
+          blockType: 'container',
+          sortKey: '',
+          props: { children: '' },
+          styles: { display: 'flex', gap: '8px', flexWrap: 'wrap' },
+          responsive: {},
+          animation: {
+            type: 'none',
+            duration: 300,
+            delay: 0,
+            easing: 'ease-out',
+            cascadeLevel: 0,
+          },
+        };
+
+        const updated = sections.map((s) => {
+          if (s.id !== targetSid) return s;
+          return {
+            ...s,
+            columns: s.columns.map((c) => {
+              if (c.id !== targetCid) return c;
+              const remaining = c.blocks.filter(
+                (b) => !blockIds.includes(b.id)
+              );
+              return {
+                ...c,
+                blocks: [...remaining, containerBlock, ...blocks],
+              };
+            }),
+          };
+        });
+
+        set({ sections: updated as Section[], isDirty: true });
+      },
+
+      ungroupBlocks: (containerBlockId: string) => {
+        const { sections } = get();
+        const updated = sections.map((s) => ({
+          ...s,
+          columns: s.columns.map((c) => ({
+            ...c,
+            blocks: c.blocks.flatMap((b) =>
+              b.id === containerBlockId ? [] : [b]
+            ),
+          })),
+        }));
+        set({ sections: updated as Section[], isDirty: true });
+      },
+
+      addBlockToColumn: (sectionId: string, columnId: string) => {
+        const { sections } = get();
+        const sorted =
+          sections
+            .find((s) => s.id === sectionId)
+            ?.columns.find((c) => c.id === columnId)
+            ?.blocks.slice()
+            .sort((a, b) =>
+              a.sortKey < b.sortKey ? -1 : a.sortKey > b.sortKey ? 1 : 0
+            ) ?? [];
+        const prevKey =
+          sorted.length > 0 ? sorted[sorted.length - 1].sortKey : null;
+        const newBlock: Block = {
+          id: crypto.randomUUID(),
+          blockType: 'text',
+          sortKey: generateKeyBetween(prevKey, null),
+          props: { text: 'New block' },
+          styles: {},
+          responsive: {},
+          animation: {
+            type: 'none',
+            duration: 300,
+            delay: 0,
+            easing: 'ease-out',
+            cascadeLevel: 0,
+          },
+        };
+        const updated = sections.map((s) => {
+          if (s.id !== sectionId) return s;
+          return {
+            ...s,
+            columns: s.columns.map((c) =>
+              c.id === columnId ? { ...c, blocks: [...c.blocks, newBlock] } : c
+            ),
+          };
+        });
+        set({ sections: updated as Section[], isDirty: true });
+      },
+
+      alignBlocks: (
+        blockIds: string[],
+        direction: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom'
+      ) => {
+        const { sections } = get();
+        const updated = sections.map((s) => ({
+          ...s,
+          columns: s.columns.map((c) => ({
+            ...c,
+            blocks: c.blocks.map((b) => {
+              if (!blockIds.includes(b.id)) return b;
+              const alignMap: Record<string, Record<string, string>> = {
+                left: { textAlign: 'left' },
+                center: { textAlign: 'center' },
+                right: { textAlign: 'right' },
+                top: { alignItems: 'flex-start' },
+                middle: { alignItems: 'center' },
+                bottom: { alignItems: 'flex-end' },
+              };
+              return { ...b, styles: { ...b.styles, ...alignMap[direction] } };
+            }),
+          })),
+        }));
+        set({ sections: updated as Section[], isDirty: true });
+      },
+
+      distributeBlocks: (
+        blockIds: string[],
+        axis: 'horizontal' | 'vertical'
+      ) => {
+        const { sections } = get();
+        const allBlocks: {
+          id: string;
+          marginLeft?: number;
+          marginTop?: number;
+        }[] = [];
+        for (const s of sections) {
+          for (const c of s.columns) {
+            for (const b of c.blocks) {
+              if (blockIds.includes(b.id)) {
+                allBlocks.push({
+                  id: b.id,
+                  marginLeft: b.styles.marginLeft as number,
+                  marginTop: b.styles.marginTop as number,
+                });
+              }
+            }
+          }
+        }
+        if (allBlocks.length < 3) return;
+        const count = allBlocks.length;
+        const key = axis === 'horizontal' ? 'marginLeft' : 'marginTop';
+        const sorted = [...allBlocks].sort(
+          (a, b) => ((a as any)[key] ?? 0) - ((b as any)[key] ?? 0)
+        );
+        const totalSpace =
+          ((sorted[sorted.length - 1] as any)[key] ?? 0) -
+          ((sorted[0] as any)[key] ?? 0);
+        const gap = totalSpace / (count - 1);
+        const updated = sections.map((s) => ({
+          ...s,
+          columns: s.columns.map((c) => ({
+            ...c,
+            blocks: c.blocks.map((b) => {
+              const idx = sorted.findIndex((sb) => sb.id === b.id);
+              if (idx < 0) return b;
+              return {
+                ...b,
+                styles: {
+                  ...b.styles,
+                  [key]: (sorted[0] as any)[key] + idx * gap,
+                },
+              };
+            }),
+          })),
+        }));
+        set({ sections: updated as Section[], isDirty: true });
+      },
 
       addTemplateCategory: (templateId: string, category: string) => {
         set({
@@ -1104,6 +1327,13 @@ export const useBuilderStore = create<BuilderStore>()(
         showMargin: state.showMargin,
         showBorderRadius: state.showBorderRadius,
         themeColors: state.themeColors,
+        lastSaved: state.lastSaved,
+        sceneVersion: state.sceneVersion,
+        remoteSceneVersion: state.remoteSceneVersion,
+        isDirty: state.isDirty,
+        isSaving: state.isSaving,
+        isLoading: state.isLoading,
+        loadingMessage: state.loadingMessage,
       }),
     }
   )

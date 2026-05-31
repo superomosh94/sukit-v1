@@ -32,6 +32,21 @@ const PREDEFINED_COLORS = [
   { hex: '#ec4899', name: 'Pink 500' },
 ];
 
+const COLOR_BLIND_SAFE_PALETTE = [
+  { hex: '#0077BB', name: 'Blue' },
+  { hex: '#EE7733', name: 'Orange' },
+  { hex: '#33BBEE', name: 'Cyan' },
+  { hex: '#EE3377', name: 'Magenta' },
+  { hex: '#CC3311', name: 'Red' },
+  { hex: '#009988', name: 'Teal' },
+  { hex: '#BBBBBB', name: 'Grey' },
+  { hex: '#000000', name: 'Black' },
+  { hex: '#FFFFFF', name: 'White' },
+  { hex: '#AA3377', name: 'Purple' },
+  { hex: '#EE8866', name: 'Peach' },
+  { hex: '#44BB99', name: 'Mint' },
+];
+
 export function ColorSwatchPicker({
   value,
   onChange,
@@ -143,6 +158,38 @@ export function ColorSwatchPicker({
           </button>
         ))}
       </div>
+
+      <button
+        type="button"
+        onClick={() => setShowPicker(!showPicker)}
+        className="mt-1 w-full rounded border border-dashed py-1 text-[10px] text-muted-foreground hover:border-primary hover:text-primary"
+      >
+        {showPicker ? 'Hide palette' : 'Color-blind safe palette'}
+      </button>
+
+      {showPicker && (
+        <div className="grid grid-cols-6 gap-1.5 pt-1">
+          {COLOR_BLIND_SAFE_PALETTE.map((c) => (
+            <button
+              key={c.hex}
+              type="button"
+              title={c.name}
+              aria-label={`${c.name} (${c.hex})`}
+              onClick={() => handleCustomChange(c.hex)}
+              className={cn(
+                'group relative h-5 w-full rounded-md border border-border transition-transform hover:scale-110',
+                value.toLowerCase() === c.hex.toLowerCase() &&
+                  'ring-2 ring-primary ring-offset-1'
+              )}
+              style={{ backgroundColor: c.hex }}
+            >
+              <span className="invisible group-hover:visible absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-popover px-1.5 py-0.5 text-[9px] text-popover-foreground shadow-md">
+                {c.name}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {onOpacityChange && (
         <SettingsField label="Opacity">

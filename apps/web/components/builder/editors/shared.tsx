@@ -1,11 +1,17 @@
-"use client";
+'use client';
 
-import { useState, type ReactNode } from "react";
-import { ChevronDown, ChevronRight, FolderUp, Image } from "lucide-react";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils/cn";
+import { useState, useCallback, type ReactNode } from 'react';
+import {
+  ChevronDown,
+  ChevronRight,
+  FolderUp,
+  Image,
+  Search,
+} from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils/cn';
 
 export function SettingsSection({
   title,
@@ -24,7 +30,11 @@ export function SettingsSection({
         onClick={() => setOpen(!open)}
         className="flex w-full items-center gap-1.5 py-1.5 text-xs font-medium text-muted-foreground"
       >
-        {open ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
+        {open ? (
+          <ChevronDown className="size-3" />
+        ) : (
+          <ChevronRight className="size-3" />
+        )}
         {title}
       </button>
       {open && <div className="space-y-2 pt-1">{children}</div>}
@@ -42,7 +52,7 @@ export function SettingsField({
   className?: string;
 }) {
   return (
-    <div className={cn("space-y-1", className)}>
+    <div className={cn('space-y-1', className)}>
       <Label className="text-xs text-muted-foreground">{label}</Label>
       {children}
     </div>
@@ -82,34 +92,110 @@ export function ViewportBadge({ viewport }: { viewport: string }) {
 export function AssetPathInput({
   value,
   onChange,
-  placeholder = "Select an asset...",
+  placeholder = 'Select an asset...',
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
 }) {
-  const handleBrowse = () => {
-    const url = window.prompt("Enter media URL:", value || "https://");
-    if (url) onChange(url);
-  };
+  const [showBrowser, setShowBrowser] = useState(false);
+  const [search, setSearch] = useState('');
+  const [media, setMedia] = useState<
+    Array<{
+      id: string;
+      url: string;
+      filename: string;
+      mimeType: string;
+      size: number;
+      width: number;
+      height: number;
+    }>
+  >([
+    {
+      id: '1',
+      url: '/placeholder.svg',
+      filename: 'placeholder.svg',
+      mimeType: 'image/svg+xml',
+      size: 4200,
+      width: 200,
+      height: 60,
+    },
+  ]);
+
+  const filtered = media.filter((item) =>
+    item.filename.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="flex gap-1">
-      <Input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="h-8 flex-1 text-xs font-mono"
-      />
-      <Button
-        type="button"
-        variant="outline"
-        size="icon"
-        className="size-8 shrink-0"
-        onClick={handleBrowse}
-      >
-        {value ? <Image className="size-3.5" /> : <FolderUp className="size-3.5" />}
-      </Button>
+      <div className="relative flex-1">
+        <Input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="h-8 w-full text-xs font-mono"
+        />
+      </div>
+      <div className="relative">
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="size-8 shrink-0"
+          onClick={() => setShowBrowser(!showBrowser)}
+        >
+          {value ? (
+            <Image className="size-3.5" />
+          ) : (
+            <FolderUp className="size-3.5" />
+          )}
+        </Button>
+        {showBrowser && (
+          <div className="absolute right-0 top-10 z-50 w-80 rounded-lg border bg-card shadow-xl">
+            <div className="p-3 space-y-3">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search media..."
+                  className="h-8 pl-8 text-xs"
+                />
+              </div>
+              <div className="max-h-60 space-y-1 overflow-y-auto">
+                {filtered.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      onChange(item.url);
+                      setShowBrowser(false);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-md p-2 text-left text-xs hover:bg-accent"
+                  >
+                    <Image className="size-6 shrink-0 text-muted-foreground" />
+                    <span className="truncate">{item.filename}</span>
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => {
+                  const url = window.prompt(
+                    'Enter media URL:',
+                    value || 'https://'
+                  );
+                  if (url) {
+                    onChange(url);
+                    setShowBrowser(false);
+                  }
+                }}
+                className="w-full rounded-md border border-dashed py-1.5 text-xs text-muted-foreground hover:border-primary hover:text-primary"
+              >
+                + Enter URL manually
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import type { Section, PageSettings } from './types';
+import { validateBlock, validateSection } from './validators';
 
 const SCENE_VERSION = 2;
 
@@ -17,24 +18,73 @@ export interface SceneDocument {
       span: number;
       sortKey: string;
       settings: Record<string, unknown>;
-      blocks: Array<{
-        id: string;
-        blockType: string;
-        sortKey: string;
-        props: Record<string, unknown>;
-        styles: Record<string, string | number>;
-        responsive: Record<string, unknown>;
-        animation: Record<string, unknown>;
-      }>;
+      blocks: Array<Record<string, unknown>>;
     }>;
   }>;
   pageSettings: PageSettings;
+}
+
+function serializeBlock(b: import('./types').Block): Record<string, unknown> {
+  return {
+    id: b.id,
+    blockType: b.blockType,
+    sortKey: b.sortKey,
+    props: b.props,
+    styles: b.styles,
+    responsive: b.responsive as Record<string, unknown>,
+    animation: b.animation as unknown as Record<string, unknown>,
+    ...(b.children && b.children.length > 0
+      ? { children: b.children.map(serializeBlock) }
+      : {}),
+  };
+}
+
+function deserializeBlock(b: Record<string, unknown>): import('./types').Block {
+  return {
+    id: (b.id as string) ?? crypto.randomUUID(),
+    blockType: b.blockType as string,
+    sortKey: (b.sortKey as string) ?? '',
+    props: (b.props as Record<string, unknown>) ?? {},
+    styles: (b.styles as Record<string, string | number>) ?? {},
+    responsive: (b.responsive as Record<string, unknown>) ?? {},
+    animation: (b.animation as Record<string, unknown>) ?? {
+      type: 'none' as const,
+      duration: 300,
+      delay: 0,
+      easing: 'ease-out',
+      cascadeLevel: 0,
+    },
+    ...(Array.isArray(b.children)
+      ? { children: b.children.map(deserializeBlock) }
+      : {}),
+  };
 }
 
 export function stateToDocument(state: {
   sections: Section[];
   pageSettings: PageSettings;
 }): string {
+  for (const s of state.sections) {
+    const sectionResult = validateSection(s);
+    if (!sectionResult.success) {
+      console.warn(
+        'Section validation failed on export:',
+        sectionResult.error.issues
+      );
+    }
+    for (const c of s.columns) {
+      for (const b of c.blocks) {
+        const blockResult = validateBlock(b);
+        if (!blockResult.success) {
+          console.warn(
+            'Block validation failed on export:',
+            blockResult.error.issues
+          );
+        }
+      }
+    }
+  }
+
   const doc: SceneDocument = {
     version: SCENE_VERSION,
     sceneVersion: crypto.randomUUID().slice(0, 8),
@@ -50,15 +100,7 @@ export function stateToDocument(state: {
         span: c.span,
         sortKey: c.sortKey,
         settings: c.settings,
-        blocks: c.blocks.map((b) => ({
-          id: b.id,
-          blockType: b.blockType,
-          sortKey: b.sortKey,
-          props: b.props,
-          styles: b.styles,
-          responsive: b.responsive as Record<string, unknown>,
-          animation: b.animation as unknown as Record<string, unknown>,
-        })),
+        blocks: c.blocks.map(serializeBlock),
       })),
     })),
     pageSettings: state.pageSettings,
@@ -92,21 +134,7 @@ export function documentToState(
             sortKey: (c.sortKey as string) ?? '',
             settings: (c.settings as Record<string, unknown>) ?? {},
             blocks: ((c.blocks as Record<string, unknown>[]) ?? []).map(
-              (b: Record<string, unknown>) => ({
-                id: (b.id as string) ?? crypto.randomUUID(),
-                blockType: b.blockType as string,
-                sortKey: (b.sortKey as string) ?? '',
-                props: (b.props as Record<string, unknown>) ?? {},
-                styles: (b.styles as Record<string, string | number>) ?? {},
-                responsive: (b.responsive as Record<string, unknown>) ?? {},
-                animation: (b.animation as Record<string, unknown>) ?? {
-                  type: 'none',
-                  duration: 300,
-                  delay: 0,
-                  easing: 'ease-out',
-                  cascadeLevel: 0,
-                },
-              })
+              deserializeBlock
             ),
           })
         ),
@@ -118,6 +146,27 @@ export function documentToState(
         c.sectionId = s.id;
       });
     });
+
+    for (const s of sections) {
+      const sectionResult = validateSection(s);
+      if (!sectionResult.success) {
+        console.warn(
+          'Section validation failed on import:',
+          sectionResult.error.issues
+        );
+      }
+      for (const c of s.columns) {
+        for (const b of c.blocks) {
+          const blockResult = validateBlock(b);
+          if (!blockResult.success) {
+            console.warn(
+              'Block validation failed on import:',
+              blockResult.error.issues
+            );
+          }
+        }
+      }
+    }
 
     return {
       sections,

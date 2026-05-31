@@ -30,6 +30,8 @@ import { VideoBlockEditor } from './editors/VideoBlockEditor';
 import { EnterAnimationPicker } from './editors/EnterAnimationPicker';
 import { HoverEffectPicker } from './editors/HoverEffectPicker';
 import { ColorSwatchPicker } from './editors/ColorSwatchPicker';
+import { GradientPicker } from './editors/GradientPicker';
+import { MediaBrowser } from './editors/MediaBrowser';
 import { showToast } from '../components/Toast';
 import { PageSettingsEditor } from '../components/PageSettingsEditor';
 
@@ -134,90 +136,197 @@ function ContentTab({
         );
       }
 
-      // Fallback: generic prop editor from schema
-      if (
-        !registration.schema ||
-        Object.keys(registration.schema).length === 0
-      ) {
-        return (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            No editable properties for this block
-          </p>
-        );
-      }
+      // Show block template selector if templates exist
+      const blockTemplates = registration.templates;
+      const hasTemplates =
+        blockTemplates && Object.keys(blockTemplates).length > 0;
 
       return (
         <div className="space-y-3">
-          {Object.entries(registration.schema).map(([key, propSchema]) => {
-            const value = (block.props as Record<string, unknown>)[key] ?? '';
-            return (
-              <div key={key} className="space-y-1">
-                <Label className="text-xs capitalize text-muted-foreground">
-                  {propSchema.label ?? key.replace(/([A-Z])/g, ' $1').trim()}
-                </Label>
-                {propSchema.type === 'select' && propSchema.options ? (
-                  <select
-                    value={String(value)}
-                    onChange={(e) =>
-                      handleChange({
-                        props: { ...block.props, [key]: e.target.value },
-                      })
-                    }
-                    className="h-8 w-full rounded-md border border-input bg-background px-3 text-xs"
-                  >
-                    {!propSchema.required && (
-                      <option value="">Select...</option>
+          {hasTemplates && (
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Template</Label>
+              <Select
+                value=""
+                onValueChange={(templateKey) => {
+                  if (templateKey && blockTemplates?.[templateKey]) {
+                    const tmpl = blockTemplates[templateKey];
+                    handleChange({
+                      props: { ...block.props, ...tmpl.props },
+                      styles: { ...block.styles, ...tmpl.styles },
+                    });
+                  }
+                }}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Select a template..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(blockTemplates).map(([key, tmpl]) => (
+                    <SelectItem key={key} value={key} className="text-xs">
+                      {key
+                        .replace(/_/g, ' ')
+                        .replace(/\b\w/g, (c) => c.toUpperCase())}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Fallback: generic prop editor from schema */}
+          {!registration.schema ||
+          Object.keys(registration.schema).length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              No editable properties for this block
+            </p>
+          ) : (
+            (() => {
+              const schemaEntries = Object.entries(registration.schema);
+              const groups = new Map<string, typeof schemaEntries>();
+              const ungrouped: typeof schemaEntries = [];
+
+              for (const entry of schemaEntries) {
+                const [, propSchema] = entry;
+                if (propSchema.group) {
+                  const existing = groups.get(propSchema.group) ?? [];
+                  existing.push(entry);
+                  groups.set(propSchema.group, existing);
+                } else {
+                  ungrouped.push(entry);
+                }
+              }
+
+              const renderProp = ([
+                key,
+                propSchema,
+              ]: (typeof schemaEntries)[0]) => {
+                const value =
+                  (block.props as Record<string, unknown>)[key] ?? '';
+                return (
+                  <div key={key} className="space-y-1">
+                    <Label className="text-xs capitalize text-muted-foreground">
+                      {propSchema.label ??
+                        key.replace(/([A-Z])/g, ' $1').trim()}
+                    </Label>
+                    {propSchema.type === 'select' && propSchema.options ? (
+                      <select
+                        value={String(value)}
+                        onChange={(e) =>
+                          handleChange({
+                            props: { ...block.props, [key]: e.target.value },
+                          })
+                        }
+                        className="h-8 w-full rounded-md border border-input bg-background px-3 text-xs"
+                      >
+                        {!propSchema.required && (
+                          <option value="">Select...</option>
+                        )}
+                        {propSchema.options.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : propSchema.type === 'number' ? (
+                      <Input
+                        type="number"
+                        value={value as number}
+                        onChange={(e) =>
+                          handleChange({
+                            props: {
+                              ...block.props,
+                              [key]: Number(e.target.value),
+                            },
+                          })
+                        }
+                        className="h-8 text-xs"
+                      />
+                    ) : propSchema.type === 'textarea' ? (
+                      <textarea
+                        value={String(value)}
+                        onChange={(e) =>
+                          handleChange({
+                            props: { ...block.props, [key]: e.target.value },
+                          })
+                        }
+                        className="h-20 w-full rounded-md border border-input bg-background p-2 text-xs"
+                      />
+                    ) : propSchema.type === 'boolean' ? (
+                      <Button
+                        type="button"
+                        variant={value ? 'default' : 'outline'}
+                        size="sm"
+                        className="h-8 w-full text-xs"
+                        onClick={() =>
+                          handleChange({
+                            props: { ...block.props, [key]: !value },
+                          })
+                        }
+                      >
+                        {value ? 'Yes' : 'No'}
+                      </Button>
+                    ) : propSchema.type === 'color' ? (
+                      <div className="flex gap-2">
+                        <Input
+                          type="color"
+                          value={String(value || '#000000')}
+                          onChange={(e) =>
+                            handleChange({
+                              props: { ...block.props, [key]: e.target.value },
+                            })
+                          }
+                          className="h-8 w-12"
+                        />
+                        <Input
+                          value={String(value || '')}
+                          onChange={(e) =>
+                            handleChange({
+                              props: { ...block.props, [key]: e.target.value },
+                            })
+                          }
+                          className="h-8 flex-1 text-xs font-mono"
+                        />
+                      </div>
+                    ) : (
+                      <Input
+                        value={String(value)}
+                        onChange={(e) =>
+                          handleChange({
+                            props: { ...block.props, [key]: e.target.value },
+                          })
+                        }
+                        className="h-8 text-xs"
+                        placeholder={
+                          propSchema.placeholder ??
+                          (propSchema.default != null
+                            ? String(propSchema.default)
+                            : '')
+                        }
+                      />
                     )}
-                    {propSchema.options.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                ) : propSchema.type === 'number' ? (
-                  <Input
-                    type="number"
-                    value={value as number}
-                    onChange={(e) =>
-                      handleChange({
-                        props: {
-                          ...block.props,
-                          [key]: Number(e.target.value),
-                        },
-                      })
-                    }
-                    className="h-8 text-xs"
-                  />
-                ) : propSchema.type === 'textarea' ? (
-                  <textarea
-                    value={String(value)}
-                    onChange={(e) =>
-                      handleChange({
-                        props: { ...block.props, [key]: e.target.value },
-                      })
-                    }
-                    className="h-20 w-full rounded-md border border-input bg-background p-2 text-xs"
-                  />
-                ) : (
-                  <Input
-                    value={String(value)}
-                    onChange={(e) =>
-                      handleChange({
-                        props: { ...block.props, [key]: e.target.value },
-                      })
-                    }
-                    className="h-8 text-xs"
-                    placeholder={
-                      propSchema.placeholder ??
-                      (propSchema.default != null
-                        ? String(propSchema.default)
-                        : '')
-                    }
-                  />
-                )}
-              </div>
-            );
-          })}
+                  </div>
+                );
+              };
+
+              return (
+                <>
+                  {ungrouped.map(renderProp)}
+                  {Array.from(groups.entries()).map(([groupName, entries]) => (
+                    <div
+                      key={groupName}
+                      className="space-y-1 border-t border-border/50 pt-2"
+                    >
+                      <Label className="text-[10px] font-medium uppercase text-muted-foreground">
+                        {groupName}
+                      </Label>
+                      {entries.map(renderProp)}
+                    </div>
+                  ))}
+                </>
+              );
+            })()
+          )}
         </div>
       );
     }
@@ -233,6 +342,16 @@ function SpacingInput({
   values: Record<string, number>;
   onChange: (key: string, value: number) => void;
 }) {
+  const presets = [0, 4, 8, 12, 16, 24, 32, 48, 64];
+
+  const applyPreset = (val: number) => {
+    const dirs = ['Top', 'Right', 'Bottom', 'Left'];
+    dirs.forEach((dir) => {
+      const key = `${label.toLowerCase()}${dir}`;
+      onChange(key, val);
+    });
+  };
+
   return (
     <div className="space-y-1">
       <Label className="text-xs text-muted-foreground">{label}</Label>
@@ -253,6 +372,18 @@ function SpacingInput({
             </div>
           );
         })}
+      </div>
+      <div className="flex flex-wrap gap-1 pt-1">
+        {presets.map((val) => (
+          <button
+            key={val}
+            type="button"
+            onClick={() => applyPreset(val)}
+            className="rounded border px-1.5 py-0.5 text-[9px] text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            {val === 0 ? '0' : `${val}px`}
+          </button>
+        ))}
       </div>
     </div>
   );
@@ -382,14 +513,72 @@ function StylesTab({
             onChange={(e) => updateStyle('backgroundColor', e.target.value)}
             className="h-8"
           />
-          <Input
-            type="text"
-            placeholder="bg image URL"
-            value={(styles.backgroundImage as string) ?? ''}
-            onChange={(e) => updateStyle('backgroundImage', e.target.value)}
-            className="h-8 text-xs"
-          />
+          <div className="space-y-1">
+            <Input
+              type="text"
+              placeholder="bg image URL"
+              value={(styles.backgroundImage as string) ?? ''}
+              onChange={(e) => updateStyle('backgroundImage', e.target.value)}
+              className="h-8 text-xs"
+            />
+            {!styles.backgroundImage && (
+              <button
+                type="button"
+                onClick={() => {
+                  const url = window.prompt('Enter background image URL:');
+                  if (url) updateStyle('backgroundImage', url);
+                }}
+                className="text-[10px] text-primary hover:underline"
+              >
+                Browse Media
+              </button>
+            )}
+          </div>
         </div>
+        {(styles.backgroundGradient as string) ? (
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-muted-foreground">
+                Gradient
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = { ...styles };
+                  delete next.backgroundGradient;
+                  Object.assign(styles, next);
+                  updateStyle('backgroundGradient', '');
+                }}
+                className="text-[10px] text-destructive hover:underline"
+              >
+                Remove
+              </button>
+            </div>
+            <div
+              className="h-6 w-full rounded border"
+              style={{ background: styles.backgroundGradient as string }}
+            />
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() =>
+              updateStyle(
+                'backgroundGradient',
+                'linear-gradient(to bottom, #000000, #ffffff)'
+              )
+            }
+            className="text-[10px] text-primary hover:underline"
+          >
+            + Add gradient background
+          </button>
+        )}
+        {styles.backgroundGradient && (
+          <GradientPicker
+            value={styles.backgroundGradient as string}
+            onChange={(v) => updateStyle('backgroundGradient', v)}
+          />
+        )}
       </div>
 
       <div className="space-y-2">
@@ -515,6 +704,53 @@ function AdvancedTab({
           className="h-8 text-xs"
           placeholder="my-custom-class"
         />
+        <div className="flex flex-wrap gap-1 pt-1">
+          {[
+            'container',
+            'wrapper',
+            'hero',
+            'card',
+            'card-body',
+            'card-header',
+            'flex',
+            'flex-col',
+            'items-center',
+            'justify-center',
+            'gap-2',
+            'gap-4',
+            'text-center',
+            'text-lg',
+            'font-bold',
+            'text-muted',
+            'bg-muted',
+            'rounded',
+            'shadow',
+            'p-4',
+            'p-8',
+            'm-0',
+            'w-full',
+            'max-w-lg',
+            'mx-auto',
+          ].map((cls) => (
+            <button
+              key={cls}
+              type="button"
+              onClick={() => {
+                const current = (props.cssClass as string) ?? '';
+                const classes = current.split(' ').filter(Boolean);
+                if (!classes.includes(cls)) {
+                  classes.push(cls);
+                  handleChange({
+                    props: { ...block.props, cssClass: classes.join(' ') },
+                  });
+                }
+              }}
+              className="rounded border px-1 py-0.5 text-[9px] text-muted-foreground hover:bg-accent hover:text-foreground"
+            >
+              .{cls}
+            </button>
+          ))}
+        </div>
       </div>
       <div className="space-y-1">
         <Label className="text-xs text-muted-foreground">Custom CSS</Label>
@@ -705,6 +941,9 @@ function ResponsiveTab({
     });
   };
 
+  const bgGradient =
+    overrides.backgroundGradient ?? block.styles.backgroundGradient ?? '';
+
   return (
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground">
@@ -762,6 +1001,245 @@ function ResponsiveTab({
         value={(overrides as any).width ?? block.styles.width ?? 'auto'}
         onChange={(v) => setOverride('width', v)}
       />
+
+      <div className="space-y-1">
+        <Label className="text-xs text-muted-foreground">
+          Background Color
+        </Label>
+        <Input
+          type="color"
+          value={
+            (overrides as any).backgroundColor ??
+            (block.styles.backgroundColor as string) ??
+            '#ffffff'
+          }
+          onChange={(e) => setOverride('backgroundColor', e.target.value)}
+          className="h-8"
+        />
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-xs text-muted-foreground">Display</Label>
+        <Select
+          value={
+            (overrides as any).display ?? (block.styles.display as string) ?? ''
+          }
+          onValueChange={(v) => setOverride('display', v || undefined)}
+        >
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue placeholder="Inherit" />
+          </SelectTrigger>
+          <SelectContent>
+            {[
+              { value: '', label: 'Inherit' },
+              { value: 'block', label: 'Block' },
+              { value: 'flex', label: 'Flex' },
+              { value: 'grid', label: 'Grid' },
+              { value: 'inline', label: 'Inline' },
+              { value: 'inline-block', label: 'Inline Block' },
+              { value: 'none', label: 'None' },
+            ].map((o) => (
+              <SelectItem key={o.value} value={o.value} className="text-xs">
+                {o.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-xs text-muted-foreground">
+          Border Width (px)
+        </Label>
+        <Input
+          type="number"
+          min={0}
+          value={
+            (overrides as any).borderWidth ??
+            (block.styles.borderWidth as number) ??
+            0
+          }
+          onChange={(e) => setOverride('borderWidth', Number(e.target.value))}
+          className="h-7 text-xs"
+        />
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-xs text-muted-foreground">
+          Border Radius (px)
+        </Label>
+        <Input
+          type="number"
+          min={0}
+          value={
+            (overrides as any).borderRadius ??
+            (block.styles.borderRadius as number) ??
+            0
+          }
+          onChange={(e) => setOverride('borderRadius', Number(e.target.value))}
+          className="h-7 text-xs"
+        />
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-xs text-muted-foreground">Gap (px)</Label>
+        <Input
+          type="number"
+          min={0}
+          value={(overrides as any).gap ?? (block.styles.gap as number) ?? 0}
+          onChange={(e) => setOverride('gap', Number(e.target.value))}
+          className="h-7 text-xs"
+        />
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-xs text-muted-foreground">Flex Direction</Label>
+        <Select
+          value={(overrides as any).flexDirection ?? ''}
+          onValueChange={(v) => setOverride('flexDirection', v || undefined)}
+        >
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue placeholder="Inherit" />
+          </SelectTrigger>
+          <SelectContent>
+            {[
+              { value: '', label: 'Inherit' },
+              { value: 'row', label: 'Row' },
+              { value: 'column', label: 'Column' },
+              { value: 'row-reverse', label: 'Row Reverse' },
+              { value: 'column-reverse', label: 'Column Reverse' },
+            ].map((o) => (
+              <SelectItem key={o.value} value={o.value} className="text-xs">
+                {o.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">
+            Justify Content
+          </Label>
+          <Select
+            value={(overrides as any).justifyContent ?? ''}
+            onValueChange={(v) => setOverride('justifyContent', v || undefined)}
+          >
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue placeholder="-" />
+            </SelectTrigger>
+            <SelectContent>
+              {[
+                '',
+                'flex-start',
+                'center',
+                'flex-end',
+                'space-between',
+                'space-around',
+                'space-evenly',
+              ].map((o) => (
+                <SelectItem key={o} value={o} className="text-xs">
+                  {o || 'Inherit'}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Align Items</Label>
+          <Select
+            value={(overrides as any).alignItems ?? ''}
+            onValueChange={(v) => setOverride('alignItems', v || undefined)}
+          >
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue placeholder="-" />
+            </SelectTrigger>
+            <SelectContent>
+              {[
+                '',
+                'stretch',
+                'flex-start',
+                'center',
+                'flex-end',
+                'baseline',
+              ].map((o) => (
+                <SelectItem key={o} value={o} className="text-xs">
+                  {o || 'Inherit'}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-xs text-muted-foreground">Position</Label>
+        <Select
+          value={(overrides as any).position ?? ''}
+          onValueChange={(v) => setOverride('position', v || undefined)}
+        >
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue placeholder="Inherit" />
+          </SelectTrigger>
+          <SelectContent>
+            {[
+              { value: '', label: 'Inherit' },
+              { value: 'static', label: 'Static' },
+              { value: 'relative', label: 'Relative' },
+              { value: 'absolute', label: 'Absolute' },
+              { value: 'fixed', label: 'Fixed' },
+              { value: 'sticky', label: 'Sticky' },
+            ].map((o) => (
+              <SelectItem key={o.value} value={o.value} className="text-xs">
+                {o.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {(overrides as any).position === 'absolute' ||
+      (overrides as any).position === 'fixed' ? (
+        <div className="grid grid-cols-2 gap-2">
+          <StyleInput
+            label="Top"
+            value={(overrides as any).top ?? ''}
+            onChange={(v) => setOverride('top', v)}
+          />
+          <StyleInput
+            label="Right"
+            value={(overrides as any).right ?? ''}
+            onChange={(v) => setOverride('right', v)}
+          />
+          <StyleInput
+            label="Bottom"
+            value={(overrides as any).bottom ?? ''}
+            onChange={(v) => setOverride('bottom', v)}
+          />
+          <StyleInput
+            label="Left"
+            value={(overrides as any).left ?? ''}
+            onChange={(v) => setOverride('left', v)}
+          />
+        </div>
+      ) : null}
+
+      {bgGradient && (
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">
+            Background Gradient
+          </Label>
+          <div
+            className="h-6 w-full rounded border"
+            style={{ background: bgGradient as string }}
+          />
+          <GradientPicker
+            value={bgGradient as string}
+            onChange={(v) => setOverride('backgroundGradient', v)}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -815,6 +1293,60 @@ function SectionSettings({ section }: { section: Section }) {
           className="h-8 text-xs font-mono"
           placeholder="https://..."
         />
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-xs text-muted-foreground">
+          Background Video URL
+        </Label>
+        <div className="flex gap-1">
+          <Input
+            value={(settings.backgroundVideoUrl as string) ?? ''}
+            onChange={(e) =>
+              updateSetting('backgroundVideoUrl', e.target.value)
+            }
+            className="h-8 flex-1 text-xs font-mono"
+            placeholder="https://example.com/video.mp4"
+          />
+          {settings.backgroundVideoUrl && (
+            <button
+              onClick={() => updateSetting('backgroundVideoUrl', '')}
+              className="size-8 shrink-0 rounded-md border text-xs text-destructive hover:bg-destructive/10"
+              title="Remove video"
+            >
+              ×
+            </button>
+          )}
+        </div>
+        {settings.backgroundVideoUrl && (
+          <video
+            src={settings.backgroundVideoUrl as string}
+            muted
+            autoPlay
+            loop
+            playsInline
+            className="mt-1 h-16 w-full rounded object-cover"
+          />
+        )}
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-xs text-muted-foreground">
+          Collapse Section
+        </Label>
+        <Button
+          variant={(settings as any).collapsed ? 'default' : 'outline'}
+          size="sm"
+          className="w-full text-xs"
+          onClick={() =>
+            updateSetting('collapsed', !(settings as any).collapsed)
+          }
+        >
+          {(settings as any).collapsed ? 'Collapsed' : 'Expanded'}
+        </Button>
+        <p className="text-[10px] text-muted-foreground">
+          Collapsed sections are hidden in the editor and export
+        </p>
       </div>
 
       <div className="space-y-1">

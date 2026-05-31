@@ -22,11 +22,23 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Plus, Copy, Trash2, LayoutGrid } from 'lucide-react';
+import {
+  GripVertical,
+  Plus,
+  Copy,
+  Trash2,
+  LayoutGrid,
+  ChevronDown,
+  ChevronRight,
+  Video,
+  Maximize2,
+  LayoutTemplate as LayoutTemplateIcon,
+} from 'lucide-react';
 import { useBuilderStore } from '../stores/builderStore';
 import type { Section, Column, Block } from '../types';
 import { SectionRenderer } from './renderer';
 import { blockRegistry } from '../block-registry';
+import { getSectionPresets, buildPresetSection } from '../section-presets';
 import { cn } from '../utils/cn';
 import { Button } from '../components/ui/button';
 import { ErrorBoundary } from '../components/ErrorBoundary';
@@ -148,7 +160,7 @@ function SortableBlock({
             onClick={(e) => handleAction(e, onDuplicate)}
             title="Duplicate block"
           >
-            <LayoutGrid className="size-3" />
+            <Copy className="size-3" />
           </Button>
           <Button
             variant="ghost"
@@ -160,6 +172,64 @@ function SortableBlock({
             <Trash2 className="size-3" />
           </Button>
         </div>
+      )}
+
+      {/* Resize handles */}
+      {isSelected && (
+        <>
+          <div
+            className="absolute right-0 top-0 z-10 h-full w-1 cursor-col-resize bg-primary/30 opacity-0 transition-opacity hover:opacity-100"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const startX = e.clientX;
+              const startWidth = block.styles.width
+                ? parseInt(String(block.styles.width))
+                : 200;
+              const handleMouseMove = (ev: MouseEvent) => {
+                const dx = ev.clientX - startX;
+                const newWidth = Math.max(20, startWidth + dx);
+                useBuilderStore
+                  .getState()
+                  .updateBlock(sectionId, columnId, block.id, {
+                    styles: { ...block.styles, width: `${newWidth}px` },
+                  });
+              };
+              const handleMouseUp = () => {
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+              };
+              document.addEventListener('mousemove', handleMouseMove);
+              document.addEventListener('mouseup', handleMouseUp);
+            }}
+          />
+          <div
+            className="absolute bottom-0 left-0 z-10 h-1 w-full cursor-row-resize bg-primary/30 opacity-0 transition-opacity hover:opacity-100"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const startY = e.clientY;
+              const startHeight = block.styles.height
+                ? parseInt(String(block.styles.height))
+                : 100;
+              const handleMouseMove = (ev: MouseEvent) => {
+                const dy = ev.clientY - startY;
+                const newHeight = Math.max(20, startHeight + dy);
+                useBuilderStore
+                  .getState()
+                  .updateBlock(sectionId, columnId, block.id, {
+                    styles: { ...block.styles, height: `${newHeight}px` },
+                  });
+              };
+              const handleMouseUp = () => {
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+              };
+              document.addEventListener('mousemove', handleMouseMove);
+              document.addEventListener('mouseup', handleMouseUp);
+            }}
+          />
+        </>
       )}
 
       <div className="flex items-center gap-2">
@@ -284,6 +354,45 @@ function SortableSection({
       >
         <GripVertical className="size-3.5 text-muted-foreground" />
       </div>
+      <div className="absolute right-2 top-2 z-10 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+        {(section.settings as any).backgroundVideoUrl ? (
+          <span className="flex items-center gap-1 rounded bg-blue-500/10 px-1.5 py-0.5 text-[10px] text-blue-600">
+            <Video className="size-3" />
+            Video
+          </span>
+        ) : null}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            const sections = useBuilderStore.getState().sections;
+            const updated = sections.map((s) =>
+              s.id === section.id
+                ? {
+                    ...s,
+                    settings: {
+                      ...s.settings,
+                      collapsed: !(s.settings as any).collapsed,
+                    },
+                  }
+                : s
+            );
+            useBuilderStore.getState().setSections(updated);
+          }}
+          className="rounded border bg-background p-1 text-muted-foreground hover:text-foreground"
+          title={
+            (section.settings as any).collapsed
+              ? 'Expand section'
+              : 'Collapse section'
+          }
+        >
+          {(section.settings as any).collapsed ? (
+            <ChevronRight className="size-3.5" />
+          ) : (
+            <ChevronDown className="size-3.5" />
+          )}
+        </button>
+      </div>
       <div className="grid grid-cols-12 gap-2 p-3">
         {sortedColumns.map((col) => {
           const sortedBlocks = sortByKeyFn(col.blocks);
@@ -294,8 +403,17 @@ function SortableSection({
                 strategy={verticalListSortingStrategy}
               >
                 {sortedBlocks.length === 0 && (
-                  <div className="flex items-center justify-center py-4 text-xs text-muted-foreground">
-                    Drop blocks here
+                  <div className="flex flex-col items-center justify-center gap-2 py-6 text-xs text-muted-foreground">
+                    <span>Empty column</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddBlockToColumn(col.id);
+                      }}
+                      className="rounded-md border border-dashed px-3 py-1 text-[10px] hover:border-primary hover:text-primary"
+                    >
+                      + Add Block
+                    </button>
                   </div>
                 )}
                 {sortedBlocks.map((block) => (
@@ -332,84 +450,40 @@ function SortableSection({
   );
 }
 
+const ICON_MAP: Record<string, typeof LayoutTemplateIcon> = {
+  Monitor: Plus,
+  LayoutGrid,
+  DollarSign: Plus,
+  Mail: Plus,
+  Copyright: Plus,
+  Images: Plus,
+  User: Plus,
+  LayoutTemplate: LayoutTemplateIcon,
+};
+
 function EmptyCanvas() {
   const addSection = useBuilderStore((s) => s.addSection);
-  const [showPicker, setShowPicker] = useState(false);
-
-  return (
-    <div className="flex min-h-[400px] flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/10 p-12 text-center">
-      <div className="mb-4 text-4xl text-muted-foreground/40">+</div>
-      <p className="mb-4 text-lg font-medium text-muted-foreground">
-        No sections yet
-      </p>
-      <div className="flex gap-2">
-        <Button
-          size="sm"
-          onClick={() => {
-            addSection('empty');
-          }}
-        >
-          Add Section
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => setShowPicker(true)}>
-          Choose Template...
-        </Button>
-      </div>
-      {showPicker && (
-        <SectionTypePicker
-          open={showPicker}
-          onOpenChange={setShowPicker}
-          onSelect={(type) => {
-            addSection(type);
-            setShowPicker(false);
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
-interface CanvasProps {
-  siteId: string;
-  pageId: string;
-}
-
-function sortByKeyFn<T extends { sortKey: string }>(items: T[]): T[] {
-  return [...items].sort((a, b) =>
-    a.sortKey < b.sortKey ? -1 : a.sortKey > b.sortKey ? 1 : 0
-  );
-}
-
-export function Canvas({ siteId, pageId }: CanvasProps) {
   const sections = useBuilderStore((s) => s.sections);
-  const selection = useBuilderStore((s) => s.selection);
-  const selectedIds = useBuilderStore((s) => s.selectedIds);
-  const viewport = useBuilderStore((s) => s.viewport);
-  const zoom = useBuilderStore((s) => s.zoom);
-  const showGrid = useBuilderStore((s) => s.showGrid);
-  const showOutlines = useBuilderStore((s) => s.showOutlines);
-  const gridSize = useBuilderStore((s) => s.gridSize);
-  const isPanning = useBuilderStore((s) => s.isPanning);
-  const panOffset = useBuilderStore((s) => s.panOffset);
-  const reorderSections = useBuilderStore((s) => s.reorderSections);
-  const select = useBuilderStore((s) => s.select);
-  const toggleSelection = useBuilderStore((s) => s.toggleSelection);
-  const clearSelection = useBuilderStore((s) => s.clearSelection);
-  const addBlock = useBuilderStore((s) => s.addBlock);
-  const deleteBlock = useBuilderStore((s) => s.deleteBlock);
-  const duplicateBlock = useBuilderStore((s) => s.duplicateBlock);
-  const moveBlock = useBuilderStore((s) => s.moveBlock);
-  const copySelection = useBuilderStore((s) => s.copySelection);
-  const setPanOffset = useBuilderStore((s) => s.setPanOffset);
-  const setIsPanning = useBuilderStore((s) => s.setIsPanning);
-  const addSection = useBuilderStore((s) => s.addSection);
-  const nudgeBlock = useBuilderStore((s) => s.nudgeBlock);
-
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const setSections = useBuilderStore((s) => s.setSections);
+  const [showPicker, setShowPicker] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    items: ContextMenuItem[];
+  } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{
     id: string;
     type: 'section' | 'block';
   } | null>(null);
+  const [marquee, setMarquee] = useState<{
+    active: boolean;
+    startX: number;
+    startY: number;
+    currentX: number;
+    currentY: number;
+  } | null>(null);
+  const marqueeRef = useRef<HTMLDivElement>(null);
+  const canvasInnerRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -930,6 +1004,44 @@ export function Canvas({ siteId, pageId }: CanvasProps) {
                       type: sel.type as 'section' | 'block',
                     }),
                 },
+                ...(sel.type === 'block' && selectedIds.length > 1
+                  ? [
+                      {
+                        label: 'Group Blocks',
+                        icon: <LayoutGrid className="size-3.5" />,
+                        onClick: () => state.groupBlocks?.(selectedIds),
+                      } as ContextMenuItem,
+                      {
+                        label: 'Align Left',
+                        icon: <LayoutGrid className="size-3.5" />,
+                        onClick: () => state.alignBlocks?.(selectedIds, 'left'),
+                      } as ContextMenuItem,
+                      {
+                        label: 'Align Center',
+                        icon: <LayoutGrid className="size-3.5" />,
+                        onClick: () =>
+                          state.alignBlocks?.(selectedIds, 'center'),
+                      } as ContextMenuItem,
+                      {
+                        label: 'Align Right',
+                        icon: <LayoutGrid className="size-3.5" />,
+                        onClick: () =>
+                          state.alignBlocks?.(selectedIds, 'right'),
+                      } as ContextMenuItem,
+                      {
+                        label: 'Distribute Horizontal',
+                        icon: <LayoutGrid className="size-3.5" />,
+                        onClick: () =>
+                          state.distributeBlocks?.(selectedIds, 'horizontal'),
+                      } as ContextMenuItem,
+                      {
+                        label: 'Distribute Vertical',
+                        icon: <LayoutGrid className="size-3.5" />,
+                        onClick: () =>
+                          state.distributeBlocks?.(selectedIds, 'vertical'),
+                      } as ContextMenuItem,
+                    ]
+                  : []),
               ];
               setContextMenu({ x: e.clientX, y: e.clientY, items });
             }
@@ -1055,6 +1167,62 @@ export function Canvas({ siteId, pageId }: CanvasProps) {
                   )}
                 </DragOverlay>
               </DndContext>
+            )}
+
+            {/* Permanent guide lines */}
+            {showGrid && (
+              <svg
+                className="pointer-events-none absolute inset-0 z-0"
+                style={{ width: '100%', height: '100%' }}
+              >
+                {(() => {
+                  const lines = [];
+                  const spacing = gridSize || 20;
+                  for (let x = 0; x < 2000; x += spacing) {
+                    lines.push(
+                      <line
+                        key={`gv${x}`}
+                        x1={x}
+                        y1={0}
+                        x2={x}
+                        y2={2000}
+                        stroke="hsl(var(--border))"
+                        strokeWidth={0.5}
+                        opacity={0.3}
+                      />
+                    );
+                  }
+                  for (let y = 0; y < 2000; y += spacing) {
+                    lines.push(
+                      <line
+                        key={`gh${y}`}
+                        x1={0}
+                        y1={y}
+                        x2={2000}
+                        y2={y}
+                        stroke="hsl(var(--border))"
+                        strokeWidth={0.5}
+                        opacity={0.3}
+                      />
+                    );
+                  }
+                  return lines;
+                })()}
+              </svg>
+            )}
+
+            {/* Marquee selection rectangle */}
+            {marquee?.active && (
+              <div
+                ref={marqueeRef}
+                className="pointer-events-none absolute z-50 rounded border-2 border-primary/50 bg-primary/10"
+                style={{
+                  left: Math.min(marquee.startX, marquee.currentX),
+                  top: Math.min(marquee.startY, marquee.currentY),
+                  width: Math.abs(marquee.currentX - marquee.startX),
+                  height: Math.abs(marquee.currentY - marquee.startY),
+                }}
+              />
             )}
 
             {/* Debug overlay */}

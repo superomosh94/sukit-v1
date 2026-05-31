@@ -11,6 +11,7 @@ import {
 } from '../../components/ui/select';
 import { Button } from '../../components/ui/button';
 import { SettingsSection, SettingsField } from './shared';
+import { LinkPicker } from './LinkPicker';
 import type { Block } from '../../types';
 
 const VARIANT_OPTIONS = [
@@ -68,10 +69,9 @@ export function ButtonBlockEditor({
           />
         </SettingsField>
         <SettingsField label="URL">
-          <Input
+          <LinkPicker
             value={(props.url as string) ?? ''}
-            onChange={(e) => setProp('url', e.target.value)}
-            className="h-8 text-xs"
+            onChange={(v) => setProp('url', v)}
             placeholder="https://..."
           />
         </SettingsField>

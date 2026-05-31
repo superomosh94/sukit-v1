@@ -1,4 +1,4 @@
-import type { ComponentType } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import type { z } from 'zod';
 
 export type DeviceViewport = 'desktop' | 'tablet' | 'phone';
@@ -61,6 +61,7 @@ export interface Block {
   styles: Record<string, string | number>;
   responsive: ResponsiveOverrides;
   animation: Animation;
+  children?: Block[];
 }
 
 export interface Column {
@@ -223,7 +224,7 @@ export interface BlockRegistration {
   defaultStyles: Record<string, string | number>;
   defaultAnimation?: EnterAnimationConfig;
   defaultHoverEffect?: HoverEffectConfig;
-  Component: ComponentType<{ block: Block }>;
+  Component: ComponentType<{ block: Block; children?: ReactNode }>;
   EditorComponent?: ComponentType<{
     block: Block;
     onChange: (updates: Partial<Block>) => void;

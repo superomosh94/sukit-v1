@@ -269,6 +269,20 @@ const BlockRendererInner = memo(function BlockRendererInner({
   const className = cn('builder-block', cssClass);
   const style = { ...resolved.styles } as React.CSSProperties;
 
+  // Render children recursively for layout blocks
+  const childElements = resolved.children?.length
+    ? resolved.children.map((child, idx) => (
+        <BlockRenderer
+          key={child.id}
+          block={child}
+          viewport={viewport}
+          cascadeIndex={cascadeIndex + idx}
+          siblingCount={(resolved.children?.length ?? 0) * (siblingCount || 1)}
+          onInlineEdit={onInlineEdit}
+        />
+      ))
+    : null;
+
   return (
     <EnterAnimationWrapper
       animation={resolved.animation}
@@ -288,7 +302,7 @@ const BlockRendererInner = memo(function BlockRendererInner({
             block={resolved}
             onSave={(text) => onInlineEdit?.(resolved.id, text)}
           >
-            <Component block={resolved} />
+            <Component block={resolved}>{childElements}</Component>
           </InlineEditor>
         </div>
       </HoverAnimationWrapper>
@@ -370,36 +384,66 @@ export const SectionRenderer = memo(function SectionRenderer({
     a.sortKey < b.sortKey ? -1 : a.sortKey > b.sortKey ? 1 : 0
   );
 
+  const bgVideo = settings.backgroundVideoUrl as string | undefined;
+  const collapsed = (settings as any).collapsed as boolean | undefined;
+
   return (
     <section
       data-section-id={section.id}
       data-section-type={section.sectionType}
-      className="builder-section"
+      className={cn(
+        'builder-section relative',
+        collapsed && 'min-h-[48px] overflow-hidden'
+      )}
       style={{
-        backgroundColor: settings.backgroundColor as string,
-        paddingTop: settings.paddingTop as number,
-        paddingBottom: settings.paddingBottom as number,
-        paddingLeft: settings.paddingLeft as number,
-        paddingRight: settings.paddingRight as number,
+        backgroundColor: collapsed
+          ? 'transparent'
+          : (settings.backgroundColor as string),
+        paddingTop: collapsed ? 0 : (settings.paddingTop as number),
+        paddingBottom: collapsed ? 0 : (settings.paddingBottom as number),
+        paddingLeft: collapsed ? 0 : (settings.paddingLeft as number),
+        paddingRight: collapsed ? 0 : (settings.paddingRight as number),
       }}
     >
-      <div
-        className="builder-section-inner mx-auto w-full"
-        style={{ maxWidth: (settings.maxWidth as number) ?? 1200 }}
-      >
-        <div className="builder-grid grid grid-cols-12 gap-4">
-          {sortedColumns.map((column, idx) => (
-            <ColumnRenderer
-              key={column.id}
-              column={column}
-              viewport={viewport}
-              columnIndex={idx}
-              totalColumns={sortedColumns.length}
-              onInlineEdit={onInlineEdit}
-            />
-          ))}
+      {bgVideo && !collapsed && (
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+          style={{ zIndex: 0 }}
+        >
+          <source src={bgVideo} type="video/mp4" />
+        </video>
+      )}
+      {collapsed && (
+        <div className="flex items-center justify-center h-12 text-xs text-muted-foreground border-b">
+          <span>Section collapsed</span>
         </div>
-      </div>
+      )}
+      {!collapsed && (
+        <div
+          className={cn(
+            'builder-section-inner mx-auto w-full',
+            bgVideo && 'relative z-10'
+          )}
+          style={{ maxWidth: (settings.maxWidth as number) ?? 1200 }}
+        >
+          <div className="builder-grid grid grid-cols-12 gap-4">
+            {sortedColumns.map((column, idx) => (
+              <ColumnRenderer
+                key={column.id}
+                column={column}
+                viewport={viewport}
+                columnIndex={idx}
+                totalColumns={sortedColumns.length}
+                onInlineEdit={onInlineEdit}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 });
