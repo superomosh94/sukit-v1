@@ -1,9 +1,17 @@
-import type { ComponentType } from "react";
-import type { z } from "zod";
+import type { ComponentType } from 'react';
+import type { z } from 'zod';
 
-export type DeviceViewport = "desktop" | "tablet" | "phone";
+export type DeviceViewport = 'desktop' | 'tablet' | 'phone';
 
-export type EnterAnimationType = 'fadeIn' | 'slideUp' | 'slideLeft' | 'slideRight' | 'scaleIn' | 'rotateIn' | 'flipIn' | 'typewriter';
+export type EnterAnimationType =
+  | 'fadeIn'
+  | 'slideUp'
+  | 'slideLeft'
+  | 'slideRight'
+  | 'scaleIn'
+  | 'rotateIn'
+  | 'flipIn'
+  | 'typewriter';
 
 export interface EnterAnimationConfig {
   type: EnterAnimationType;
@@ -14,7 +22,14 @@ export interface EnterAnimationConfig {
   staggerDelay?: number;
 }
 
-export type CSSHoverPreset = 'none' | 'lift' | 'shadow' | 'scale' | 'glow' | 'color' | 'underline';
+export type CSSHoverPreset =
+  | 'none'
+  | 'lift'
+  | 'shadow'
+  | 'scale'
+  | 'glow'
+  | 'color'
+  | 'underline';
 export type ShaderHoverPreset = 'none' | 'ripple' | 'rgb-shift' | 'pixelate';
 
 export interface HoverEffectConfig {
@@ -25,7 +40,7 @@ export interface HoverEffectConfig {
 }
 
 export interface Animation {
-  type: EnterAnimationType | "none";
+  type: EnterAnimationType | 'none';
   duration: number;
   delay: number;
   easing: string;
@@ -34,7 +49,7 @@ export interface Animation {
 
 export interface ResponsiveOverrides {
   [viewport: string]: Partial<
-    Block["props"] & Block["styles"] & { hidden: boolean }
+    Block['props'] & Block['styles'] & { hidden: boolean }
   >;
 }
 
@@ -139,7 +154,7 @@ export interface User {
   name: string | null;
   email: string;
   image: string | null;
-  role: "user" | "admin";
+  role: 'user' | 'admin';
 }
 
 export interface Media {
@@ -169,7 +184,20 @@ export interface Module {
 }
 
 export interface BlockPropSchema {
-  type: 'string' | 'number' | 'boolean' | 'color' | 'image' | 'select' | 'multi-select' | 'rich-text' | 'code' | 'object' | 'array' | 'slot' | 'event';
+  type:
+    | 'string'
+    | 'number'
+    | 'boolean'
+    | 'color'
+    | 'image'
+    | 'select'
+    | 'multi-select'
+    | 'rich-text'
+    | 'code'
+    | 'object'
+    | 'array'
+    | 'slot'
+    | 'event';
   label: string;
   required?: boolean;
   default?: unknown;
@@ -196,8 +224,14 @@ export interface BlockRegistration {
   defaultAnimation?: EnterAnimationConfig;
   defaultHoverEffect?: HoverEffectConfig;
   Component: ComponentType<{ block: Block }>;
-  EditorComponent?: ComponentType<{ block: Block; onChange: (updates: Partial<Block>) => void }>;
-  templates?: Record<string, { props: Record<string, unknown>; styles: Record<string, string | number> }>;
+  EditorComponent?: ComponentType<{
+    block: Block;
+    onChange: (updates: Partial<Block>) => void;
+  }>;
+  templates?: Record<
+    string,
+    { props: Record<string, unknown>; styles: Record<string, string | number> }
+  >;
 }
 
 export interface SiteConfig {
@@ -229,7 +263,7 @@ export interface SiteConfig {
 export interface BuilderState {
   sections: Section[];
   pageSettings: PageSettings;
-  selection: { id: string; type: "section" | "column" | "block" } | null;
+  selection: { id: string; type: 'section' | 'column' | 'block' } | null;
   selectedIds: string[];
   clipboard: { sections: Section[]; blocks: Block[] } | null;
   viewport: DeviceViewport;
@@ -247,6 +281,11 @@ export interface BuilderState {
   pageTitle: string;
   isDirty: boolean;
   lastSaved: string | null;
+  isSaving: boolean;
+  isLoading: boolean;
+  loadingMessage: string | null;
+  sceneVersion: string;
+  remoteSceneVersion: string | null;
 }
 
 export interface BuilderSnapshot {
@@ -264,20 +303,30 @@ export interface BuilderActions {
     sectionId: string,
     columnId: string,
     blockId: string,
-    updates: Partial<Block>,
+    updates: Partial<Block>
   ) => void;
   deleteBlock: (sectionId: string, columnId: string, blockId: string) => void;
-  duplicateBlock: (sectionId: string, columnId: string, blockId: string) => void;
+  duplicateBlock: (
+    sectionId: string,
+    columnId: string,
+    blockId: string
+  ) => void;
   moveBlock: (
     blockId: string,
     from: { sectionId: string; columnId: string },
     to: { sectionId: string; columnId: string },
-    newIndex: number,
+    newIndex: number
   ) => void;
-  select: (id: string, type: "section" | "column" | "block") => void;
+  select: (id: string, type: 'section' | 'column' | 'block') => void;
   clearSelection: () => void;
-  toggleSelection: (id: string, type: "section" | "column" | "block") => void;
-  nudgeBlock: (sectionId: string, columnId: string, blockId: string, dx: number, dy: number) => void;
+  toggleSelection: (id: string, type: 'section' | 'column' | 'block') => void;
+  nudgeBlock: (
+    sectionId: string,
+    columnId: string,
+    blockId: string,
+    dx: number,
+    dy: number
+  ) => void;
   undo: () => void;
   redo: () => void;
   setViewport: (viewport: DeviceViewport) => void;

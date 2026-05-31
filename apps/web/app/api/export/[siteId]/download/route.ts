@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/auth';
-import { buildSite } from '@/lib/export/sukit-builder';
-import { createZipBuffer } from '@/lib/export/zip';
+import { exportToZip } from '@/lib/export/export-adapter';
 
 export async function GET(
   _request: Request,
@@ -18,24 +17,20 @@ export async function GET(
   const { siteId } = await params;
 
   try {
-    const result = await buildSite(siteId, '/tmp/sukit-export', {
-      minify: true,
-    });
-    const buffer = await createZipBuffer(
-      result.files.map((f) => ({ path: f.path, content: f.content }))
-    );
+    const buffer = await exportToZip(siteId);
 
     return new NextResponse(buffer as any, {
       status: 200,
       headers: {
         'Content-Type': 'application/zip',
-        'Content-Disposition': `attachment; filename="${siteId}-export.zip"`,
+        'Content-Disposition': `attachment; filename="${siteId}-pern-app.zip"`,
         'Content-Length': String(buffer.length),
       },
     });
-  } catch {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Export failed';
     return NextResponse.json(
-      { error: { message: 'Export failed', code: 'EXPORT_ERROR' } },
+      { error: { message, code: 'EXPORT_ERROR' } },
       { status: 500 }
     );
   }

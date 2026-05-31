@@ -1,0 +1,36 @@
+{
+  "id": "@sukit/site-manager",
+  "name": "Site Manager",
+  "version": "1.0.0",
+  "description": "Multi-site management, page tree, and team collaboration",
+  "author": { "name": "SUKIT Core Team", "email": "core@sukit.dev" },
+  "license": "MIT",
+  "icon": "Globe",
+  "sukit": {
+    "minVersion": "1.0.0",
+    "maxVersion": "2.0.0",
+    "capabilities": ["ui:sidebar", "ui:toolbar", "ui:modal", "ui:dashboard", "api:routes", "hooks:register"],
+    "permissions": ["db:read", "db:write"],
+    "entrypoints": {
+      "main": "./dist/index.js",
+      "styles": "./dist/styles.css"
+    },
+    "slots": {
+      "sidebar:left": { "component": "./dist/components/SiteTree.jsx", "position": 20 },
+      "toolbar:top": { "component": "./dist/components/SiteSelector.jsx", "position": 0 },
+      "sidebar:right": { "component": "./dist/components/PageSettings.jsx", "position": 30, "when": "context.currentPage !== null" },
+      "dashboard:widgets": { "component": "./dist/components/SiteDashboard.jsx", "position": 10 }
+    },
+    "hooks": {
+      "site:beforeCreate": "./dist/hooks/beforeCreate.js",
+      "site:afterCreate": "./dist/hooks/afterCreate.js",
+      "site:beforeDelete": "./dist/hooks/beforeDelete.js",
+      "site:afterDelete": "./dist/hooks/afterDelete.js",
+      "page:beforeCreate": "./dist/hooks/beforePageCreate.js",
+      "page:afterCreate": "./dist/hooks/afterPageCreate.js"
+    },
+    "api": { "basePath": "/api/sites", "routes": "./dist/api/routes.js" },
+    "dependencies": { "@sukit/core": "^1.0.0", "@sukit/ui": "^1.0.0" },
+    "peerDependencies": { "react": "^19.0.0", "next": "^16.0.0" }
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "id": "@sukit/export-engine",
+  "name": "Export Engine",
+  "version": "1.0.0",
+  "description": "Generates complete full-stack React + Express + PostgreSQL applications from visual designs",
+  "author": { "name": "SUKIT Core Team" },
+  "license": "MIT",
+  "icon": "Download",
+  "sukit": {
+    "minVersion": "1.0.0",
+    "capabilities": [
+      "export:fullstack",
+      "export:zip",
+      "export:github",
+      "ui:dialog",
+      "api:routes"
+    ],
+    "permissions": [
+      "db:read",
+      "db:write",
+      "fs:write"
+    ],
+    "entrypoints": {
+      "main": "./dist/index.js",
+      "styles": "./dist/styles.css"
+    },
+    "api": {
+      "basePath": "/api/export",
+      "routes": "./dist/routes.js"
+    },
+    "slots": {
+      "deploy:export": {
+        "component": "ExportDialog",
+        "position": 10
+      },
+      "settings:export": {
+        "component": "ExportSettings",
+        "position": 20
+      }
+    },
+    "hooks": {
+      "site:export": "onSiteExport"
+    },
+    "dependencies": {
+      "@sukit/core": "^1.0.0",
+      "@sukit/visual-builder": "^1.0.0",
+      "@sukit/site-manager": "^1.0.0"
+    },
+    "peerDependencies": {
+      "react": "^19.0.0",
+      "react-dom": "^19.0.0",
+      "archiver": "^7.0.0",
+      "prisma": "^6.0.0"
+    }
+  }
+}

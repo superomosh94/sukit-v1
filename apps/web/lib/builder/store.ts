@@ -686,9 +686,10 @@ export const useBuilderStore = create<BuilderStore>()(
       },
 
       abortPendingSaves: () => {
-        if ((get() as any)._abortController) {
-          (get() as any)._abortController.abort();
-          set({ _abortController: null, isSaving: false });
+        const state = get() as any;
+        if (state._abortController) {
+          state._abortController.abort();
+          set({ _abortController: null, isSaving: false } as any);
         }
       },
     }),
@@ -707,21 +708,8 @@ export const useBuilderStore = create<BuilderStore>()(
         zoom: state.zoom,
         viewport: state.viewport,
         showGrid: state.showGrid,
-        showOutlines: state.showOutlines,
         gridSize: state.gridSize,
         snapToGrid: state.snapToGrid,
-        customBreakpoints: state.customBreakpoints,
-        templates: state.templates,
-        versionHistory: state.versionHistory,
-        isPublished: state.isPublished,
-        lastPublishedSnapshot: state.lastPublishedSnapshot,
-        builderTheme: state.builderTheme,
-        leftSidebarOpen: state.leftSidebarOpen,
-        rightSidebarOpen: state.rightSidebarOpen,
-        showPadding: state.showPadding,
-        showMargin: state.showMargin,
-        showBorderRadius: state.showBorderRadius,
-        themeColors: state.themeColors,
       }),
     }
   )

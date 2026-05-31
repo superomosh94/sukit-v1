@@ -1,0 +1,33 @@
+{
+  "id": "@sukit/media-library",
+  "name": "Media Library",
+  "version": "1.0.0",
+  "description": "Image upload, optimization, and management for SUKIT sites",
+  "author": { "name": "SUKIT Core Team", "email": "core@sukit.dev" },
+  "license": "MIT",
+  "icon": "Image",
+  "sukit": {
+    "minVersion": "1.0.0",
+    "maxVersion": "2.0.0",
+    "capabilities": ["ui:sidebar", "ui:modal", "ui:toolbar", "api:routes", "hooks:register"],
+    "permissions": ["fs:read", "fs:write"],
+    "entrypoints": {
+      "main": "./dist/index.js",
+      "styles": "./dist/styles.css"
+    },
+    "slots": {
+      "sidebar:left": { "component": "./dist/components/MediaLibrary.jsx", "position": 30 },
+      "toolbar:top": { "component": "./dist/components/UploadButton.jsx", "position": 100 },
+      "sidebar:right": { "component": "./dist/components/MediaDetails.jsx", "position": 40, "when": "context.currentAsset !== null" }
+    },
+    "hooks": {
+      "media:beforeUpload": "./dist/hooks/beforeUpload.js",
+      "media:afterUpload": "./dist/hooks/afterUpload.js",
+      "media:beforeDelete": "./dist/hooks/beforeDelete.js",
+      "media:afterDelete": "./dist/hooks/afterDelete.js"
+    },
+    "api": { "basePath": "/api/media", "routes": "./dist/api/routes.js" },
+    "dependencies": { "@sukit/core": "^1.0.0", "@sukit/ui": "^1.0.0" },
+    "peerDependencies": { "react": "^19.0.0", "next": "^16.0.0" }
+  }
+}

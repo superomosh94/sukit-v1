@@ -11,6 +11,16 @@
       "id": "@sukit/seo-module",
       "version": "1.0.0",
       "settings": {}
+    },
+    {
+      "id": "@sukit/site-manager",
+      "version": "1.0.0",
+      "settings": {}
+    },
+    {
+      "id": "@sukit/media-library",
+      "version": "1.0.0",
+      "settings": {}
     }
   ],
   "disabled": [],
@@ -19,6 +29,16 @@
       "id": "@sukit/form-builder",
       "path": "../../modules/form-builder",
       "version": "0.1.0"
+    },
+    {
+      "id": "@sukit/site-manager",
+      "path": "../../modules/site-manager",
+      "version": "1.0.0"
+    },
+    {
+      "id": "@sukit/media-library",
+      "path": "../../modules/media-library",
+      "version": "1.0.0"
     }
   ]
 }

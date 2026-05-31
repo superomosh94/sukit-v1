@@ -16,6 +16,8 @@ import {
 } from '@sukit/visual-builder';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import dynamic from 'next/dynamic';
+import { useHotkeys } from '@/hooks/useHotkeys';
 import {
   PanelLeftClose,
   PanelLeftOpen,
@@ -23,9 +25,19 @@ import {
   PanelRightOpen,
   ChevronLeft,
   ChevronRight,
+  Globe,
+  Image,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useHotkeys } from '@/hooks/useHotkeys';
+
+const SiteTreeComponent = dynamic(
+  () => import('@sukit/site-manager').then((m) => ({ default: m.SiteTree })),
+  { ssr: false }
+);
+const MediaLibraryComponent = dynamic(
+  () =>
+    import('@sukit/media-library').then((m) => ({ default: m.MediaLibrary })),
+  { ssr: false }
+);
 
 export function BuilderEditor({
   siteId,
@@ -104,12 +116,20 @@ export function BuilderEditor({
               onValueChange={setLeftTab}
               className="flex flex-col flex-1"
             >
-              <TabsList className="mx-3 mt-1 grid w-auto grid-cols-2">
+              <TabsList className="mx-3 mt-1 grid w-auto grid-cols-4">
                 <TabsTrigger value="blocks" className="text-xs">
                   Blocks
                 </TabsTrigger>
                 <TabsTrigger value="layers" className="text-xs">
                   Layers
+                </TabsTrigger>
+                <TabsTrigger value="pages" className="text-xs">
+                  <Globe className="size-3 mr-1" />
+                  Pages
+                </TabsTrigger>
+                <TabsTrigger value="media" className="text-xs">
+                  <Image className="size-3 mr-1" />
+                  Media
                 </TabsTrigger>
               </TabsList>
               <TabsContent
@@ -123,6 +143,18 @@ export function BuilderEditor({
                 className="flex-1 overflow-hidden mt-0 pt-2"
               >
                 <LayerPanel />
+              </TabsContent>
+              <TabsContent
+                value="pages"
+                className="flex-1 overflow-hidden mt-0 pt-0"
+              >
+                <SiteTreeComponent />
+              </TabsContent>
+              <TabsContent
+                value="media"
+                className="flex-1 overflow-hidden mt-0 pt-0"
+              >
+                <MediaLibraryComponent />
               </TabsContent>
             </Tabs>
           </aside>
