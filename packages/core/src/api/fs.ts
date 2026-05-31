@@ -1,4 +1,4 @@
-import type { FileInfo } from "../types";
+import type { FileInfo } from '../types';
 
 export interface FSAdapter {
   readFile(path: string): Promise<string>;
@@ -17,7 +17,6 @@ export function setFSAdapter(adapter: FSAdapter): void {
 
 export function createFSAPI(adapter?: FSAdapter) {
   const a = () => adapter ?? _adapter;
-  if (!a()) throw new Error("FS adapter not configured. Call setFSAdapter() or pass to createKernel().");
 
   return {
     async read(path: string): Promise<string> {

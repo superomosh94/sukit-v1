@@ -1,0 +1,62 @@
+.slot-container {
+  position: relative;
+}
+
+.slot-toolbar-top,
+.slot-toolbar-bottom {
+  width: 100%;
+}
+
+.slot-sidebar-left,
+.slot-sidebar-right {
+  height: 100%;
+}
+
+.slot-canvas-main {
+  flex: 1;
+}
+
+.slot-canvas-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.slot-modal-center {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.canvas-container {
+  position: relative;
+}
+
+.canvas-content {
+  position: relative;
+}
+
+.selection-overlay {
+  position: absolute;
+  inset: 0;
+  border: 2px solid hsl(var(--primary));
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}

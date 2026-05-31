@@ -9,31 +9,24 @@
   },
   "license": "MIT",
   "icon": "LayoutDashboard",
-
   "sukit": {
     "minVersion": "1.0.0",
     "maxVersion": "2.0.0",
-
     "capabilities": [
-      "ui:sidebar",
-      "ui:toolbar",
-      "api:routes",
-      "hooks:page",
-      "blocks:register"
+      "ui:canvas", "ui:sidebar", "ui:toolbar", "blocks:register"
     ],
-
     "permissions": [
-      "filesystem:read",
-      "filesystem:write",
-      "database:read"
+      "db:read", "db:write"
     ],
-
     "entrypoints": {
       "main": "./dist/index.js",
       "styles": "./dist/styles.css"
     },
-
     "slots": {
+      "canvas:main": {
+        "component": "./dist/canvas/Canvas.jsx",
+        "position": 0
+      },
       "sidebar:left": {
         "component": "./dist/components/block-palette.jsx",
         "position": 10
@@ -48,22 +41,18 @@
         "position": 5
       }
     },
-
     "hooks": {
       "page:beforeSave": "./dist/hooks/beforeSave.js",
       "page:afterSave": "./dist/hooks/afterSave.js"
     },
-
     "api": {
       "basePath": "/api/builder",
       "routes": "./dist/routes.js"
     },
-
     "dependencies": {
       "@sukit/core": "^1.0.0",
       "@sukit/ui": "^1.0.0"
     },
-
     "peerDependencies": {
       "react": "^19.0.0",
       "next": "^16.0.0",

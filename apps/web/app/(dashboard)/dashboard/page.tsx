@@ -1,52 +1,62 @@
-import Link from "next/link";
-import { auth } from "@/lib/auth/auth";
-import { prisma } from "@/lib/db/prisma";
+import Link from 'next/link';
+import { auth } from '@/lib/auth/auth';
+import { prisma } from '@/lib/db/prisma';
 
 export default async function DashboardPage() {
   const session = await auth();
   const userId = session?.user?.id;
 
-  const [siteCount, pageCount, popupCount, mediaCount, postCount, commentCount, sites, recentActivity] =
-    await Promise.all([
-      userId ? prisma.site.count({ where: { userId } }) : 0,
-      userId ? prisma.page.count({ where: { site: { userId } } }) : 0,
-      userId ? prisma.popup.count({ where: { site: { userId } } }) : 0,
-      userId ? prisma.media.count({ where: { site: { userId } } }) : 0,
-      userId ? prisma.post.count({ where: { site: { userId }, status: "PUBLISHED" } }) : 0,
-      userId ? prisma.comment.count({ where: { site: { userId } } }) : 0,
-      userId
-        ? prisma.site.findMany({
-            where: { userId },
-            include: { _count: { select: { pages: true, posts: true } } },
-            orderBy: { updatedAt: "desc" },
-            take: 5,
-          })
-        : Promise.resolve([]),
-      userId
-        ? prisma.userActivity.findMany({
-            where: { userId },
-            include: { site: { select: { name: true } } },
-            orderBy: { createdAt: "desc" },
-            take: 10,
-          })
-        : Promise.resolve([]),
-    ]);
+  const [
+    siteCount,
+    pageCount,
+    popupCount,
+    mediaCount,
+    postCount,
+    commentCount,
+    sites,
+    recentActivity,
+  ] = await Promise.all([
+    userId ? prisma.site.count({ where: { userId } }) : 0,
+    userId ? prisma.page.count({ where: { site: { userId } } }) : 0,
+    userId ? prisma.popup.count({ where: { site: { userId } } }) : 0,
+    userId ? prisma.media.count({ where: { site: { userId } } }) : 0,
+    userId
+      ? prisma.post.count({ where: { site: { userId }, status: 'PUBLISHED' } })
+      : 0,
+    userId ? prisma.comment.count({ where: { site: { userId } } }) : 0,
+    userId
+      ? prisma.site.findMany({
+          where: { userId },
+          include: { _count: { select: { pages: true, posts: true } } },
+          orderBy: { updatedAt: 'desc' },
+          take: 5,
+        })
+      : Promise.resolve([]),
+    userId
+      ? prisma.userActivity.findMany({
+          where: { userId },
+          include: { site: { select: { name: true } } },
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+        })
+      : Promise.resolve([]),
+  ]);
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Dashboard</h1>
         <p className="text-muted-foreground">
-          Welcome back, {session?.user?.name ?? "User"}
+          Welcome back, {session?.user?.name ?? 'User'}
         </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: "Total Sites", value: siteCount },
-          { label: "Published Pages", value: pageCount },
-          { label: "Blog Posts", value: postCount },
-          { label: "Comments", value: commentCount },
+          { label: 'Total Sites', value: siteCount },
+          { label: 'Published Pages', value: pageCount },
+          { label: 'Blog Posts', value: postCount },
+          { label: 'Comments', value: commentCount },
         ].map((stat) => (
           <div key={stat.label} className="rounded-xl border bg-card p-4">
             <div className="text-2xl font-bold">{stat.value}</div>
@@ -70,7 +80,7 @@ export default async function DashboardPage() {
             {sites.map((site) => (
               <Link
                 key={site.id}
-                href={`/sites/${site.id}`}
+                href={`/sites/${site.id}` as any}
                 className="flex items-center justify-between rounded-lg border p-3 hover:bg-accent transition-colors"
               >
                 <span className="font-medium">{site.name}</span>
@@ -98,7 +108,7 @@ export default async function DashboardPage() {
               >
                 <span>{a.action}</span>
                 <span className="text-muted-foreground">
-                  {a.site.name} &middot;{" "}
+                  {a.site.name} &middot;{' '}
                   {new Date(a.createdAt).toLocaleDateString()}
                 </span>
               </div>

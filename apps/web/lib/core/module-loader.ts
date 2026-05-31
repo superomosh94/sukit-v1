@@ -1,15 +1,20 @@
-import type { ModuleRegistration, ModuleManifest } from "@sukit/core";
-import { moduleRegistry } from "./module-registry";
+import type { ModuleManifest } from '@sukit/core';
+import type { ModuleRegistration } from './module-registry';
+import { moduleRegistry } from './module-registry';
 
 const moduleCache = new Map<string, ModuleRegistration>();
 
-export async function loadModule(manifest: ModuleManifest): Promise<ModuleRegistration | null> {
+export async function loadModule(
+  manifest: ModuleManifest
+): Promise<ModuleRegistration | null> {
   if (moduleCache.has(manifest.id)) {
     return moduleCache.get(manifest.id)!;
   }
 
   try {
-    const mod = await import(/* webpackIgnore: true */ manifest.sukit.entrypoints.main);
+    const mod = await import(
+      /* webpackIgnore: true */ manifest.sukit.entrypoints.main
+    );
     const registration: ModuleRegistration = {
       manifest,
       components: mod.components ?? {},
@@ -34,6 +39,8 @@ export function getLoadedModules(): ModuleRegistration[] {
   return Array.from(moduleCache.values());
 }
 
-export async function preloadModules(manifests: ModuleManifest[]): Promise<(ModuleRegistration | null)[]> {
+export async function preloadModules(
+  manifests: ModuleManifest[]
+): Promise<(ModuleRegistration | null)[]> {
   return Promise.all(manifests.map((m) => loadModule(m)));
 }

@@ -13,7 +13,6 @@ export function setStorageAdapter(adapter: StorageAdapter): void {
 
 export function createStorageAPI(prefix: string, adapter?: StorageAdapter) {
   const a = () => adapter ?? _adapter;
-  if (!a()) throw new Error("Storage adapter not configured. Call setStorageAdapter() or pass to createKernel().");
 
   const prefixed = (key: string) => `${prefix}:${key}`;
 

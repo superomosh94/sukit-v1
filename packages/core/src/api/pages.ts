@@ -1,4 +1,4 @@
-import type { Page } from "../types";
+import type { Page } from '../types';
 
 export interface PagesAdapter {
   create(siteId: string, slug: string, title: string): Promise<Page>;
@@ -16,7 +16,6 @@ export function setPagesAdapter(adapter: PagesAdapter): void {
 
 export function createPagesAPI(adapter?: PagesAdapter) {
   const a = () => adapter ?? _adapter;
-  if (!a()) throw new Error("Pages adapter not configured.");
 
   return {
     async create(siteId: string, slug: string, title: string): Promise<Page> {

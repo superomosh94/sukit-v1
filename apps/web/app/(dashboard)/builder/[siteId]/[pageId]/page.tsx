@@ -1,4 +1,4 @@
-import { BuilderEditor } from "./builder-editor";
+import { BuilderWrapper } from './builder-wrapper';
 
 export default async function BuilderPage({
   params,
@@ -7,5 +7,5 @@ export default async function BuilderPage({
 }) {
   const { siteId, pageId } = await params;
 
-  return <BuilderEditor siteId={siteId} pageId={pageId} />;
+  return <BuilderWrapper siteId={siteId} pageId={pageId} />;
 }

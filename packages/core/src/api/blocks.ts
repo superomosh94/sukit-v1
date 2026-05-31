@@ -1,4 +1,5 @@
-import type { BlockDefinition, Block } from "../types";
+import React from 'react';
+import type { BlockDefinition, Block } from '../types';
 
 export function createBlocksAPI() {
   const blocks = new Map<string, BlockDefinition>();
@@ -27,8 +28,7 @@ export function createBlocksAPI() {
     render(block: Block): React.ReactNode {
       const def = blocks.get(block.blockType);
       if (!def) return null;
-      const Component = def.component;
-      return <Component {...block.props} />;
+      return React.createElement(def.component, block.props);
     },
   };
 }

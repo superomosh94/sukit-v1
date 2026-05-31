@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from 'next/link';
 
 export default function PopupsPage() {
   return (
@@ -11,7 +11,7 @@ export default function PopupsPage() {
           </p>
         </div>
         <Link
-          href="/popups/new"
+          href={'/popups/new' as any}
           className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
         >
           New Popup

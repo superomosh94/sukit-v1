@@ -1,29 +1,30 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db/prisma";
-import { auth } from "@/lib/auth/auth";
-import { getStorageAdapter } from "@/lib/media/storage";
-import { convertToWebP, getImageDimensions } from "@/lib/media/image";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/db/prisma';
+import { auth } from '@/lib/auth/auth';
+import { getStorageAdapter } from '@/lib/media/storage';
+import { convertToWebP, getImageDimensions } from '@/lib/media/image';
 
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ siteId: string }> },
+  { params }: { params: Promise<{ siteId: string }> }
 ) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json(
-      { error: { message: "Unauthorized", code: "UNAUTHORIZED" } },
-      { status: 401 },
+      { error: { message: 'Unauthorized', code: 'UNAUTHORIZED' } },
+      { status: 401 }
     );
   }
 
   const { siteId } = await params;
   const media = await prisma.media.findMany({
     where: { siteId, site: { userId: session.user.id } },
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: 'desc' },
   });
 
   const items = media.map((m) => {
-    const isImage = m.mimeType.startsWith("image/") && m.mimeType !== "image/svg+xml";
+    const isImage =
+      m.mimeType.startsWith('image/') && m.mimeType !== 'image/svg+xml';
     return {
       ...m,
       webpUrl: isImage ? `${m.url}.webp` : null,
@@ -35,29 +36,29 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ siteId: string }> },
+  { params }: { params: Promise<{ siteId: string }> }
 ) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json(
-      { error: { message: "Unauthorized", code: "UNAUTHORIZED" } },
-      { status: 401 },
+      { error: { message: 'Unauthorized', code: 'UNAUTHORIZED' } },
+      { status: 401 }
     );
   }
 
   const { siteId } = await params;
   const formData = await request.formData();
-  const file = formData.get("file") as File;
+  const file = formData.get('file') as File;
 
   if (!file) {
     return NextResponse.json(
-      { error: { message: "No file provided", code: "VALIDATION_ERROR" } },
-      { status: 400 },
+      { error: { message: 'No file provided', code: 'VALIDATION_ERROR' } },
+      { status: 400 }
     );
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  const storage = getStorageAdapter();
+  const storage = await getStorageAdapter();
   const path = `${siteId}/${Date.now()}-${file.name}`;
   const url = await storage.upload(path, buffer, file.type);
 
@@ -65,7 +66,8 @@ export async function POST(
   let height = 0;
   let webpUrl: string | null = null;
 
-  const isImage = file.type.startsWith("image/") && file.type !== "image/svg+xml";
+  const isImage =
+    file.type.startsWith('image/') && file.type !== 'image/svg+xml';
 
   if (isImage) {
     try {
@@ -75,7 +77,7 @@ export async function POST(
 
       const webpBuffer = await convertToWebP(buffer);
       const webpPath = `${path}.webp`;
-      webpUrl = await storage.upload(webpPath, webpBuffer, "image/webp");
+      webpUrl = await storage.upload(webpPath, webpBuffer, 'image/webp');
     } catch {
       // WebP conversion failed, proceed without it
     }

@@ -2,8 +2,8 @@
   "version": "1.0.0",
   "packageManager": "pnpm@8.15.0",
   "scripts": {
-    "sukit": "pnpm dev",
-
+    "sukit": "pnpm dev:watch",
+    "dev": "pnpm dev:watch",
     "dev:web": "pnpm --filter sukit-web dev",
     "dev:server": "pnpm --filter @sukit/server dev",
     "dev:watch": "concurrently -n web,server -c cyan,green \"pnpm dev:web\" \"pnpm dev:server\"",

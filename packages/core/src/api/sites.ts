@@ -1,4 +1,4 @@
-import type { Site, SiteOptions } from "../types";
+import type { Site, SiteOptions } from '../types';
 
 export interface SitesAdapter {
   create(name: string, options?: SiteOptions): Promise<Site>;
@@ -16,7 +16,6 @@ export function setSitesAdapter(adapter: SitesAdapter): void {
 
 export function createSitesAPI(adapter?: SitesAdapter) {
   const a = () => adapter ?? _adapter;
-  if (!a()) throw new Error("Sites adapter not configured.");
 
   return {
     async create(name: string, options?: SiteOptions): Promise<Site> {

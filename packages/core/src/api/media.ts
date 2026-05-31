@@ -1,4 +1,4 @@
-import type { MediaAsset, ImageOptions } from "../types";
+import type { MediaAsset, ImageOptions } from '../types';
 
 export interface MediaAdapter {
   upload(file: File | Buffer, siteId: string): Promise<MediaAsset>;
@@ -16,7 +16,6 @@ export function setMediaAdapter(adapter: MediaAdapter): void {
 
 export function createMediaAPI(adapter?: MediaAdapter) {
   const a = () => adapter ?? _adapter;
-  if (!a()) throw new Error("Media adapter not configured.");
 
   return {
     async upload(file: File | Buffer, siteId: string): Promise<MediaAsset> {

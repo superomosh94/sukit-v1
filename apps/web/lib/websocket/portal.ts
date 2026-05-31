@@ -9,7 +9,8 @@ export class BuilderPortal {
   private broadcastedVersions: Map<string, number> = new Map();
   private throttledBroadcasts: Map<string, number> = new Map();
   private onEvent: ((event: BuilderSocketEvent) => void) | null = null;
-  private handleBroadcastBound: ((event: BuilderSocketEvent) => void) | null = null;
+  private handleBroadcastBound: ((event: BuilderSocketEvent) => void) | null =
+    null;
 
   open(socket: Socket, roomId: string, encryptionKey?: string) {
     this.socket = socket;
@@ -41,7 +42,10 @@ export class BuilderPortal {
 
   private handleBroadcast(event: BuilderSocketEvent) {
     const dedupKey = `${event.type}:${event.userId}`;
-    const eventVersion = 'payload' in event && 'version' in (event as any).payload ? (event as any).payload.version : 0;
+    const eventVersion =
+      'payload' in event && 'version' in (event as any).payload
+        ? (event as any).payload.version
+        : 0;
     const lastVersion = this.broadcastedVersions.get(dedupKey) || 0;
 
     if (eventVersion > 0 && eventVersion <= lastVersion) return;
@@ -67,19 +71,26 @@ export class BuilderPortal {
     }
 
     const dedupKey = `${event.type}:${event.userId}`;
-    const eventVersion = 'version' in (event as any).payload ? (event as any).payload.version : 0;
+    const eventVersion =
+      'version' in (event as any).payload ? (event as any).payload.version : 0;
     if (eventVersion > 0) {
       this.broadcastedVersions.set(dedupKey, eventVersion);
     }
 
     if (this.encryptionKey) {
       const { encrypted, iv } = await encrypt(this.encryptionKey, event);
-      data = { type: 'SCENE_SYNC', roomId: this.roomId, payload: { sections: [], pageSettings: {}, sceneVersion: 0 }, userId: event.userId, timestamp: Date.now() };
-      this.socket.emit(volatile ? 'server-volatile' : 'server', this.roomId, { encrypted, iv });
+      this.socket.emit(volatile ? 'server-volatile' : 'server', this.roomId, {
+        encrypted,
+        iv,
+      });
       return;
     }
 
-    this.socket.emit(volatile ? 'server-volatile' : 'server', this.roomId, event);
+    this.socket.emit(
+      volatile ? 'server-volatile' : 'server',
+      this.roomId,
+      event
+    );
   }
 
   requestFullSync() {

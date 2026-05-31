@@ -1,27 +1,30 @@
-import NextAuth from "next-auth";
-import Credentials from "next-auth/providers/credentials";
-import GitHub from "next-auth/providers/github";
-import Google from "next-auth/providers/google";
-import { prisma } from "@/lib/db/prisma";
+import NextAuth from 'next-auth';
+import Credentials from 'next-auth/providers/credentials';
+import GitHub from 'next-auth/providers/github';
+import Google from 'next-auth/providers/google';
+import { prisma } from '@/lib/db/prisma';
 
-async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  const { compare } = await import("bcryptjs");
+async function verifyPassword(
+  password: string,
+  hash: string
+): Promise<boolean> {
+  const { compare } = await import('bcryptjs');
   return compare(password, hash);
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: undefined,
-  session: { strategy: "jwt" },
+  session: { strategy: 'jwt' },
   pages: {
-    signIn: "/login",
-    error: "/login",
+    signIn: '/login',
+    error: '/login',
   },
   providers: [
     Credentials({
-      name: "credentials",
+      name: 'credentials',
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
@@ -34,7 +37,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         const isValid = await verifyPassword(
           credentials.password as string,
-          user.hashedPassword,
+          user.hashedPassword
         );
 
         if (!isValid) return null;
@@ -61,14 +64,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = (user as { role?: string }).role ?? "user";
+        token.role = (user as { role?: string }).role ?? 'user';
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.role = token.role as string;
+        (session.user as any).role = token.role as string;
       }
       return session;
     },

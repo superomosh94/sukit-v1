@@ -1,13 +1,13 @@
-import Link from "next/link";
-import { auth } from "@/lib/auth/auth";
-import { prisma } from "@/lib/db/prisma";
-import { formatRelativeTime } from "@/lib/utils/format";
+import Link from 'next/link';
+import { auth } from '@/lib/auth/auth';
+import { prisma } from '@/lib/db/prisma';
+import { formatRelativeTime } from '@/lib/utils/format';
 
 export default async function SitesPage() {
   const session = await auth();
   const sites = await prisma.site.findMany({
     where: { userId: session?.user?.id },
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: 'desc' },
     include: { _count: { select: { pages: true } } },
   });
 
@@ -25,9 +25,7 @@ export default async function SitesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Sites</h1>
-          <p className="text-muted-foreground">
-            Manage your websites
-          </p>
+          <p className="text-muted-foreground">Manage your websites</p>
         </div>
         <Link
           href="/sites/new"
@@ -53,7 +51,7 @@ export default async function SitesPage() {
         {serialized.map((site) => (
           <Link
             key={site.id}
-            href={`/sites/${site.id}/pages`}
+            href={`/sites/${site.id}/pages` as any}
             className="rounded-xl border bg-card p-6 transition-colors hover:border-primary/50"
           >
             <h3 className="font-semibold">{site.name}</h3>

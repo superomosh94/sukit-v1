@@ -1,17 +1,17 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db/prisma";
-import { auth } from "@/lib/auth/auth";
-import { getStorageAdapter } from "@/lib/media/storage";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/db/prisma';
+import { auth } from '@/lib/auth/auth';
+import { getStorageAdapter } from '@/lib/media/storage';
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: Promise<{ siteId: string; mediaId: string }> },
+  { params }: { params: Promise<{ siteId: string; mediaId: string }> }
 ) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json(
-      { error: { message: "Unauthorized", code: "UNAUTHORIZED" } },
-      { status: 401 },
+      { error: { message: 'Unauthorized', code: 'UNAUTHORIZED' } },
+      { status: 401 }
     );
   }
 
@@ -22,15 +22,15 @@ export async function DELETE(
 
   if (!media) {
     return NextResponse.json(
-      { error: { message: "Media not found", code: "NOT_FOUND" } },
-      { status: 404 },
+      { error: { message: 'Media not found', code: 'NOT_FOUND' } },
+      { status: 404 }
     );
   }
 
   try {
-    const storage = getStorageAdapter();
+    const storage = await getStorageAdapter();
     const url = new URL(media.url);
-    const path = url.pathname.replace("/uploads/", "");
+    const path = url.pathname.replace('/uploads/', '');
     await storage.delete(path);
   } catch {
     // File may not exist on storage

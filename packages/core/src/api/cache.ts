@@ -14,7 +14,6 @@ export function setCacheAdapter(adapter: CacheAdapter): void {
 
 export function createCacheAPI(adapter?: CacheAdapter) {
   const a = () => adapter ?? _adapter;
-  if (!a()) throw new Error("Cache adapter not configured.");
 
   return {
     async get<T>(key: string): Promise<T | null> {

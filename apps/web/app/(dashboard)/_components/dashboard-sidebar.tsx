@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils/cn";
-import { useState } from "react";
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils/cn';
+import { useState } from 'react';
 import {
   LayoutDashboard,
   Globe,
@@ -34,85 +34,105 @@ import {
   Palette,
   Layout,
   Timer,
-} from "lucide-react";
+} from 'lucide-react';
 
 interface NavGroup {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   href: string;
   badge?: string;
-  children?: { label: string; href: string; icon?: React.ComponentType<{ className?: string }> }[];
+  children?: {
+    label: string;
+    href: string;
+    icon?: React.ComponentType<{ className?: string }>;
+  }[];
 }
 
 const navItems: NavGroup[] = [
-  { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
+  { label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
   {
-    label: "Sites", icon: Globe, href: "/sites",
+    label: 'Sites',
+    icon: Globe,
+    href: '/sites',
     children: [
-      { label: "All Sites", icon: Globe, href: "/sites" },
-      { label: "Pages", icon: FileText, href: "/sites/pages" },
-      { label: "Media", icon: Image, href: "/sites/media" },
-      { label: "Forms", icon: FormInput, href: "/sites/forms" },
+      { label: 'All Sites', icon: Globe, href: '/sites' },
+      { label: 'Pages', icon: FileText, href: '/sites/pages' },
+      { label: 'Media', icon: Image, href: '/sites/media' },
+      { label: 'Forms', icon: FormInput, href: '/sites/forms' },
     ],
   },
-  { label: "Builder", icon: Blocks, href: "/builder" },
+  { label: 'Builder', icon: Blocks, href: '/builder' },
   {
-    label: "Popups", icon: Megaphone, href: "/popups",
+    label: 'Popups',
+    icon: Megaphone,
+    href: '/popups',
     children: [
-      { label: "All Popups", icon: PanelTop, href: "/popups" },
-      { label: "Analytics", icon: ClipboardList, href: "/popups/analytics" },
-    ],
-  },
-  {
-    label: "Modules", icon: Puzzle, href: "/modules",
-    children: [
-      { label: "Installed", icon: Package, href: "/modules" },
-      { label: "Marketplace", icon: Store, href: "/modules/marketplace" },
+      { label: 'All Popups', icon: PanelTop, href: '/popups' },
+      { label: 'Analytics', icon: ClipboardList, href: '/popups/analytics' },
     ],
   },
   {
-    label: "Plugins", icon: Package, href: "/plugins",
+    label: 'Modules',
+    icon: Puzzle,
+    href: '/modules',
     children: [
-      { label: "Installed", icon: Package, href: "/plugins" },
-      { label: "Add Plugin", icon: Package, href: "/plugins/add" },
-      { label: "Create Plugin", icon: Code2, href: "/plugins/create" },
-      { label: "Registry", icon: Database, href: "/plugins/registry" },
+      { label: 'Installed', icon: Package, href: '/modules' },
+      { label: 'Marketplace', icon: Store, href: '/modules/marketplace' },
     ],
   },
-  { label: "Code", icon: Code2, href: "/code" },
   {
-    label: "Deploy", icon: Rocket, href: "/deploy",
+    label: 'Plugins',
+    icon: Package,
+    href: '/plugins',
     children: [
-      { label: "Providers", icon: Rocket, href: "/deploy" },
-      { label: "CI/CD", icon: GitBranch, href: "/deploy/ci" },
-      { label: "Secrets", icon: Key, href: "/deploy/secrets" },
+      { label: 'Installed', icon: Package, href: '/plugins' },
+      { label: 'Add Plugin', icon: Package, href: '/plugins/add' },
+      { label: 'Create Plugin', icon: Code2, href: '/plugins/create' },
+      { label: 'Registry', icon: Database, href: '/plugins/registry' },
     ],
   },
-  { label: "Team", icon: Users, href: "/team" },
-  { label: "Audit", icon: ClipboardList, href: "/audit" },
+  { label: 'Code', icon: Code2, href: '/code' },
   {
-    label: "Content", icon: BookOpen, href: "/posts",
+    label: 'Deploy',
+    icon: Rocket,
+    href: '/deploy',
     children: [
-      { label: "Posts", icon: FileText, href: "/posts" },
-      { label: "Categories", icon: Tags, href: "/taxonomies?type=category" },
-      { label: "Tags", icon: Tags, href: "/taxonomies?type=tag" },
+      { label: 'Providers', icon: Rocket, href: '/deploy' },
+      { label: 'CI/CD', icon: GitBranch, href: '/deploy/ci' },
+      { label: 'Secrets', icon: Key, href: '/deploy/secrets' },
     ],
   },
-  { label: "Comments", icon: MessageSquare, href: "/comments" },
+  { label: 'Team', icon: Users, href: '/team' },
+  { label: 'Audit', icon: ClipboardList, href: '/audit' },
   {
-    label: "Appearance", icon: Palette, href: "/themes",
+    label: 'Content',
+    icon: BookOpen,
+    href: '/posts',
     children: [
-      { label: "Themes", icon: Palette, href: "/themes" },
-      { label: "Widgets", icon: Layout, href: "/widgets" },
+      { label: 'Posts', icon: FileText, href: '/posts' },
+      { label: 'Categories', icon: Tags, href: '/taxonomies?type=category' },
+      { label: 'Tags', icon: Tags, href: '/taxonomies?type=tag' },
     ],
   },
-  { label: "Cron Jobs", icon: Timer, href: "/cron" },
+  { label: 'Comments', icon: MessageSquare, href: '/comments' },
   {
-    label: "Settings", icon: Settings, href: "/settings",
+    label: 'Appearance',
+    icon: Palette,
+    href: '/themes',
     children: [
-      { label: "Profile", icon: User, href: "/settings/profile" },
-      { label: "Account", icon: Shield, href: "/settings/account" },
-      { label: "API Keys", icon: Key, href: "/settings/api-keys" },
+      { label: 'Themes', icon: Palette, href: '/themes' },
+      { label: 'Widgets', icon: Layout, href: '/widgets' },
+    ],
+  },
+  { label: 'Cron Jobs', icon: Timer, href: '/cron' },
+  {
+    label: 'Settings',
+    icon: Settings,
+    href: '/settings',
+    children: [
+      { label: 'Profile', icon: User, href: '/settings/profile' },
+      { label: 'Account', icon: Shield, href: '/settings/account' },
+      { label: 'API Keys', icon: Key, href: '/settings/api-keys' },
     ],
   },
 ];
@@ -130,7 +150,8 @@ export function DashboardSidebar() {
     });
   };
 
-  const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
+  const isActive = (href: string) =>
+    pathname === href || pathname.startsWith(href + '/');
 
   return (
     <aside className="flex w-64 flex-col border-r bg-sidebar overflow-y-auto">
@@ -159,29 +180,39 @@ export function DashboardSidebar() {
                   }
                 }}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                   active && !hasChildren
-                    ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                    ? 'bg-accent text-accent-foreground'
+                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                 )}
               >
                 {hasChildren ? (
                   <>
                     <Icon className="size-4 shrink-0" />
-                    <span className="flex-1 truncate text-left">{item.label}</span>
+                    <span className="flex-1 truncate text-left">
+                      {item.label}
+                    </span>
                     {item.badge && (
                       <span className="rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
                         {item.badge}
                       </span>
                     )}
                     <ChevronDown
-                      className={cn("size-3 transition-transform", expanded && "rotate-180")}
+                      className={cn(
+                        'size-3 transition-transform',
+                        expanded && 'rotate-180'
+                      )}
                     />
                   </>
                 ) : (
-                  <Link href={item.href} className="flex w-full items-center gap-3">
+                  <Link
+                    href={item.href as any}
+                    className="flex w-full items-center gap-3"
+                  >
                     <Icon className="size-4 shrink-0" />
-                    <span className="flex-1 truncate text-left">{item.label}</span>
+                    <span className="flex-1 truncate text-left">
+                      {item.label}
+                    </span>
                     {item.badge && (
                       <span className="rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
                         {item.badge}
@@ -198,15 +229,17 @@ export function DashboardSidebar() {
                     return (
                       <Link
                         key={child.href}
-                        href={child.href}
+                        href={child.href as any}
                         className={cn(
-                          "flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm transition-colors",
+                          'flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm transition-colors',
                           childActive
-                            ? "bg-accent text-accent-foreground font-medium"
-                            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                            ? 'bg-accent text-accent-foreground font-medium'
+                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                         )}
                       >
-                        {ChildIcon && <ChildIcon className="size-3.5 shrink-0" />}
+                        {ChildIcon && (
+                          <ChildIcon className="size-3.5 shrink-0" />
+                        )}
                         <span className="truncate">{child.label}</span>
                       </Link>
                     );

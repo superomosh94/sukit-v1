@@ -1,6 +1,6 @@
-import type { ComponentType } from "react";
+import type { ComponentType } from 'react';
 
-export type KernelForModule = import("../index").SukitKernel;
+export type KernelForModule = import('../index').SukitKernel;
 
 // ---- Module System Types ----
 export interface ModuleAuthor {
@@ -51,7 +51,17 @@ export interface ModuleManifest {
 
 export interface ModuleSettings {
   [key: string]: {
-    type: "text" | "number" | "boolean" | "select" | "file" | "image" | "color" | "code" | "encrypted" | "json";
+    type:
+      | 'text'
+      | 'number'
+      | 'boolean'
+      | 'select'
+      | 'file'
+      | 'image'
+      | 'color'
+      | 'code'
+      | 'encrypted'
+      | 'json';
     label?: string;
     default?: any;
     options?: { label: string; value: any }[];
@@ -71,12 +81,18 @@ export interface Module {
 export interface ActiveModule {
   definition: Module;
   manifest: ModuleManifest;
-  status: "active" | "inactive" | "error";
+  status: 'active' | 'inactive' | 'error';
   error?: string;
 }
 
 // ---- Block Types ----
-export type BlockCategory = "content" | "media" | "layout" | "forms" | "widgets" | "advanced";
+export type BlockCategory =
+  | 'content'
+  | 'media'
+  | 'layout'
+  | 'forms'
+  | 'widgets'
+  | 'advanced';
 
 export interface BlockDefinition {
   type: string;
@@ -145,15 +161,15 @@ export interface ImageOptions {
   width?: number;
   height?: number;
   quality?: number;
-  format?: "webp" | "jpeg" | "png" | "avif";
+  format?: 'webp' | 'jpeg' | 'png' | 'avif';
 }
 
 // ---- Export Types ----
 export interface Deployment {
   id: string;
   siteId: string;
-  provider: "netlify" | "vercel" | "github";
-  status: "pending" | "building" | "success" | "failed";
+  provider: 'netlify' | 'vercel' | 'github';
+  status: 'pending' | 'building' | 'success' | 'failed';
   url?: string;
   createdAt: string;
 }
@@ -169,7 +185,12 @@ export interface ScheduledTask<T = any> extends Task<T> {
   cron: string;
 }
 
-export type TaskStatus = "pending" | "running" | "completed" | "failed" | "cancelled";
+export type TaskStatus =
+  | 'pending'
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'cancelled';
 
 // ---- Auth Types ----
 export interface Session {
@@ -219,10 +240,13 @@ export interface SettingsPanel {
 }
 
 // ---- API Route Types ----
-export type RequestHandler = (req: Request, params: Record<string, string>) => Response | Promise<Response>;
+export type RequestHandler = (
+  req: Request,
+  params: Record<string, string>
+) => Response | Promise<Response>;
 
 export interface APIRoute {
-  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   path: string;
   handler: RequestHandler;
   moduleId: string;
@@ -234,4 +258,5 @@ export interface ModuleLogger {
   info(message: string, meta?: any): void;
   warn(message: string, meta?: any): void;
   error(message: string, error?: Error): void;
+  forModule(moduleId: string): ModuleLogger;
 }

@@ -1,4 +1,4 @@
-import type { Session, User, Invitation } from "../types";
+import type { Session, User, Invitation } from '../types';
 
 export interface AuthAdapter {
   login(email: string, password: string): Promise<Session>;
@@ -19,19 +19,21 @@ export function setAuthAdapter(adapter: AuthAdapter): void {
 
 export function createAuthAPI(adapter?: AuthAdapter) {
   const a = () => adapter ?? _adapter;
-  if (!a()) throw new Error("Auth adapter not configured. Call setAuthAdapter() or pass adapter to createKernel().");
 
   return {
     async login(email: string, password: string): Promise<Session> {
+      if (!a()) throw new Error('Auth adapter not configured');
       return a()!.login(email, password);
     },
 
     async logout(): Promise<void> {
-      return a()!.logout("");
+      if (!a()) return;
+      return a()!.logout('');
     },
 
     async user(): Promise<User | null> {
-      return a()!.getUser("");
+      if (!a()) return null;
+      return a()!.getUser('');
     },
 
     isAuthenticated(): boolean {
@@ -42,7 +44,12 @@ export function createAuthAPI(adapter?: AuthAdapter) {
       return false;
     },
 
-    async register(email: string, password: string, name?: string): Promise<User> {
+    async register(
+      email: string,
+      password: string,
+      name?: string
+    ): Promise<User> {
+      if (!a()) throw new Error('Auth adapter not configured');
       return a()!.createUser(email, password, name);
     },
   };

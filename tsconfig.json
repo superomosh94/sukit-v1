@@ -17,7 +17,7 @@
     "jsx": "preserve",
     "baseUrl": ".",
     "paths": {
-      "@sukit/*": ["./packages/*/src"]
+      "@sukit/*": ["./packages/*/src", "./modules/*/src"]
     }
   },
   "references": [
@@ -27,6 +27,7 @@
     { "path": "packages/shared" },
     { "path": "packages/ui" },
     { "path": "packages/blocks" },
-    { "path": "packages/modules-core" }
+    { "path": "packages/modules-core" },
+    { "path": "modules/visual-builder" }
   ]
 }

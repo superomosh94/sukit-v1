@@ -1,17 +1,14 @@
-import type { PropsWithChildren } from "react";
-import type { Section } from "@/lib/builder/types";
-import { blockRegistry } from "@/lib/builder/block-registry";
+import type { PropsWithChildren } from 'react';
+import type { Section } from '@/lib/builder/types';
+import { blockRegistry } from '@/lib/builder/block-registry';
 
 interface CustomSectionProps {
   data: Section;
   className?: string;
 }
 
-export function CustomSection({
-  data,
-  className,
-}: CustomSectionProps) {
-  const bgColor = (data.settings?.backgroundColor as string) ?? "transparent";
+export function CustomSection({ data, className }: CustomSectionProps) {
+  const bgColor = (data.settings?.backgroundColor as string) ?? 'transparent';
   const paddingTop = (data.settings?.paddingTop as number) ?? 40;
   const paddingBottom = (data.settings?.paddingBottom as number) ?? 40;
 
@@ -27,7 +24,9 @@ export function CustomSection({
       <div className="mx-auto w-full max-w-[1200px] px-4">
         <div className="grid grid-cols-12 gap-4">
           {data.columns
-            .sort((a, b) => a.sortOrder - b.sortOrder)
+            .sort((a, b) =>
+              a.sortKey < b.sortKey ? -1 : a.sortKey > b.sortKey ? 1 : 0
+            )
             .map((column) => (
               <div
                 key={column.id}
@@ -36,10 +35,12 @@ export function CustomSection({
                 }}
               >
                 {column.blocks
-                  .sort((a, b) => a.sortOrder - b.sortOrder)
+                  .sort((a, b) =>
+                    a.sortKey < b.sortKey ? -1 : a.sortKey > b.sortKey ? 1 : 0
+                  )
                   .map((block) => {
                     const registration = blockRegistry.getBlockType(
-                      block.blockType,
+                      block.blockType
                     );
                     if (!registration) {
                       return (

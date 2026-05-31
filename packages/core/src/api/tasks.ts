@@ -1,4 +1,4 @@
-import type { Task, ScheduledTask, TaskStatus } from "../types";
+import type { Task, ScheduledTask, TaskStatus } from '../types';
 
 export interface TasksAdapter {
   enqueue<T>(task: Task<T>): Promise<string>;
@@ -15,7 +15,6 @@ export function setTasksAdapter(adapter: TasksAdapter): void {
 
 export function createTasksAPI(adapter?: TasksAdapter) {
   const a = () => adapter ?? _adapter;
-  if (!a()) throw new Error("Tasks adapter not configured.");
 
   return {
     async enqueue<T>(task: Task<T>): Promise<string> {

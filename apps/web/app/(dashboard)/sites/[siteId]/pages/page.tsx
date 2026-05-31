@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
-import { formatRelativeTime } from "@/lib/utils/format";
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { formatRelativeTime } from '@/lib/utils/format';
 
 interface PageItem {
   id: string;
@@ -29,13 +29,16 @@ export default function SitePagesPage() {
   }, [params.siteId]);
 
   async function createPage() {
-    const title = prompt("Page title:");
+    const title = prompt('Page title:');
     if (!title) return;
 
     const res = await fetch(`/api/sites/${params.siteId}/pages`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, slug: title.toLowerCase().replace(/\s+/g, "-") }),
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title,
+        slug: title.toLowerCase().replace(/\s+/g, '-'),
+      }),
     });
 
     if (res.ok) {
@@ -45,9 +48,9 @@ export default function SitePagesPage() {
   }
 
   async function deletePage(pageId: string) {
-    if (!confirm("Delete this page?")) return;
+    if (!confirm('Delete this page?')) return;
     await fetch(`/api/sites/${params.siteId}/pages/${pageId}`, {
-      method: "DELETE",
+      method: 'DELETE',
     });
     setPages((prev) => prev.filter((p) => p.id !== pageId));
   }
@@ -92,7 +95,7 @@ export default function SitePagesPage() {
             <div className="flex items-center gap-3">
               <div>
                 <Link
-                  href={`/builder/${params.siteId}/${page.id}`}
+                  href={`/builder/${params.siteId}/${page.id}` as any}
                   className="font-medium hover:underline"
                 >
                   {page.title}
@@ -110,7 +113,7 @@ export default function SitePagesPage() {
             </div>
             <div className="flex items-center gap-2">
               <Link
-                href={`/builder/${params.siteId}/${page.id}`}
+                href={`/builder/${params.siteId}/${page.id}` as any}
                 className="rounded px-3 py-1 text-xs font-medium hover:bg-accent"
               >
                 Edit

@@ -1,7 +1,7 @@
-import type { Module, ModuleManifest, ActiveModule } from "../types";
-import { EventBus } from "./event-bus";
-import { PermissionManager } from "./permission-manager";
-import type { SukitKernel } from "../api";
+import type { Module, ModuleManifest, ActiveModule } from '../types';
+import { EventBus } from './event-bus';
+import { PermissionManager } from './permission-manager';
+import type { SukitKernel } from '../index';
 
 export class ModuleLoader {
   private modules = new Map<string, ActiveModule>();
@@ -11,9 +11,13 @@ export class ModuleLoader {
     this.kernel = kernel;
   }
 
-  async load(moduleId: string, manifest: ModuleManifest, factory: () => Promise<{ default: Module }>): Promise<void> {
+  async load(
+    moduleId: string,
+    manifest: ModuleManifest,
+    factory: () => Promise<{ default: Module }>
+  ): Promise<void> {
     const existing = this.modules.get(moduleId);
-    if (existing?.status === "active") return;
+    if (existing?.status === 'active') return;
 
     try {
       const modExports = await factory();
@@ -21,9 +25,16 @@ export class ModuleLoader {
 
       const perms = manifest.sukit.permissions ?? [];
       for (const perm of perms) {
-        const granted = await this.kernel.permissions.request(moduleId, perm, `Module ${manifest.name} requires ${perm}`);
+        const granted = await this.kernel
+          .forModule(moduleId)
+          .permissions.request(
+            perm,
+            `Module ${manifest.name} requires ${perm}`
+          );
         if (!granted) {
-          throw new Error(`Permission "${perm}" denied for module "${moduleId}"`);
+          throw new Error(
+            `Permission "${perm}" denied for module "${moduleId}"`
+          );
         }
       }
 
@@ -32,18 +43,21 @@ export class ModuleLoader {
       this.modules.set(moduleId, {
         definition: mod,
         manifest,
-        status: "active",
+        status: 'active',
       });
 
-      await this.kernel.events.emit("module:activated", { moduleId });
+      await this.kernel.events.emit('module:activated', { moduleId });
     } catch (error) {
       this.modules.set(moduleId, {
         definition: null as any,
         manifest,
-        status: "error",
-        error: error instanceof Error ? error.message : "Unknown error",
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
-      await this.kernel.events.emit("module:error", { moduleId, error: error instanceof Error ? error.message : "Unknown" });
+      await this.kernel.events.emit('module:error', {
+        moduleId,
+        error: error instanceof Error ? error.message : 'Unknown',
+      });
     }
   }
 
@@ -53,7 +67,7 @@ export class ModuleLoader {
 
     try {
       await mod.definition.deactivate(this.kernel.forModule(moduleId));
-      await this.kernel.events.emit("module:deactivated", { moduleId });
+      await this.kernel.events.emit('module:deactivated', { moduleId });
     } catch (error) {
       console.error(`[ModuleLoader] Error deactivating "${moduleId}":`, error);
     }
@@ -62,7 +76,7 @@ export class ModuleLoader {
   }
 
   isLoaded(moduleId: string): boolean {
-    return this.modules.get(moduleId)?.status === "active";
+    return this.modules.get(moduleId)?.status === 'active';
   }
 
   getManifest(moduleId: string): ModuleManifest | undefined {
@@ -71,7 +85,7 @@ export class ModuleLoader {
 
   list(): Module[] {
     return Array.from(this.modules.values())
-      .filter((m) => m.status === "active")
+      .filter((m) => m.status === 'active')
       .map((m) => m.definition);
   }
 
@@ -79,7 +93,11 @@ export class ModuleLoader {
     return Array.from(this.modules.values());
   }
 
-  async reload(moduleId: string, manifest: ModuleManifest, factory: () => Promise<{ default: Module }>): Promise<void> {
+  async reload(
+    moduleId: string,
+    manifest: ModuleManifest,
+    factory: () => Promise<{ default: Module }>
+  ): Promise<void> {
     await this.unload(moduleId);
     await this.load(moduleId, manifest, factory);
   }

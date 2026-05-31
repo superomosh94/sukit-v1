@@ -1,7 +1,7 @@
 import fs from 'fs-extra';
 import path from 'path';
-import { prisma } from "@/lib/db/prisma";
-import { renderBlock } from "./block-renderer";
+import { prisma } from '@/lib/db/prisma';
+import { renderBlock } from './block-renderer';
 
 interface BuildFile {
   path: string;
@@ -26,7 +26,7 @@ interface BuildOptions {
 export async function buildSite(
   siteId: string,
   outputDir: string,
-  options: BuildOptions = {},
+  options: BuildOptions = {}
 ): Promise<BuildResult> {
   const site = await prisma.site.findUnique({
     where: { id: siteId },
@@ -34,12 +34,12 @@ export async function buildSite(
       pages: {
         include: {
           sections: {
-            orderBy: { sortOrder: "asc" },
+            orderBy: { sortOrder: 'asc' },
             include: {
               columns: {
-                orderBy: { sortOrder: "asc" },
+                orderBy: { sortOrder: 'asc' },
                 include: {
-                  blocks: { orderBy: { sortOrder: "asc" } },
+                  blocks: { orderBy: { sortOrder: 'asc' } },
                 },
               },
             },
@@ -47,12 +47,12 @@ export async function buildSite(
         },
       },
       posts: {
-        where: { status: "PUBLISHED" },
+        where: { status: 'PUBLISHED' },
         include: {
           author: { select: { name: true } },
           taxonomies: { include: { taxonomy: true } },
         },
-        orderBy: { publishedAt: "desc" },
+        orderBy: { publishedAt: 'desc' },
       },
       taxonomies: {
         include: {
@@ -80,7 +80,8 @@ export async function buildSite(
   for (const page of site.pages) {
     const headHtml = (page.pageSettings as any)?.headHtml || '';
     const title = (page.metadata as any)?.title || seo.defaultTitle || '';
-    const description = (page.metadata as any)?.description || seo.defaultDescription || '';
+    const description =
+      (page.metadata as any)?.description || seo.defaultDescription || '';
 
     const sectionsHtml = page.sections
       .map((section) => {
@@ -100,9 +101,16 @@ export async function buildSite(
 
             const blocksHtml = col.blocks
               .map((block) => {
-                const blockStyles = (block.styles as Record<string, unknown>) || {};
-                const blockProps = (block.props as Record<string, unknown>) || {};
-                return renderBlock({ blockType: block.blockType, props: blockProps, styles: blockStyles, id: block.id });
+                const blockStyles =
+                  (block.styles as Record<string, unknown>) || {};
+                const blockProps =
+                  (block.props as Record<string, unknown>) || {};
+                return renderBlock({
+                  blockType: block.blockType,
+                  props: blockProps,
+                  styles: blockStyles,
+                  id: block.id,
+                });
               })
               .join('\n');
 
@@ -151,19 +159,35 @@ ${sectionsHtml}
 
   if (site.posts.length > 0) {
     const blogHtml = generateBlogArchive(site.posts, site.name, seo);
-    files.push({ path: 'blog/index.html', content: options.minify ? minifyHtml(blogHtml) : blogHtml });
+    files.push({
+      path: 'blog/index.html',
+      content: options.minify ? minifyHtml(blogHtml) : blogHtml,
+    });
 
     for (const post of site.posts) {
       const postHtml = generatePostPage(post, site.widgetAreas);
-      files.push({ path: `blog/${post.slug}/index.html`, content: options.minify ? minifyHtml(postHtml) : postHtml });
+      files.push({
+        path: `blog/${post.slug}/index.html`,
+        content: options.minify ? minifyHtml(postHtml) : postHtml,
+      });
       totalSize += Buffer.byteLength(postHtml, 'utf-8');
     }
 
     for (const taxonomy of site.taxonomies) {
-      const postsInTax = site.posts.filter(p => p.taxonomies.some(pt => pt.taxonomy.id === taxonomy.id));
+      const postsInTax = site.posts.filter((p) =>
+        p.taxonomies.some((pt) => pt.taxonomy.id === taxonomy.id)
+      );
       if (postsInTax.length === 0) continue;
-      const archiveHtml = generateTaxonomyArchive(taxonomy, postsInTax, site.name, seo);
-      files.push({ path: `${taxonomy.type}/${taxonomy.slug}/index.html`, content: options.minify ? minifyHtml(archiveHtml) : archiveHtml });
+      const archiveHtml = generateTaxonomyArchive(
+        taxonomy,
+        postsInTax,
+        site.name,
+        seo
+      );
+      files.push({
+        path: `${taxonomy.type}/${taxonomy.slug}/index.html`,
+        content: options.minify ? minifyHtml(archiveHtml) : archiveHtml,
+      });
     }
   }
 
@@ -193,13 +217,17 @@ ${sectionsHtml}
 }
 
 function generateBlogArchive(posts: any[], siteName: string, seo: any): string {
-  const items = posts.map(p => `
+  const items = posts
+    .map(
+      (p) => `
     <article style="margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid #e2e8f0">
       <h2 style="font-size:1.5rem;margin-bottom:0.25rem"><a href="/blog/${escHtml(p.slug)}/" style="color:#0f172a;text-decoration:none">${escHtml(p.title)}</a></h2>
       <div style="font-size:0.875rem;color:#64748b;margin-bottom:0.5rem">${p.publishedAt ? new Date(p.publishedAt).toLocaleDateString() : ''} by ${escHtml(p.author?.name || '')}</div>
       ${p.excerpt ? `<p style="color:#475569;line-height:1.6">${escHtml(p.excerpt)}</p>` : ''}
       <div style="margin-top:0.5rem">${p.taxonomies.map((pt: any) => `<a href="/${escHtml(pt.taxonomy.type)}/${escHtml(pt.taxonomy.slug)}/" style="display:inline-block;padding:0.125rem 0.5rem;background:#e2e8f0;border-radius:4px;font-size:0.75rem;margin-right:0.25rem;color:#475569;text-decoration:none">${escHtml(pt.taxonomy.name)}</a>`).join('')}</div>
-    </article>`).join('\n');
+    </article>`
+    )
+    .join('\n');
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -214,16 +242,24 @@ function generateBlogArchive(posts: any[], siteName: string, seo: any): string {
 
 function generatePostPage(post: any, widgetAreas: any[]): string {
   const comments = post.comments || [];
-  const commentsHtml = comments.length > 0 ? `
+  const commentsHtml =
+    comments.length > 0
+      ? `
     <section style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid #e2e8f0">
       <h3 style="font-size:1.25rem;margin-bottom:1rem">Comments (${comments.length})</h3>
-      ${comments.filter((c: any) => c.status === 'APPROVED').map((c: any) => `
+      ${comments
+        .filter((c: any) => c.status === 'APPROVED')
+        .map(
+          (c: any) => `
         <div style="padding:0.75rem;margin-bottom:0.75rem;background:#f8fafc;border-radius:6px">
           <div style="font-weight:600;font-size:0.875rem">${escHtml(c.authorName)}</div>
           <div style="font-size:0.75rem;color:#64748b;margin-bottom:0.25rem">${new Date(c.createdAt).toLocaleDateString()}</div>
           <p style="font-size:0.875rem;line-height:1.5">${escHtml(c.content)}</p>
-        </div>`).join('\n')}
-    </section>` : '';
+        </div>`
+        )
+        .join('\n')}
+    </section>`
+      : '';
 
   const widgetHtml = generateWidgetAreas(widgetAreas);
 
@@ -244,12 +280,21 @@ function generatePostPage(post: any, widgetAreas: any[]): string {
 </body></html>`;
 }
 
-function generateTaxonomyArchive(taxonomy: any, posts: any[], siteName: string, seo: any): string {
-  const items = posts.map(p => `
+function generateTaxonomyArchive(
+  taxonomy: any,
+  posts: any[],
+  siteName: string,
+  seo: any
+): string {
+  const items = posts
+    .map(
+      (p) => `
     <article style="margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid #e2e8f0">
       <h2 style="font-size:1.25rem"><a href="/blog/${escHtml(p.slug)}/" style="color:#0f172a;text-decoration:none">${escHtml(p.title)}</a></h2>
       <div style="font-size:0.875rem;color:#64748b">${p.publishedAt ? new Date(p.publishedAt).toLocaleDateString() : ''}</div>
-    </article>`).join('\n');
+    </article>`
+    )
+    .join('\n');
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -264,20 +309,31 @@ function generateTaxonomyArchive(taxonomy: any, posts: any[], siteName: string, 
 }
 
 function generateWidgetAreas(areas: any[]): string {
-  return areas.map(area => {
-    const widgets = (area.widgets as any[]) || [];
-    if (widgets.length === 0) return '';
-    return `<aside style="margin-top:2rem;padding:1rem;background:#f8fafc;border-radius:8px" data-widget-area="${escAttr(area.slug)}">
+  return areas
+    .map((area) => {
+      const widgets = (area.widgets as any[]) || [];
+      if (widgets.length === 0) return '';
+      return `<aside style="margin-top:2rem;padding:1rem;background:#f8fafc;border-radius:8px" data-widget-area="${escAttr(area.slug)}">
       <h3 style="font-size:1rem;margin-bottom:0.75rem">${escHtml(area.name)}</h3>
       ${widgets.map((w: any) => `<div data-widget="${escAttr(w.type || '')}" style="margin-bottom:0.75rem">${escHtml(w.content || '')}</div>`).join('\n')}
     </aside>`;
-  }).join('\n');
+    })
+    .join('\n');
 }
 
-function generateSitemap(pages: Array<{ isHome: boolean; slug: string; updatedAt: Date }>, posts: Array<{ slug: string; publishedAt: Date | null }>, domain: string): string {
-  const urls: string[] = pages.map(p => `  <url><loc>${p.isHome ? domain : `${domain}/${p.slug}`}</loc><lastmod>${p.updatedAt.toISOString().split('T')[0]}</lastmod></url>`);
+function generateSitemap(
+  pages: Array<{ isHome: boolean; slug: string; updatedAt: Date }>,
+  posts: Array<{ slug: string; publishedAt: Date | null }>,
+  domain: string
+): string {
+  const urls: string[] = pages.map(
+    (p) =>
+      `  <url><loc>${p.isHome ? domain : `${domain}/${p.slug}`}</loc><lastmod>${p.updatedAt.toISOString().split('T')[0]}</lastmod></url>`
+  );
   for (const p of posts) {
-    urls.push(`  <url><loc>${domain}/blog/${p.slug}</loc><lastmod>${(p.publishedAt || new Date()).toISOString().split('T')[0]}</lastmod></url>`);
+    urls.push(
+      `  <url><loc>${domain}/blog/${p.slug}</loc><lastmod>${(p.publishedAt || new Date()).toISOString().split('T')[0]}</lastmod></url>`
+    );
   }
   if (posts.length > 0) urls.push(`  <url><loc>${domain}/blog</loc></url>`);
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -303,5 +359,11 @@ function minifyHtml(html: string): string {
 }
 
 function escHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
+
+const escAttr = escHtml;

@@ -1,4 +1,4 @@
-import type { SettingsPanel } from "../types";
+import type { SettingsPanel } from '../types';
 
 export interface SettingsAdapter {
   get<T>(key: string, defaultValue?: T): Promise<T>;
@@ -17,14 +17,20 @@ export function createSettingsAPI(prefix: string, adapter?: SettingsAdapter) {
 
   const prefixed = (key: string) => `${prefix}:${key}`;
 
+  const ensure = () => {
+    const inst = a();
+    if (!inst) throw new Error('Settings adapter not configured');
+    return inst;
+  };
+
   return {
     async get<T>(key: string, defaultValue?: T): Promise<T> {
-      const val = await a()!.get<T>(prefixed(key));
-      return val ?? defaultValue as T;
+      const val = await ensure().get<T>(prefixed(key));
+      return val ?? (defaultValue as T);
     },
 
     async set<T>(key: string, value: T): Promise<void> {
-      return a()!.set(prefixed(key), value);
+      return ensure().set(prefixed(key), value);
     },
 
     registerPanel(panel: SettingsPanel): void {
