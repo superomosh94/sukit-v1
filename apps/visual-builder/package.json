@@ -1,5 +1,5 @@
 {
-  "name": "@sukit/visual-builder",
+  "name": "@sukit/visual-builder-app",
   "version": "2.0.0",
   "description": "SuKit Visual Builder - React migration",
   "main": "main.cjs",
