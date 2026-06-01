@@ -7,14 +7,10 @@ const exportEngineModule: Module = {
   async activate(kernel: KernelForModule) {
     kernel.log.info('[ExportEngine] Activating...');
 
-    kernel.ui.registerSlot('deploy:export', {
-      component: 'ExportDialog',
-      position: 10,
-    });
+    kernel.ui.registerSlot('deploy:export', () => null, { position: 10 });
 
-    kernel.api.post('/api/export/:siteId', async (req) => {
-      const { siteId } = req.params;
-      const body = await req.json().catch(() => ({}));
+    kernel.api.post('/api/export/:siteId', async (_req, params) => {
+      const siteId = params.siteId;
       try {
         const { exportFullStack } = await import('./export-adapter.js');
         const tree = await exportFullStack(siteId);
@@ -52,7 +48,7 @@ const exportEngineModule: Module = {
       defaultStyles: {},
     });
 
-    kernel.events.on('site:export', async ({ siteId }) => {
+    kernel.events.on('site:export', async ({ siteId }: any) => {
       const { exportQueue } = await import('./ExportQueue.js');
       await exportQueue.queueExport(siteId);
     });
@@ -61,10 +57,7 @@ const exportEngineModule: Module = {
   },
 
   async deactivate(kernel: KernelForModule) {
-    kernel.ui.unregisterAll('@sukit/export-engine');
-    kernel.api.unregisterAll('@sukit/export-engine');
     kernel.blocks.unregister('exportButton');
-    kernel.events.off('site:export');
     kernel.log.info('[ExportEngine] Deactivated');
   },
 };

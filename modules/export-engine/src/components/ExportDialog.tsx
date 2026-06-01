@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Download,
-  GitHub,
+  Github,
   Settings,
   Code2,
   Database,
@@ -86,7 +86,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
     }
   };
 
-  const triggerDownload = async (eid: string) => {
+  const triggerDownload = async (eid?: string) => {
     const a = document.createElement('a');
     a.href = `/api/export/${siteId}/download`;
     a.download = `${siteName.toLowerCase().replace(/\s+/g, '-')}-pern-app.zip`;
@@ -209,7 +209,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                     }
                     className="rounded"
                   />{' '}
-                  GitHub Actions CI/CD
+                  Github Actions CI/CD
                 </label>
               </div>
             </div>
@@ -292,8 +292,8 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                 }
                 className={`p-4 border rounded-lg text-center transition-colors ${options.target === 'github' ? 'border-gray-900 bg-gray-50' : 'hover:bg-gray-50'}`}
               >
-                <GitHub className="size-8 mx-auto mb-2 text-gray-600" />
-                <span className="font-medium block">Push to GitHub</span>
+                <Github className="size-8 mx-auto mb-2 text-gray-600" />
+                <span className="font-medium block">Push to Github</span>
                 <span className="text-xs text-gray-400">
                   Create a repository
                 </span>
@@ -349,7 +349,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
             {error && <p className="text-red-500 text-sm">{error}</p>}
             <div className="flex justify-center gap-3 pt-4">
               <button
-                onClick={triggerDownload}
+                onClick={() => triggerDownload()}
                 className="px-6 py-2 bg-gray-900 text-white rounded-lg text-sm hover:bg-gray-800 flex items-center gap-2"
               >
                 <Download className="size-4" /> Download Again

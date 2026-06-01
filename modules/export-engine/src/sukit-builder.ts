@@ -8,7 +8,7 @@ interface BuildFile {
   content: string;
 }
 
-interface BuildResult {
+export interface BuildResult {
   files: BuildFile[];
   sitemap: string;
   robots: string;
