@@ -2,7 +2,11 @@
   "version": "1.0.0",
   "packageManager": "pnpm@8.15.0",
   "scripts": {
-    "sukit": "pnpm dev:watch",
+    "sukit": "node packages/cli/bin/sukit.js",
+    "sukit:dev": "node packages/cli/bin/sukit.js dev",
+    "sukit:build": "node packages/cli/bin/sukit.js build",
+    "sukit:export": "node packages/cli/bin/sukit.js export",
+    "sukit:new": "node packages/cli/bin/sukit.js new",
     "dev": "pnpm dev:watch",
     "dev:web": "pnpm --filter sukit-web dev",
     "dev:server": "pnpm --filter @sukit/server dev",
