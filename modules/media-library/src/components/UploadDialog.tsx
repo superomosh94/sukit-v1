@@ -1,7 +1,11 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { formatFileSize } from '../utils/fileUtils';
+import {
+  formatFileSize,
+  getUploadSpeed,
+  getTimeRemaining,
+} from '../utils/fileUtils';
 import {
   Upload,
   X,
@@ -17,6 +21,8 @@ import {
   Image,
   Video,
   FileText,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { useMediaStore } from '../stores/mediaStore';
 import { cn } from '../utils/cn';
@@ -60,6 +66,8 @@ export function UploadDialog({ onClose }: UploadDialogProps) {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const clipboardInputRef = useRef<HTMLTextAreaElement>(null);
+  const startTimes = useRef<Map<string, number>>(new Map());
+  const [queueCollapsed, setQueueCollapsed] = useState(false);
 
   const pendingUploads = uploadQueue.filter(
     (u) => u.status === 'pending' || u.status === 'uploading'
@@ -144,6 +152,17 @@ export function UploadDialog({ onClose }: UploadDialogProps) {
     [uploadFiles, settings.destinationFolder]
   );
 
+  useEffect(() => {
+    for (const entry of uploadQueue) {
+      if (
+        entry.status === 'uploading' &&
+        !startTimes.current.has(entry.fileId)
+      ) {
+        startTimes.current.set(entry.fileId, Date.now());
+      }
+    }
+  }, [uploadQueue]);
+
   const getStatusIcon = (status: UploadProgress['status']) => {
     switch (status) {
       case 'completed':
@@ -160,16 +179,28 @@ export function UploadDialog({ onClose }: UploadDialogProps) {
     }
   };
 
-  const formatSpeed = (bytesPerSecond: number) => {
-    if (bytesPerSecond < 1024) return `${bytesPerSecond.toFixed(0)} B/s`;
-    if (bytesPerSecond < 1024 * 1024)
-      return `${(bytesPerSecond / 1024).toFixed(1)} KB/s`;
-    return `${(bytesPerSecond / (1024 * 1024)).toFixed(1)} MB/s`;
+  const calcSpeed = (entry: UploadProgress) => {
+    const start = startTimes.current.get(entry.fileId);
+    if (!start || entry.loaded === 0) return null;
+    const elapsed = (Date.now() - start) / 1000;
+    return getUploadSpeed(entry.loaded, elapsed);
   };
 
-  const formatTimeRemaining = (seconds: number) => {
-    if (seconds < 60) return `${Math.ceil(seconds)}s`;
-    return `${Math.floor(seconds / 60)}m ${Math.ceil(seconds % 60)}s`;
+  const calcTimeRemaining = (entry: UploadProgress) => {
+    const speed = calcSpeed(entry);
+    if (!speed) return null;
+    const speedVal = parseFloat(speed.split(' ')[0]);
+    const remaining = entry.total - entry.loaded;
+    return getTimeRemaining(remaining, speedVal);
+  };
+
+  const handlePauseResume = (entry: UploadProgress) => {
+    if (entry.status === 'uploading') {
+      useMediaStore.getState().pauseUpload(entry.fileId);
+    } else if (entry.status === 'pending') {
+      useMediaStore.getState().resumeUpload(entry.fileId);
+      startTimes.current.set(entry.fileId, Date.now());
+    }
   };
 
   return (
@@ -439,131 +470,205 @@ export function UploadDialog({ onClose }: UploadDialogProps) {
           {uploadQueue.length > 0 && (
             <div className="mt-6 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">
+                <button
+                  onClick={() => setQueueCollapsed(!queueCollapsed)}
+                  className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                >
+                  {queueCollapsed ? (
+                    <ChevronUp className="size-3.5" />
+                  ) : (
+                    <ChevronDown className="size-3.5" />
+                  )}
                   Upload queue ({uploadQueue.length})
-                </span>
-                {(completedCount > 0 || failedCount > 0) && (
-                  <button
-                    onClick={() =>
-                      useMediaStore.getState().clearCompletedUploads()
-                    }
-                    className="text-[10px] text-muted-foreground hover:text-foreground"
-                  >
-                    Clear completed
-                  </button>
-                )}
+                </button>
+                <div className="flex items-center gap-2">
+                  {completedCount > 0 && (
+                    <span className="text-[10px] text-green-600">
+                      {completedCount} done
+                    </span>
+                  )}
+                  {failedCount > 0 && (
+                    <span className="text-[10px] text-destructive">
+                      {failedCount} failed
+                    </span>
+                  )}
+                  {(completedCount > 0 || failedCount > 0) && (
+                    <button
+                      onClick={() =>
+                        useMediaStore.getState().clearCompletedUploads()
+                      }
+                      className="text-[10px] text-muted-foreground hover:text-foreground"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
               </div>
 
-              <div className="max-h-48 space-y-1 overflow-y-auto">
-                {uploadQueue.map((entry) => (
-                  <div
-                    key={entry.fileId}
-                    className={cn(
-                      'flex items-center gap-2 rounded-md border px-3 py-2 text-xs',
-                      entry.status === 'failed' &&
-                        'border-destructive/30 bg-destructive/5',
-                      entry.status === 'completed' &&
-                        'border-green-500/20 bg-green-500/5'
+              {queueCollapsed ? (
+                <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-xs text-muted-foreground">
+                  <div className="flex-1">
+                    <span className="font-medium">
+                      {pendingUploads.length} uploading
+                    </span>
+                    {completedCount > 0 && (
+                      <span className="ml-2">· {completedCount} complete</span>
                     )}
-                  >
-                    {getStatusIcon(entry.status)}
-
-                    <div className="flex-1 min-w-0">
-                      <p className="truncate font-medium">{entry.filename}</p>
-                      <div className="mt-1 flex items-center gap-2">
-                        <div className="h-1.5 flex-1 rounded-full bg-muted">
-                          <div
-                            className={cn(
-                              'h-1.5 rounded-full transition-all',
-                              entry.status === 'failed'
-                                ? 'bg-destructive'
-                                : entry.status === 'completed'
-                                  ? 'bg-green-500'
-                                  : 'bg-primary'
-                            )}
-                            style={{ width: `${entry.percentage}%` }}
-                          />
-                        </div>
-                        <span className="tabular-nums text-muted-foreground">
-                          {entry.percentage}%
-                        </span>
-                      </div>
-                      <div className="mt-0.5 flex items-center gap-2 text-[10px] text-muted-foreground">
-                        <span>
-                          {formatFileSize(entry.loaded)} /{' '}
-                          {formatFileSize(entry.total)}
-                        </span>
-                        {entry.status === 'uploading' && entry.loaded > 0 && (
-                          <>
-                            <span>·</span>
-                            <span>
-                              {formatSpeed(
-                                entry.loaded /
-                                  Math.max(1, Date.now() - Date.now() + 1000)
-                              )}
-                            </span>
-                            <span>·</span>
-                            <span>
-                              {formatTimeRemaining(
-                                ((entry.total - entry.loaded) /
-                                  Math.max(1, entry.loaded)) *
-                                  1
-                              )}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1 shrink-0">
-                      {entry.status === 'pending' && (
-                        <button
-                          onClick={() => cancelUpload(entry.fileId)}
-                          className="rounded p-1 text-muted-foreground hover:text-destructive"
-                          title="Cancel"
-                        >
-                          <X className="size-3" />
-                        </button>
-                      )}
-                      {entry.status === 'uploading' && (
-                        <button
-                          onClick={() => cancelUpload(entry.fileId)}
-                          className="rounded p-1 text-muted-foreground hover:text-destructive"
-                          title="Cancel"
-                        >
-                          <X className="size-3" />
-                        </button>
-                      )}
-                      {entry.status === 'failed' && (
-                        <button
-                          onClick={() =>
-                            useMediaStore.getState().retryUpload(entry.fileId)
-                          }
-                          className="rounded p-1 text-muted-foreground hover:text-foreground"
-                          title="Retry"
-                        >
-                          <Upload className="size-3" />
-                        </button>
-                      )}
-                      {entry.status === 'completed' && (
-                        <button
-                          onClick={() => cancelUpload(entry.fileId)}
-                          className="rounded p-1 text-muted-foreground hover:text-foreground"
-                          title="Remove"
-                        >
-                          <X className="size-3" />
-                        </button>
-                      )}
-                    </div>
-
-                    {entry.error && (
-                      <div className="text-[10px] text-destructive">
-                        {entry.error}
-                      </div>
+                    {failedCount > 0 && (
+                      <span className="ml-2 text-destructive">
+                        · {failedCount} failed
+                      </span>
                     )}
                   </div>
-                ))}
-              </div>
+                  {pendingUploads.length > 0 && (
+                    <div className="h-1.5 w-20 rounded-full bg-muted">
+                      <div
+                        className="h-1.5 rounded-full bg-primary transition-all"
+                        style={{
+                          width: `${uploadQueue.reduce((a, e) => a + e.percentage, 0) / uploadQueue.length}%`,
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="max-h-48 space-y-1 overflow-y-auto">
+                  {uploadQueue.map((entry) => {
+                    const speed = calcSpeed(entry);
+                    const remaining = calcTimeRemaining(entry);
+                    return (
+                      <div
+                        key={entry.fileId}
+                        className={cn(
+                          'flex items-center gap-2 rounded-md border px-3 py-2 text-xs',
+                          entry.status === 'failed' &&
+                            'border-destructive/30 bg-destructive/5',
+                          entry.status === 'completed' &&
+                            'border-green-500/20 bg-green-500/5'
+                        )}
+                      >
+                        {getStatusIcon(entry.status)}
+
+                        <div className="flex-1 min-w-0">
+                          <p className="truncate font-medium">
+                            {entry.filename}
+                          </p>
+                          <div className="mt-1 flex items-center gap-2">
+                            <div className="h-1.5 flex-1 rounded-full bg-muted">
+                              <div
+                                className={cn(
+                                  'h-1.5 rounded-full transition-all',
+                                  entry.status === 'failed'
+                                    ? 'bg-destructive'
+                                    : entry.status === 'completed'
+                                      ? 'bg-green-500'
+                                      : 'bg-primary'
+                                )}
+                                style={{ width: `${entry.percentage}%` }}
+                              />
+                            </div>
+                            <span className="tabular-nums text-muted-foreground">
+                              {entry.percentage}%
+                            </span>
+                          </div>
+                          <div className="mt-0.5 flex items-center gap-2 text-[10px] text-muted-foreground">
+                            <span>
+                              {formatFileSize(entry.loaded)} /{' '}
+                              {formatFileSize(entry.total)}
+                            </span>
+                            {(entry.status === 'uploading' ||
+                              entry.status === 'pending') &&
+                              entry.loaded > 0 &&
+                              speed && (
+                                <>
+                                  <span>·</span>
+                                  <span>{speed}</span>
+                                </>
+                              )}
+                            {(entry.status === 'uploading' ||
+                              entry.status === 'pending') &&
+                              entry.loaded > 0 &&
+                              remaining && (
+                                <>
+                                  <span>·</span>
+                                  <span>{remaining} remaining</span>
+                                </>
+                              )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          {(entry.status === 'uploading' ||
+                            entry.status === 'pending') && (
+                            <button
+                              onClick={() => handlePauseResume(entry)}
+                              className="rounded p-1 text-muted-foreground hover:text-foreground"
+                              title={
+                                entry.status === 'uploading'
+                                  ? 'Pause'
+                                  : 'Resume'
+                              }
+                            >
+                              {entry.status === 'uploading' ? (
+                                <Pause className="size-3" />
+                              ) : (
+                                <Play className="size-3" />
+                              )}
+                            </button>
+                          )}
+                          {(entry.status === 'uploading' ||
+                            entry.status === 'pending') && (
+                            <button
+                              onClick={() => cancelUpload(entry.fileId)}
+                              className="rounded p-1 text-muted-foreground hover:text-destructive"
+                              title="Cancel"
+                            >
+                              <X className="size-3" />
+                            </button>
+                          )}
+                          {entry.status === 'failed' && (
+                            <>
+                              <button
+                                onClick={() =>
+                                  useMediaStore
+                                    .getState()
+                                    .retryUpload(entry.fileId)
+                                }
+                                className="rounded p-1 text-muted-foreground hover:text-foreground"
+                                title="Retry"
+                              >
+                                <Upload className="size-3" />
+                              </button>
+                              <button
+                                onClick={() => cancelUpload(entry.fileId)}
+                                className="rounded p-1 text-muted-foreground hover:text-destructive"
+                                title="Remove"
+                              >
+                                <X className="size-3" />
+                              </button>
+                            </>
+                          )}
+                          {entry.status === 'completed' && (
+                            <button
+                              onClick={() => cancelUpload(entry.fileId)}
+                              className="rounded p-1 text-muted-foreground hover:text-foreground"
+                              title="Remove"
+                            >
+                              <X className="size-3" />
+                            </button>
+                          )}
+                        </div>
+
+                        {entry.error && (
+                          <div className="text-[10px] text-destructive">
+                            {entry.error}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>

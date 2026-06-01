@@ -38,6 +38,7 @@ export interface MediaAsset {
   metadata?: Record<string, unknown>;
   thumbnailUrl?: string;
   url?: string;
+  focusPoint?: FocusPoint;
 }
 
 export interface MediaVariant {
@@ -83,6 +84,11 @@ export interface CropArea {
   y: number;
   width: number;
   height: number;
+}
+
+export interface FocusPoint {
+  x: number; // percentage 0-100
+  y: number; // percentage 0-100
 }
 
 export interface ImageFilter {
@@ -243,12 +249,30 @@ export interface MediaStore {
   applyFilter: (id: string, filter: ImageFilter) => Promise<MediaAsset | null>;
   resetEdits: (assetId: string) => Promise<MediaAsset | null>;
 
+  setFocusPoint: (id: string, point: FocusPoint) => void;
+  autoStraighten: (id: string) => Promise<MediaAsset | null>;
+  smartCrop: (
+    id: string,
+    aspectRatio: string | number,
+    focusPoint?: FocusPoint
+  ) => Promise<MediaAsset | null>;
+
   // Optimization
   optimizeAsset: (
     id: string,
     options: OptimizeOptions
   ) => Promise<MediaVariant | null>;
   generateVariants: (id: string) => Promise<MediaVariant[]>;
+  bulkOptimize: (
+    ids: string[],
+    format?: string,
+    quality?: number
+  ) => Promise<void>;
+  batchOptimize: (
+    ids: string[],
+    format?: string,
+    quality?: number
+  ) => Promise<void>;
 
   // URLs
   getUrl: (id: string, variant?: VariantType) => string;
@@ -285,7 +309,13 @@ export interface MediaStore {
     blockId: string,
     property: string
   ) => void;
-  setAsBackground: (asset: MediaAsset, blockId: string) => void;
+  setAsBackground: (asset: MediaAsset, sectionId: string) => void;
+
+  // Drag state
+  draggingAsset: MediaAsset | null;
+  getRecentUploads: () => MediaAsset[];
+  onDragStart: (asset: MediaAsset) => void;
+  onDragEnd: () => void;
 
   // Usage tracking
   getUsage: (assetId: string) => Promise<UsageRecord[]>;

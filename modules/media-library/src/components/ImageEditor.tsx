@@ -13,17 +13,21 @@ import {
   FlipHorizontal,
   FlipVertical,
   RefreshCw,
+  Loader2,
+  Crosshair,
+  Target,
+  Palette,
 } from 'lucide-react';
 import { useMediaStore } from '../stores/mediaStore';
 import { cn } from '../utils/cn';
-import type { CropArea, ImageFilter } from '../types';
+import type { CropArea, ImageFilter, FocusPoint } from '../types';
 
 interface ImageEditorProps {
   assetId: string;
   onClose: () => void;
 }
 
-type EditorTab = 'crop' | 'resize' | 'rotate' | 'filters';
+type EditorTab = 'crop' | 'resize' | 'rotate' | 'filters' | 'presets';
 
 const ASPECT_RATIOS = [
   { label: 'Free', value: 'free' },
@@ -49,6 +53,41 @@ const PRESET_FILTERS = [
     class: 'contrast-[1.4] brightness-[0.85] saturate-[0.8]',
   },
   { name: 'Grayscale', class: 'grayscale' },
+  { name: 'Sepia', class: 'sepia' },
+  {
+    name: 'Noir',
+    class: 'grayscale contrast-[1.5] brightness-[0.85]',
+  },
+  {
+    name: 'Fade',
+    class: 'contrast-[0.85] brightness-[1.1] saturate-[0.9]',
+  },
+];
+
+interface PresetConfig {
+  name: string;
+  brightness: number;
+  contrast: number;
+  saturation: number;
+  blur: number;
+}
+
+const PRESET_CONFIGS: PresetConfig[] = [
+  {
+    name: 'Original',
+    brightness: 100,
+    contrast: 100,
+    saturation: 100,
+    blur: 0,
+  },
+  { name: 'Vintage', brightness: 110, contrast: 85, saturation: 80, blur: 0 },
+  { name: 'Cool', brightness: 95, contrast: 115, saturation: 120, blur: 0 },
+  { name: 'Warm', brightness: 110, contrast: 100, saturation: 130, blur: 0 },
+  { name: 'Dramatic', brightness: 85, contrast: 150, saturation: 60, blur: 0 },
+  { name: 'Grayscale', brightness: 100, contrast: 100, saturation: 0, blur: 0 },
+  { name: 'Sepia', brightness: 110, contrast: 95, saturation: 70, blur: 0 },
+  { name: 'Noir', brightness: 90, contrast: 160, saturation: 0, blur: 0 },
+  { name: 'Fade', brightness: 105, contrast: 85, saturation: 90, blur: 0 },
 ];
 
 const RESIZE_PRESETS = [
@@ -68,6 +107,9 @@ export function ImageEditor({ assetId, onClose }: ImageEditorProps) {
     rotateAsset,
     flipAsset,
     applyFilter,
+    setFocusPoint: storeSetFocusPoint,
+    autoStraighten: storeAutoStraighten,
+    smartCrop: storeSmartCrop,
   } = useMediaStore();
 
   const asset = assets.find((a) => a.id === assetId);
@@ -103,8 +145,19 @@ export function ImageEditor({ assetId, onClose }: ImageEditorProps) {
   const [selectedPreset, setSelectedPreset] = useState<string>('Original');
   const [saving, setSaving] = useState(false);
 
+  // Auto-straighten state
+  const [autoStraightening, setAutoStraightening] = useState(false);
+
+  // Focus point state
+  const [focusPoint, setLocalFocusPoint] = useState<FocusPoint | null>(null);
+
+  // Smart crop preview state
+  const [showSmartCropPreview, setShowSmartCropPreview] = useState(false);
+
   const aspectRatioRef = useRef(aspectRatio);
   aspectRatioRef.current = aspectRatio;
+
+  const previewRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (asset) {
@@ -174,12 +227,12 @@ export function ImageEditor({ assetId, onClose }: ImageEditorProps) {
         setSharpness(0);
         break;
       case 'Cool':
-        setFilters({ brightness: 95, contrast: 100, saturation: 120, blur: 0 });
+        setFilters({ brightness: 95, contrast: 115, saturation: 120, blur: 0 });
         setSharpness(0);
         break;
       case 'Warm':
         setFilters({
-          brightness: 105,
+          brightness: 110,
           contrast: 100,
           saturation: 130,
           blur: 0,
@@ -187,15 +240,87 @@ export function ImageEditor({ assetId, onClose }: ImageEditorProps) {
         setSharpness(0);
         break;
       case 'Dramatic':
-        setFilters({ brightness: 85, contrast: 140, saturation: 80, blur: 0 });
+        setFilters({ brightness: 85, contrast: 150, saturation: 60, blur: 0 });
         setSharpness(0);
         break;
       case 'Grayscale':
         setFilters({ brightness: 100, contrast: 100, saturation: 0, blur: 0 });
         setSharpness(0);
         break;
+      case 'Sepia':
+        setFilters({ brightness: 110, contrast: 95, saturation: 70, blur: 0 });
+        setSharpness(0);
+        break;
+      case 'Noir':
+        setFilters({ brightness: 90, contrast: 160, saturation: 0, blur: 0 });
+        setSharpness(0);
+        break;
+      case 'Fade':
+        setFilters({ brightness: 105, contrast: 85, saturation: 90, blur: 0 });
+        setSharpness(0);
+        break;
     }
   }, []);
+
+  const handleAutoStraighten = useCallback(async () => {
+    setAutoStraightening(true);
+    try {
+      const result = await storeAutoStraighten(assetId);
+      if (result) {
+        setRotation(0);
+      }
+    } finally {
+      setAutoStraightening(false);
+    }
+  }, [assetId, storeAutoStraighten]);
+
+  const handleImageClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      const point: FocusPoint = {
+        x: Math.round(Math.min(100, Math.max(0, x))),
+        y: Math.round(Math.min(100, Math.max(0, y))),
+      };
+      setLocalFocusPoint(point);
+      storeSetFocusPoint(assetId, point);
+    },
+    [assetId, storeSetFocusPoint]
+  );
+
+  const handleRemoveFocusPoint = useCallback(() => {
+    setLocalFocusPoint(null);
+    storeSetFocusPoint(assetId, { x: 0, y: 0 } as FocusPoint);
+  }, [assetId, storeSetFocusPoint]);
+
+  const handleSmartCrop = useCallback(async () => {
+    setSaving(true);
+    const fp = focusPoint ?? undefined;
+    await storeSmartCrop(assetId, aspectRatioRef.current, fp);
+    setSaving(false);
+    onClose();
+  }, [assetId, focusPoint, storeSmartCrop, onClose]);
+
+  const handleResetAll = useCallback(() => {
+    setFilters({
+      brightness: 100,
+      contrast: 100,
+      saturation: 100,
+      blur: 0,
+    });
+    setSharpness(0);
+    setRotation(0);
+    setSelectedPreset('Original');
+    setCropArea({ x: 0, y: 0, width: 100, height: 100 });
+    setAspectRatio('free');
+    setResizeWidth(asset?.width ?? 800);
+    setResizeHeight(asset?.height ?? 600);
+    setMaintainAspect(true);
+    setResizeMode('pixel');
+    setLocalFocusPoint(null);
+    setShowSmartCropPreview(false);
+  }, [asset]);
 
   const handleResizeWidthChange = useCallback(
     (w: number) => {
@@ -247,6 +372,7 @@ export function ImageEditor({ assetId, onClose }: ImageEditorProps) {
     { key: 'resize', label: 'Resize', icon: Maximize2 },
     { key: 'rotate', label: 'Rotate', icon: RotateCw },
     { key: 'filters', label: 'Filters', icon: Sliders },
+    { key: 'presets', label: 'Presets', icon: Palette },
   ];
 
   return (
@@ -262,21 +388,11 @@ export function ImageEditor({ assetId, onClose }: ImageEditorProps) {
           <h2 className="text-base font-semibold">Image Editor</h2>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => {
-                setFilters({
-                  brightness: 100,
-                  contrast: 100,
-                  saturation: 100,
-                  blur: 0,
-                });
-                setSharpness(0);
-                setRotation(0);
-                setSelectedPreset('Original');
-              }}
+              onClick={handleResetAll}
               className="flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs hover:bg-accent"
             >
               <RefreshCw className="size-3" />
-              Reset
+              Reset All
             </button>
             <button onClick={onClose} className="rounded p-1 hover:bg-accent">
               <X className="size-4" />
@@ -286,7 +402,7 @@ export function ImageEditor({ assetId, onClose }: ImageEditorProps) {
 
         <div className="flex flex-1 overflow-hidden">
           {/* Toolbar */}
-          <div className="w-48 shrink-0 border-r p-2 space-y-1">
+          <div className="w-56 shrink-0 border-r p-2 space-y-1 overflow-y-auto">
             {tabs.map((t) => (
               <button
                 key={t.key}
@@ -329,12 +445,49 @@ export function ImageEditor({ assetId, onClose }: ImageEditorProps) {
                       ))}
                     </div>
                   </div>
+
+                  {/* Focus Point */}
+                  <div>
+                    <label className="text-[10px] font-medium text-muted-foreground">
+                      Focus Point
+                    </label>
+                    <div className="mt-1 space-y-1.5">
+                      <p className="text-[10px] text-muted-foreground">
+                        Click on the image to set focus point
+                      </p>
+                      {focusPoint && (
+                        <div className="rounded border bg-muted/30 px-2 py-1.5 text-[10px]">
+                          <div className="flex items-center justify-between">
+                            <span>
+                              X: {focusPoint.x}% Y: {focusPoint.y}%
+                            </span>
+                            <button
+                              onClick={handleRemoveFocusPoint}
+                              className="text-destructive hover:underline"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   <button
                     onClick={handleCrop}
                     disabled={saving}
                     className="flex w-full items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
                   >
                     {saving ? 'Applying...' : 'Apply Crop'}
+                  </button>
+
+                  <button
+                    onClick={handleSmartCrop}
+                    disabled={saving}
+                    className="flex w-full items-center justify-center gap-1.5 rounded-md border border-primary/50 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/5 disabled:opacity-50"
+                  >
+                    <Target className="size-3.5" />
+                    {saving ? 'Applying...' : 'Smart Crop'}
                   </button>
                 </div>
               )}
@@ -516,6 +669,20 @@ export function ImageEditor({ assetId, onClose }: ImageEditorProps) {
                     />
                   </div>
 
+                  {/* Auto-Straighten */}
+                  <button
+                    onClick={handleAutoStraighten}
+                    disabled={autoStraightening}
+                    className="flex w-full items-center justify-center gap-1.5 rounded-md border border-primary/50 px-3 py-2 text-xs font-medium text-primary hover:bg-primary/5 disabled:opacity-50"
+                  >
+                    {autoStraightening ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      <Crosshair className="size-3.5" />
+                    )}
+                    {autoStraightening ? 'Straightening...' : 'Auto-Straighten'}
+                  </button>
+
                   <div className="grid grid-cols-2 gap-1">
                     <button
                       onClick={() => handleFlip('horizontal')}
@@ -667,18 +834,85 @@ export function ImageEditor({ assetId, onClose }: ImageEditorProps) {
                   </button>
                 </div>
               )}
+
+              {activeTab === 'presets' && (
+                <div className="space-y-3">
+                  <p className="text-[10px] font-medium text-muted-foreground">
+                    One-click preset filters
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {PRESET_CONFIGS.map((preset) => {
+                      const presetFilterStyle: React.CSSProperties = {
+                        filter: `brightness(${preset.brightness}%) contrast(${preset.contrast}%) saturate(${preset.saturation}%) blur(${preset.blur}px)`,
+                      };
+                      return (
+                        <button
+                          key={preset.name}
+                          onClick={() => {
+                            handlePresetFilter(preset.name);
+                            setActiveTab('filters');
+                          }}
+                          className={cn(
+                            'rounded-lg border overflow-hidden transition-all',
+                            selectedPreset === preset.name
+                              ? 'border-primary ring-1 ring-primary'
+                              : 'hover:border-muted-foreground'
+                          )}
+                        >
+                          <div className="aspect-[4/3] bg-muted relative overflow-hidden">
+                            <img
+                              src={
+                                asset.url ??
+                                asset.thumbnailUrl ??
+                                '/placeholder.svg'
+                              }
+                              alt={preset.name}
+                              className="h-full w-full object-cover"
+                              style={presetFilterStyle}
+                            />
+                          </div>
+                          <div className="py-1.5 text-[10px] font-medium text-center">
+                            {preset.name}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Preview */}
           <div className="flex flex-1 items-center justify-center bg-muted/30 p-8">
-            <div className="overflow-hidden rounded-lg shadow-lg max-h-full max-w-full">
+            <div
+              ref={previewRef}
+              className="relative overflow-hidden rounded-lg shadow-lg max-h-full max-w-full"
+              onClick={activeTab === 'crop' ? handleImageClick : undefined}
+              style={{ cursor: activeTab === 'crop' ? 'crosshair' : 'default' }}
+            >
               <img
                 src={asset.url ?? asset.thumbnailUrl ?? '/placeholder.svg'}
                 alt={asset.filename}
                 style={filterStyle}
                 className="max-h-[65vh] max-w-full object-contain transition-all duration-200"
               />
+              {focusPoint && activeTab === 'crop' && (
+                <div
+                  className="absolute pointer-events-none"
+                  style={{
+                    left: `calc(${focusPoint.x}% - 12px)`,
+                    top: `calc(${focusPoint.y}% - 12px)`,
+                  }}
+                >
+                  <div className="relative flex items-center justify-center">
+                    <div className="absolute h-6 w-6 rounded-full border-2 border-white/80" />
+                    <div className="absolute h-0.5 w-4 bg-white/80" />
+                    <div className="absolute h-4 w-0.5 bg-white/80" />
+                    <Target className="size-3.5 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]" />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

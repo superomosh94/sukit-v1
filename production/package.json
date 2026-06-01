@@ -1,0 +1,9 @@
+{
+  "name": "@sukit/production",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SUKIT Production Infrastructure - Security, Performance, Testing, Deployment",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": { "@sukit/core": "workspace:*", "@sukit/tools": "workspace:*", "zod": "^3.24.0" }
+}

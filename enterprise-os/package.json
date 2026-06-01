@@ -1,0 +1,9 @@
+{
+  "name": "@sukit/enterprise-os",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SUKIT Enterprise OS - Organization management, billing, compliance, API gateway, white-label, advanced security, scaling",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": { "@sukit/core": "workspace:*", "@sukit/marketplace": "workspace:*", "@sukit/tools": "workspace:*", "@sukit/production": "workspace:*", "zod": "^3.24.0" }
+}

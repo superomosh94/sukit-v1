@@ -20,11 +20,41 @@ import {
   Link,
   ChevronRight,
   Info,
+  Video,
+  FileText,
+  FileSpreadsheet,
+  File,
+  Clock,
+  Gauge,
+  Code,
 } from 'lucide-react';
 import { useMediaStore } from '../stores/mediaStore';
 import { cn } from '../utils/cn';
-import { formatFileSize, formatDimensions } from '../utils/fileUtils';
+import {
+  formatFileSize,
+  formatDimensions,
+  isVideoType,
+  isDocumentType,
+} from '../utils/fileUtils';
+import { VideoPlayer } from './VideoPlayer';
+import { PdfViewer } from './PdfViewer';
+import { ExifPanel } from './ExifPanel';
+import { UrlPanel } from './UrlPanel';
+import { EmbedPanel } from './EmbedPanel';
 import type { VariantType } from '../types';
+
+type DetailsTab = 'info' | 'exif' | 'urls' | 'embed' | 'optimize';
+
+function formatDuration(seconds: number): string {
+  if (!seconds || !isFinite(seconds)) return '00:00';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) {
+    return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
 
 interface EditableFieldProps {
   label: string;
@@ -131,12 +161,11 @@ export function MediaDetails() {
   const getSrcSet = useMediaStore((s) => s.getSrcSet);
   const setCurrentAsset = useMediaStore((s) => s.setCurrentAsset);
 
+  const [activeTab, setActiveTab] = useState<DetailsTab>('info');
   const [copied, setCopied] = useState<
     'direct' | 'markdown' | 'html' | 'thumbnail' | 'srcset' | null
   >(null);
-  const [showExif, setShowExif] = useState(false);
   const [showVariants, setShowVariants] = useState(false);
-  const [showUrls, setShowUrls] = useState(false);
 
   const handleCopy = (
     format: 'direct' | 'markdown' | 'html' | 'thumbnail' | 'srcset'
@@ -188,6 +217,31 @@ export function MediaDetails() {
   }
 
   const isImage = currentAsset.mimeType.startsWith('image/');
+  const isVideo = isVideoType(currentAsset.mimeType);
+  const isDocument = isDocumentType(currentAsset.mimeType);
+  const isPdf = currentAsset.mimeType === 'application/pdf';
+
+  const documentIcon = (() => {
+    const t = currentAsset.mimeType;
+    if (isPdf) return FileText;
+    if (t.includes('word') || t.includes('document')) return FileText;
+    if (t.includes('excel') || t.includes('sheet')) return FileSpreadsheet;
+    if (t.includes('presentation') || t.includes('powerpoint')) return File;
+    return File;
+  })();
+  const DocumentIcon = documentIcon;
+
+  const documentBadgeColor = (() => {
+    const t = currentAsset.mimeType;
+    if (isPdf) return 'border-red-300 bg-red-50 text-red-700';
+    if (t.includes('word') || t.includes('document'))
+      return 'border-blue-300 bg-blue-50 text-blue-700';
+    if (t.includes('excel') || t.includes('sheet'))
+      return 'border-green-300 bg-green-50 text-green-700';
+    if (t.includes('presentation') || t.includes('powerpoint'))
+      return 'border-orange-300 bg-orange-50 text-orange-700';
+    return 'border-gray-300 bg-gray-50 text-gray-700';
+  })();
 
   const variantLabels: Record<VariantType, string> = {
     original: 'Original',
@@ -201,6 +255,14 @@ export function MediaDetails() {
   };
 
   const exifData = currentAsset.metadata as Record<string, any> | undefined;
+
+  const tabs: { key: DetailsTab; label: string; icon: typeof Info }[] = [
+    { key: 'info', label: 'Info', icon: Info },
+    { key: 'exif', label: 'EXIF', icon: Camera },
+    { key: 'urls', label: 'URLs', icon: Link },
+    { key: 'embed', label: 'Embed', icon: Code },
+    { key: 'optimize', label: 'Optimize', icon: Gauge },
+  ];
 
   return (
     <div className="flex h-full flex-col">
@@ -216,9 +278,40 @@ export function MediaDetails() {
             alt={currentAsset.alt ?? currentAsset.filename}
             className="max-h-48 max-w-full rounded object-contain"
           />
+        ) : isVideo && currentAsset.url ? (
+          <div className="w-full max-w-lg">
+            <VideoPlayer
+              src={currentAsset.url}
+              poster={currentAsset.thumbnailUrl}
+              duration={currentAsset.duration}
+              width={currentAsset.width}
+              height={currentAsset.height}
+              codec={(currentAsset.metadata as any)?.codec}
+              onThumbnailSelect={(time) => {
+                currentAsset.metadata = {
+                  ...currentAsset.metadata,
+                  thumbnailTime: time,
+                } as any;
+              }}
+            />
+          </div>
+        ) : isPdf && currentAsset.url ? (
+          <div className="w-full max-w-lg">
+            <PdfViewer
+              src={currentAsset.url}
+              pageCount={
+                (currentAsset.metadata as any)?.pageCount as number | undefined
+              }
+              filename={currentAsset.filename}
+            />
+          </div>
         ) : (
           <div className="flex h-32 w-full items-center justify-center rounded bg-muted">
-            <Image className="size-10 text-muted-foreground/40" />
+            {isVideo ? (
+              <Video className="size-10 text-muted-foreground/40" />
+            ) : (
+              <FileText className="size-10 text-muted-foreground/40" />
+            )}
           </div>
         )}
       </div>
@@ -265,342 +358,400 @@ export function MediaDetails() {
         </button>
       </div>
 
-      {/* Properties */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="space-y-4 p-4">
-          {/* Filename */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-medium uppercase text-muted-foreground">
-              Filename
-            </label>
-            <p className="break-all rounded border px-2 py-1 text-xs font-medium">
-              {currentAsset.filename}
-            </p>
-          </div>
+      {/* Tab bar */}
+      <div className="flex border-b overflow-x-auto">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-2 text-[11px] font-medium whitespace-nowrap transition-colors',
+              activeTab === tab.key
+                ? 'border-b-2 border-primary text-primary'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <tab.icon className="size-3.5" />
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-          {/* File info grid */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
+      {/* Tab content */}
+      <div className="flex-1 overflow-y-auto">
+        {activeTab === 'info' && (
+          <div className="space-y-4 p-4">
+            {/* Filename */}
+            <div className="space-y-1">
               <label className="text-[10px] font-medium uppercase text-muted-foreground">
-                Size
+                Filename
               </label>
-              <p className="text-xs">{formatFileSize(currentAsset.size)}</p>
+              <p className="break-all rounded border px-2 py-1 text-xs font-medium">
+                {currentAsset.filename}
+              </p>
             </div>
-            <div>
-              <label className="text-[10px] font-medium uppercase text-muted-foreground">
-                Type
-              </label>
-              <p className="text-xs">{currentAsset.mimeType}</p>
-            </div>
-            {currentAsset.width && (
-              <div>
-                <label className="text-[10px] font-medium uppercase text-muted-foreground">
-                  Dimensions
-                </label>
-                <p className="text-xs">
-                  {formatDimensions(currentAsset.width, currentAsset.height)}
-                </p>
+
+            {/* File type badge */}
+            {(isVideo || isDocument) && (
+              <div className="flex flex-wrap gap-2">
+                <span
+                  className={cn(
+                    'inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-medium',
+                    isVideo && 'border-purple-300 bg-purple-50 text-purple-700',
+                    isDocument && documentBadgeColor
+                  )}
+                >
+                  {isVideo ? (
+                    <Video className="size-3" />
+                  ) : (
+                    <DocumentIcon className="size-3" />
+                  )}
+                  {isVideo
+                    ? 'Video'
+                    : isPdf
+                      ? 'PDF'
+                      : currentAsset.mimeType.includes('word') ||
+                          currentAsset.mimeType.includes('document')
+                        ? 'Word'
+                        : currentAsset.mimeType.includes('excel') ||
+                            currentAsset.mimeType.includes('sheet')
+                          ? 'Excel'
+                          : 'Document'}
+                </span>
+                {isVideo && currentAsset.duration != null && (
+                  <span className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-gray-50 px-2 py-0.5 text-[10px] font-medium text-gray-700">
+                    <Clock className="size-3" />
+                    {formatDuration(currentAsset.duration)}
+                  </span>
+                )}
+                {isPdf && (currentAsset.metadata as any)?.pageCount != null && (
+                  <span className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-gray-50 px-2 py-0.5 text-[10px] font-medium text-gray-700">
+                    <FileText className="size-3" />
+                    {(currentAsset.metadata as any).pageCount} page
+                    {(currentAsset.metadata as any).pageCount !== 1 ? 's' : ''}
+                  </span>
+                )}
               </div>
             )}
-            <div>
+
+            {/* File info grid */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-medium uppercase text-muted-foreground">
+                  Size
+                </label>
+                <p className="text-xs">{formatFileSize(currentAsset.size)}</p>
+              </div>
+              <div>
+                <label className="text-[10px] font-medium uppercase text-muted-foreground">
+                  Type
+                </label>
+                <p className="text-xs">{currentAsset.mimeType}</p>
+              </div>
+              {currentAsset.width && (
+                <div>
+                  <label className="text-[10px] font-medium uppercase text-muted-foreground">
+                    Dimensions
+                  </label>
+                  <p className="text-xs">
+                    {formatDimensions(currentAsset.width, currentAsset.height)}
+                  </p>
+                </div>
+              )}
+              {isVideo && currentAsset.duration != null && (
+                <div>
+                  <label className="text-[10px] font-medium uppercase text-muted-foreground">
+                    Duration
+                  </label>
+                  <p className="text-xs">
+                    {formatDuration(currentAsset.duration)}
+                  </p>
+                </div>
+              )}
+              {isPdf && (currentAsset.metadata as any)?.pageCount != null && (
+                <div>
+                  <label className="text-[10px] font-medium uppercase text-muted-foreground">
+                    Pages
+                  </label>
+                  <p className="text-xs">
+                    {(currentAsset.metadata as any).pageCount}
+                  </p>
+                </div>
+              )}
+              <div>
+                <label className="text-[10px] font-medium uppercase text-muted-foreground">
+                  Uploaded
+                </label>
+                <p className="text-xs">
+                  {new Date(currentAsset.uploadedAt).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+
+            {/* Folder path */}
+            <div className="space-y-1">
               <label className="text-[10px] font-medium uppercase text-muted-foreground">
-                Uploaded
+                Location
               </label>
-              <p className="text-xs">
-                {new Date(currentAsset.uploadedAt).toLocaleDateString()}
+              <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                <FolderOpen className="size-3" />
+                {currentAsset.folderId
+                  ? `Folder ID: ${currentAsset.folderId}`
+                  : 'Root folder'}
+              </p>
+            </div>
+
+            {/* Hash */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-medium uppercase text-muted-foreground">
+                File hash
+              </label>
+              <p className="truncate rounded bg-muted px-2 py-1 font-mono text-[10px] text-muted-foreground">
+                {currentAsset.id}
+              </p>
+            </div>
+
+            {/* Editable fields */}
+            <EditableField
+              label="Alt Text"
+              value={currentAsset.alt}
+              placeholder="No alt text — click to add"
+              onSave={handleFieldSave('alt')}
+            />
+
+            <EditableField
+              label="Caption"
+              value={currentAsset.caption}
+              placeholder="Optional caption"
+              onSave={handleFieldSave('caption')}
+            />
+
+            <EditableField
+              label="Description"
+              value={currentAsset.description}
+              placeholder="Optional description"
+              multiline
+              onSave={handleFieldSave('description')}
+            />
+
+            <EditableField
+              label="Title"
+              value={(currentAsset.metadata as any)?.title ?? ''}
+              placeholder="Optional title"
+              onSave={(v) =>
+                updateAsset(currentAsset.id, {
+                  metadata: { ...currentAsset.metadata, title: v },
+                } as any)
+              }
+            />
+
+            <EditableField
+              label="Copyright"
+              value={currentAsset.copyright}
+              placeholder="Copyright info"
+              onSave={handleFieldSave('copyright')}
+            />
+
+            <EditableField
+              label="Credit"
+              value={currentAsset.credit}
+              placeholder="Credit attribution"
+              onSave={handleFieldSave('credit')}
+            />
+
+            <EditableField
+              label="Source URL"
+              value={(currentAsset.metadata as any)?.sourceUrl ?? ''}
+              placeholder="Source URL"
+              onSave={(v) =>
+                updateAsset(currentAsset.id, {
+                  metadata: { ...currentAsset.metadata, sourceUrl: v },
+                } as any)
+              }
+            />
+
+            {/* Tags */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-medium uppercase text-muted-foreground">
+                Tags
+              </label>
+              <div className="flex flex-wrap gap-1">
+                {currentAsset.tags.length > 0 ? (
+                  currentAsset.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                    >
+                      {tag}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs italic text-muted-foreground">
+                    No tags
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Variants */}
+            {currentAsset.variants && currentAsset.variants.length > 0 && (
+              <div className="space-y-2">
+                <button
+                  onClick={() => setShowVariants(!showVariants)}
+                  className="flex w-full items-center justify-between rounded-md border px-3 py-2 text-xs font-medium hover:bg-accent"
+                >
+                  <span className="flex items-center gap-2">
+                    <FileCode className="size-3.5" />
+                    Variants ({currentAsset.variants.length})
+                  </span>
+                  <ChevronRight
+                    className={cn(
+                      'size-3.5 transition-transform',
+                      showVariants && 'rotate-90'
+                    )}
+                  />
+                </button>
+                {showVariants && (
+                  <div className="space-y-1 pl-1">
+                    {currentAsset.variants.map((v) => (
+                      <div
+                        key={v.id}
+                        className="flex items-center justify-between rounded border px-2 py-1 text-[10px]"
+                      >
+                        <span className="font-medium capitalize">
+                          {variantLabels[v.type] ?? v.type}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {v.width}×{v.height} · {formatFileSize(v.size)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Video codec info */}
+            {isVideo && (
+              <div className="space-y-2">
+                <button
+                  onClick={() => setShowVariants(!showVariants)}
+                  className="flex w-full items-center justify-between rounded-md border px-3 py-2 text-xs font-medium hover:bg-accent"
+                >
+                  <span className="flex items-center gap-2">
+                    <Video className="size-3.5" />
+                    Video Info
+                  </span>
+                  <ChevronRight
+                    className={cn(
+                      'size-3.5 transition-transform',
+                      showVariants && 'rotate-90'
+                    )}
+                  />
+                </button>
+                {showVariants && (
+                  <div className="grid grid-cols-2 gap-2 pl-1 text-[10px]">
+                    {(currentAsset.metadata as any)?.codec && (
+                      <>
+                        <span className="text-muted-foreground">Codec</span>
+                        <span>{(currentAsset.metadata as any).codec}</span>
+                      </>
+                    )}
+                    {currentAsset.duration != null && (
+                      <>
+                        <span className="text-muted-foreground">Duration</span>
+                        <span>{formatDuration(currentAsset.duration)}</span>
+                      </>
+                    )}
+                    {currentAsset.width && currentAsset.height && (
+                      <>
+                        <span className="text-muted-foreground">
+                          Resolution
+                        </span>
+                        <span>
+                          {currentAsset.width} × {currentAsset.height}
+                        </span>
+                      </>
+                    )}
+                    {(currentAsset.metadata as any)?.frameRate && (
+                      <>
+                        <span className="text-muted-foreground">
+                          Frame Rate
+                        </span>
+                        <span>
+                          {(currentAsset.metadata as any).frameRate} fps
+                        </span>
+                      </>
+                    )}
+                    {(currentAsset.metadata as any)?.bitrate && (
+                      <>
+                        <span className="text-muted-foreground">Bitrate</span>
+                        <span>{(currentAsset.metadata as any).bitrate}</span>
+                      </>
+                    )}
+                    {!(currentAsset.metadata as any)?.codec &&
+                      !(currentAsset.metadata as any)?.frameRate &&
+                      !(currentAsset.metadata as any)?.bitrate && (
+                        <p className="col-span-2 italic text-muted-foreground">
+                          No video metadata available
+                        </p>
+                      )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Usage count */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-medium uppercase text-muted-foreground">
+                Usage
+              </label>
+              <p className="text-xs text-muted-foreground">
+                Referenced in {currentAsset.tags.length} location
+                {currentAsset.tags.length !== 1 ? 's' : ''}
               </p>
             </div>
           </div>
+        )}
 
-          {/* Folder path */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-medium uppercase text-muted-foreground">
-              Location
-            </label>
-            <p className="flex items-center gap-1 text-xs text-muted-foreground">
-              <FolderOpen className="size-3" />
-              {currentAsset.folderId
-                ? `Folder ID: ${currentAsset.folderId}`
-                : 'Root folder'}
+        {activeTab === 'exif' && (
+          <div className="p-4">
+            <ExifPanel metadata={currentAsset.metadata ?? null} />
+          </div>
+        )}
+
+        {activeTab === 'urls' && (
+          <div className="p-4">
+            <UrlPanel asset={currentAsset} />
+          </div>
+        )}
+
+        {activeTab === 'embed' && (
+          <div className="p-4">
+            <EmbedPanel asset={currentAsset} />
+          </div>
+        )}
+
+        {activeTab === 'optimize' && (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <Gauge className="mb-3 size-10 text-muted-foreground/40" />
+            <p className="text-sm font-medium text-muted-foreground">
+              Optimization
             </p>
-          </div>
-
-          {/* Hash */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-medium uppercase text-muted-foreground">
-              File hash
-            </label>
-            <p className="truncate rounded bg-muted px-2 py-1 font-mono text-[10px] text-muted-foreground">
-              {currentAsset.id}
+            <p className="mt-1 text-xs text-muted-foreground/60">
+              Compress, convert, and generate responsive variants for this
+              asset. Coming soon.
             </p>
-          </div>
-
-          {/* Editable fields */}
-          <EditableField
-            label="Alt Text"
-            value={currentAsset.alt}
-            placeholder="No alt text — click to add"
-            onSave={handleFieldSave('alt')}
-          />
-
-          <EditableField
-            label="Caption"
-            value={currentAsset.caption}
-            placeholder="Optional caption"
-            onSave={handleFieldSave('caption')}
-          />
-
-          <EditableField
-            label="Description"
-            value={currentAsset.description}
-            placeholder="Optional description"
-            multiline
-            onSave={handleFieldSave('description')}
-          />
-
-          <EditableField
-            label="Title"
-            value={(currentAsset.metadata as any)?.title ?? ''}
-            placeholder="Optional title"
-            onSave={(v) =>
-              updateAsset(currentAsset.id, {
-                metadata: { ...currentAsset.metadata, title: v },
-              } as any)
-            }
-          />
-
-          <EditableField
-            label="Copyright"
-            value={currentAsset.copyright}
-            placeholder="Copyright info"
-            onSave={handleFieldSave('copyright')}
-          />
-
-          <EditableField
-            label="Credit"
-            value={currentAsset.credit}
-            placeholder="Credit attribution"
-            onSave={handleFieldSave('credit')}
-          />
-
-          <EditableField
-            label="Source URL"
-            value={(currentAsset.metadata as any)?.sourceUrl ?? ''}
-            placeholder="Source URL"
-            onSave={(v) =>
-              updateAsset(currentAsset.id, {
-                metadata: { ...currentAsset.metadata, sourceUrl: v },
-              } as any)
-            }
-          />
-
-          {/* Tags */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-medium uppercase text-muted-foreground">
-              Tags
-            </label>
-            <div className="flex flex-wrap gap-1">
-              {currentAsset.tags.length > 0 ? (
-                currentAsset.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
-                  >
-                    {tag}
-                  </span>
-                ))
-              ) : (
-                <span className="text-xs italic text-muted-foreground">
-                  No tags
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* URL copy options */}
-          <div className="space-y-2">
             <button
-              onClick={() => setShowUrls(!showUrls)}
-              className="flex w-full items-center justify-between rounded-md border px-3 py-2 text-xs font-medium hover:bg-accent"
+              onClick={() =>
+                useMediaStore.getState().generateVariants(currentAsset.id)
+              }
+              className="mt-4 rounded-md bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground"
             >
-              <span className="flex items-center gap-2">
-                <Link className="size-3.5" />
-                URLs
-              </span>
-              <ChevronRight
-                className={cn(
-                  'size-3.5 transition-transform',
-                  showUrls && 'rotate-90'
-                )}
-              />
+              Generate variants now
             </button>
-            {showUrls && (
-              <div className="space-y-1 pl-1">
-                {(
-                  ['direct', 'markdown', 'html', 'thumbnail', 'srcset'] as const
-                ).map((format) => (
-                  <button
-                    key={format}
-                    onClick={() => handleCopy(format)}
-                    className="flex w-full items-center gap-2 rounded border px-2 py-1.5 text-xs hover:bg-accent"
-                  >
-                    {copied === format ? (
-                      <Check className="size-3 text-green-500" />
-                    ) : (
-                      <Copy className="size-3" />
-                    )}
-                    <span className="flex-1 text-left capitalize">
-                      {format}
-                    </span>
-                    <span className="text-[9px] text-muted-foreground">
-                      {copied === format ? 'Copied!' : 'Copy'}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
-
-          {/* Variants */}
-          {currentAsset.variants && currentAsset.variants.length > 0 && (
-            <div className="space-y-2">
-              <button
-                onClick={() => setShowVariants(!showVariants)}
-                className="flex w-full items-center justify-between rounded-md border px-3 py-2 text-xs font-medium hover:bg-accent"
-              >
-                <span className="flex items-center gap-2">
-                  <FileCode className="size-3.5" />
-                  Variants ({currentAsset.variants.length})
-                </span>
-                <ChevronRight
-                  className={cn(
-                    'size-3.5 transition-transform',
-                    showVariants && 'rotate-90'
-                  )}
-                />
-              </button>
-              {showVariants && (
-                <div className="space-y-1 pl-1">
-                  {currentAsset.variants.map((v) => (
-                    <div
-                      key={v.id}
-                      className="flex items-center justify-between rounded border px-2 py-1 text-[10px]"
-                    >
-                      <span className="font-medium capitalize">
-                        {variantLabels[v.type] ?? v.type}
-                      </span>
-                      <span className="text-muted-foreground">
-                        {v.width}×{v.height} · {formatFileSize(v.size)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* EXIF data */}
-          {isImage && (
-            <div className="space-y-2">
-              <button
-                onClick={() => setShowExif(!showExif)}
-                className="flex w-full items-center justify-between rounded-md border px-3 py-2 text-xs font-medium hover:bg-accent"
-              >
-                <span className="flex items-center gap-2">
-                  <Camera className="size-3.5" />
-                  EXIF Data
-                </span>
-                <ChevronRight
-                  className={cn(
-                    'size-3.5 transition-transform',
-                    showExif && 'rotate-90'
-                  )}
-                />
-              </button>
-              {showExif && (
-                <div className="space-y-2 pl-1">
-                  <div className="grid grid-cols-2 gap-2 text-[10px]">
-                    {exifData?.make && (
-                      <>
-                        <span className="text-muted-foreground">
-                          Camera Make
-                        </span>
-                        <span>{exifData.make}</span>
-                      </>
-                    )}
-                    {exifData?.model && (
-                      <>
-                        <span className="text-muted-foreground">
-                          Camera Model
-                        </span>
-                        <span>{exifData.model}</span>
-                      </>
-                    )}
-                    {exifData?.lens && (
-                      <>
-                        <span className="text-muted-foreground">Lens</span>
-                        <span>{exifData.lens}</span>
-                      </>
-                    )}
-                    {exifData?.focalLength && (
-                      <>
-                        <span className="text-muted-foreground">
-                          Focal Length
-                        </span>
-                        <span>{exifData.focalLength}mm</span>
-                      </>
-                    )}
-                    {exifData?.aperture && (
-                      <>
-                        <span className="text-muted-foreground">Aperture</span>
-                        <span>f/{exifData.aperture}</span>
-                      </>
-                    )}
-                    {exifData?.iso && (
-                      <>
-                        <span className="text-muted-foreground">ISO</span>
-                        <span>{exifData.iso}</span>
-                      </>
-                    )}
-                    {exifData?.shutterSpeed && (
-                      <>
-                        <span className="text-muted-foreground">
-                          Shutter Speed
-                        </span>
-                        <span>{exifData.shutterSpeed}s</span>
-                      </>
-                    )}
-                    {exifData?.gpsLat && exifData?.gpsLng && (
-                      <>
-                        <span className="text-muted-foreground">GPS</span>
-                        <span className="truncate">
-                          {exifData.gpsLat.toFixed(4)},{' '}
-                          {exifData.gpsLng.toFixed(4)}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                  {!exifData?.make && !exifData?.model && (
-                    <p className="text-[10px] text-muted-foreground italic">
-                      No EXIF data available
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Usage count */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-medium uppercase text-muted-foreground">
-              Usage
-            </label>
-            <p className="text-xs text-muted-foreground">
-              Referenced in {currentAsset.tags.length} location
-              {currentAsset.tags.length !== 1 ? 's' : ''}
-            </p>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

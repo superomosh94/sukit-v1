@@ -8,6 +8,7 @@ import type {
   MediaVariant,
   UploadProgress,
   CropArea,
+  FocusPoint,
   ImageFilter,
   OptimizeOptions,
   PickerOptions,
@@ -460,13 +461,48 @@ export const useMediaStore = create<MediaStore>()(
         }
       },
 
-      bulkOptimize: async (ids: string[]) => {
+      bulkOptimize: async (
+        ids: string[],
+        format?: string,
+        quality?: number
+      ) => {
         try {
           await apiFetch(`${API_BASE}/bulk/optimize`, {
             method: 'POST',
-            body: JSON.stringify({ ids }),
+            body: JSON.stringify({ ids, format, quality }),
           });
-          await get().emit('media:afterBulkOptimize', { ids } as any);
+          await get().emit('media:afterBulkOptimize', {
+            ids,
+            format,
+            quality,
+          } as any);
+        } catch (e: any) {
+          set({ error: e.message });
+        }
+      },
+
+      batchOptimize: async (
+        ids: string[],
+        format: string = 'webp',
+        quality: number = 80
+      ) => {
+        try {
+          await apiFetch(`${API_BASE}/batch/optimize`, {
+            method: 'POST',
+            body: JSON.stringify({ ids, format, quality }),
+          });
+          set((s) => ({
+            assets: s.assets.map((a) =>
+              ids.includes(a.id)
+                ? { ...a, variants: [...(a.variants ?? [])] }
+                : a
+            ),
+          }));
+          await get().emit('media:afterBulkOptimize', {
+            ids,
+            format,
+            quality,
+          } as any);
         } catch (e: any) {
           set({ error: e.message });
         }
@@ -790,6 +826,57 @@ export const useMediaStore = create<MediaStore>()(
         }
       },
 
+      setFocusPoint: (id, point) => {
+        set((s) => ({
+          assets: s.assets.map((a) =>
+            a.id === id ? { ...a, focusPoint: point } : a
+          ),
+          currentAsset:
+            s.currentAsset?.id === id
+              ? { ...s.currentAsset, focusPoint: point }
+              : s.currentAsset,
+        }));
+      },
+
+      autoStraighten: async (id) => {
+        try {
+          const asset = await apiFetch<MediaAsset>(
+            `${API_BASE}/${id}/auto-straighten`,
+            {
+              method: 'POST',
+            }
+          );
+          set((s) => ({
+            assets: s.assets.map((a) => (a.id === id ? asset : a)),
+            currentAsset: asset,
+          }));
+          return asset;
+        } catch (e: any) {
+          set({ error: e.message });
+          return null;
+        }
+      },
+
+      smartCrop: async (id, aspectRatio, focusPoint) => {
+        try {
+          const asset = await apiFetch<MediaAsset>(
+            `${API_BASE}/${id}/smart-crop`,
+            {
+              method: 'POST',
+              body: JSON.stringify({ aspectRatio, focusPoint }),
+            }
+          );
+          set((s) => ({
+            assets: s.assets.map((a) => (a.id === id ? asset : a)),
+            currentAsset: asset,
+          }));
+          return asset;
+        } catch (e: any) {
+          set({ error: e.message });
+          return null;
+        }
+      },
+
       // ---- Optimization ----
       optimizeAsset: async (id, options) => {
         try {
@@ -981,18 +1068,42 @@ export const useMediaStore = create<MediaStore>()(
       // ---- Visual Builder ----
       insertIntoBlock: (asset, blockId, property) => {
         (globalThis as any).dispatchEvent(
-          new (globalThis as any).CustomEvent('media:insertIntoBlock', {
+          new (globalThis as any).CustomEvent('media:insert-into-block', {
             detail: { asset, blockId, property },
           })
         );
       },
 
-      setAsBackground: (asset, blockId) => {
+      setAsBackground: (asset, sectionId) => {
         (globalThis as any).dispatchEvent(
-          new (globalThis as any).CustomEvent('media:setAsBackground', {
-            detail: { asset, blockId },
+          new (globalThis as any).CustomEvent('media:set-background', {
+            detail: {
+              assetUrl: asset.url ?? asset.thumbnailUrl ?? '',
+              sectionId,
+              asset,
+            },
           })
         );
+      },
+
+      draggingAsset: null,
+
+      getRecentUploads: () => {
+        return [...get().assets]
+          .sort(
+            (a, b) =>
+              new Date(b.uploadedAt).getTime() -
+              new Date(a.uploadedAt).getTime()
+          )
+          .slice(0, 10);
+      },
+
+      onDragStart: (asset) => {
+        set({ draggingAsset: asset });
+      },
+
+      onDragEnd: () => {
+        set({ draggingAsset: null });
       },
 
       // ---- Usage tracking ----

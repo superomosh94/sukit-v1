@@ -1,0 +1,9 @@
+{
+  "name": "@sukit/github",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SUKIT GitHub Integration - Repo management, push, PRs, Actions CI/CD",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": { "@sukit/core": "workspace:*", "@sukit/export-engine": "workspace:*" }
+}

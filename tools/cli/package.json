@@ -1,0 +1,12 @@
+{
+  "name": "@sukit/cli",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SUKIT CLI - Create, build, export, deploy, and manage SUKIT sites",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "bin": {
+    "sukit": "./bin/sukit.js"
+  },
+  "dependencies": { "@sukit/core": "workspace:*", "@sukit/marketplace": "workspace:*", "@sukit/export-engine": "workspace:*" }
+}

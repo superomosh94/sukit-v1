@@ -1,0 +1,16 @@
+{
+  "name": "@sukit/marketplace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SUKIT Marketplace Layer - Module discovery, installation, updates, developer portal, and submission workflow",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@sukit/core": "workspace:*",
+    "zod": "^3.24.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }
+}

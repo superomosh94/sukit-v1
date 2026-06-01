@@ -4,6 +4,8 @@ export { useMediaStore } from './stores/mediaStore';
 export { MediaLibrary } from './components/MediaLibrary';
 export { MediaDetails } from './components/MediaDetails';
 export { UploadButton } from './components/UploadButton';
+export { MediaPicker } from './components/MediaPicker';
+export { MediaDragPreview } from './components/MediaDragPreview';
 
 // Module lifecycle for kernel compatibility
 import type { Module, KernelForModule } from '@sukit/core';
@@ -23,6 +25,15 @@ const mediaLibraryModule: Module = {
     });
     kernel.events.on('media:afterDelete', async ({ data }: any) => {
       kernel.log.debug('Media deleted', data);
+    });
+
+    kernel.events.on('media:open-picker', async ({ data }: any) => {
+      kernel.log.debug('Opening media picker', data);
+      const store = useMediaStore.getState();
+      const result = await store.openPicker(data?.options ?? {});
+      if (result && data?.callback) {
+        data.callback(result);
+      }
     });
   },
 

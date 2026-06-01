@@ -1,9 +1,10 @@
 'use client';
 
 import { useRef, useCallback, useState, useEffect } from 'react';
-import { Upload, Clipboard } from 'lucide-react';
+import { Upload, Clipboard, Gauge } from 'lucide-react';
 import { useMediaStore } from '../stores/mediaStore';
 import { cn } from '../utils/cn';
+import { getUploadSpeed } from '../utils/fileUtils';
 
 export function UploadButton({ onClick }: { onClick?: () => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -11,6 +12,10 @@ export function UploadButton({ onClick }: { onClick?: () => void }) {
   const uploadQueue = useMediaStore((s) => s.uploadQueue);
   const [badgeCount, setBadgeCount] = useState(0);
   const [dragOver, setDragOver] = useState(false);
+  const [uploadSpeed, setUploadSpeed] = useState<string | null>(null);
+  const speedInterval = useRef<ReturnType<typeof setInterval> | undefined>(
+    undefined
+  );
 
   const pendingCount = uploadQueue.filter(
     (u) => u.status === 'pending' || u.status === 'uploading'
@@ -19,6 +24,42 @@ export function UploadButton({ onClick }: { onClick?: () => void }) {
   useEffect(() => {
     setBadgeCount(pendingCount);
   }, [pendingCount]);
+
+  const prevLoaded = useRef(0);
+
+  useEffect(() => {
+    const uploading = uploadQueue.filter((u) => u.status === 'uploading');
+    if (uploading.length === 0) {
+      setUploadSpeed(null);
+      prevLoaded.current = 0;
+      if (speedInterval.current) {
+        clearInterval(speedInterval.current);
+        speedInterval.current = undefined;
+      }
+      return;
+    }
+
+    const calc = () => {
+      const queue = useMediaStore.getState().uploadQueue;
+      const active = queue.filter((u) => u.status === 'uploading');
+      const totalLoaded = active.reduce((s, u) => s + u.loaded, 0);
+      const delta = totalLoaded - prevLoaded.current;
+      prevLoaded.current = totalLoaded;
+      if (delta > 0) {
+        setUploadSpeed(getUploadSpeed(delta, 2));
+      }
+    };
+
+    calc();
+    speedInterval.current = setInterval(calc, 2000);
+
+    return () => {
+      if (speedInterval.current) {
+        clearInterval(speedInterval.current);
+        speedInterval.current = undefined;
+      }
+    };
+  }, [uploadQueue]);
 
   useEffect(() => {
     const handleDragOver = (e: DragEvent) => {
@@ -40,14 +81,30 @@ export function UploadButton({ onClick }: { onClick?: () => void }) {
       }
     };
 
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = Array.from(e.clipboardData?.items ?? []);
+      const files: File[] = [];
+      for (const item of items) {
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          if (file) files.push(file);
+        }
+      }
+      if (files.length > 0) {
+        uploadFiles(files, useMediaStore.getState().currentFolder ?? undefined);
+      }
+    };
+
     document.addEventListener('dragover', handleDragOver);
     document.addEventListener('dragleave', handleDragLeave);
     document.addEventListener('drop', handleDrop);
+    document.addEventListener('paste', handlePaste);
 
     return () => {
       document.removeEventListener('dragover', handleDragOver);
       document.removeEventListener('dragleave', handleDragLeave);
       document.removeEventListener('drop', handleDrop);
+      document.removeEventListener('paste', handlePaste);
     };
   }, [uploadFiles]);
 
@@ -113,8 +170,21 @@ export function UploadButton({ onClick }: { onClick?: () => void }) {
           Upload
         </button>
         {badgeCount > 0 && (
-          <span className="absolute -right-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
-            {badgeCount}
+          <span
+            className={cn(
+              'absolute -right-1.5 -top-1.5 flex items-center justify-center rounded-full text-[9px] font-bold text-destructive-foreground',
+              uploadSpeed ? 'h-5 px-1.5' : 'size-4'
+            )}
+            style={{ background: 'hsl(var(--destructive))' }}
+          >
+            {uploadSpeed ? (
+              <span className="flex items-center gap-0.5">
+                <Gauge className="size-2.5" />
+                {uploadSpeed}
+              </span>
+            ) : (
+              badgeCount
+            )}
           </span>
         )}
       </div>

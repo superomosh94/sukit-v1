@@ -1,0 +1,438 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model MarketplaceModule {
+  id            String   @id @default(cuid())
+  moduleId      String   @unique
+  name          String
+  description   String
+  version       String
+  authorId      String
+  authorName    String
+
+  category      String
+  tags          String[]
+
+  price         Float?
+  priceModel    String   @default("free")
+  subscriptionPriceMonthly Float?
+  subscriptionPriceYearly  Float?
+
+  downloads     Int      @default(0)
+  rating        Float    @default(0)
+  ratingCount   Int      @default(0)
+
+  screenshots   String[]
+  icon          String?
+  banner        String?
+
+  documentation String?
+  changelog     String?
+
+  minSukitVersion String  @default("1.0.0")
+  maxSukitVersion String?
+  sukCompatibleVersions String[] @default(["1.0.0"])
+
+  dependencies  Json?
+  permissions   String[]
+
+  status        String   @default("draft")
+  rejectionReason String?
+
+  demoUrl       String?
+  supportUrl    String?
+  sourceUrl     String?
+
+  featured      Boolean  @default(false)
+  featuredUntil DateTime?
+  staffPick     Boolean  @default(false)
+  trendingScore Float    @default(0)
+
+  metadata      Json?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  publishedAt   DateTime?
+
+  versions      ModuleVersion[]
+  reviews       ModuleReview[]
+  supportTickets SupportTicket[]
+  installs      ModuleInstall[]
+}
+
+model ModuleVersion {
+  id            String   @id @default(cuid())
+  moduleId      String
+  module        MarketplaceModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  version       String
+  changelog     String?
+  downloadUrl   String
+  fileSize      Int      @default(0)
+  sukVersion    String
+
+  isLatest      Boolean  @default(false)
+  isDeprecated  Boolean  @default(false)
+  isSecurityFix Boolean  @default(false)
+  isBeta        Boolean  @default(false)
+
+  downloads     Int      @default(0)
+  compatibility Json?
+
+  createdAt     DateTime @default(now())
+}
+
+model ModuleInstall {
+  id            String   @id @default(cuid())
+  moduleId      String
+  module        MarketplaceModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  userId        String
+  siteId        String?
+
+  version       String
+  previousVersion String?
+  status        String   @default("installed")
+  autoUpdate    Boolean  @default(false)
+  pinnedVersion String?
+
+  installedAt   DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  uninstalledAt DateTime?
+}
+
+model ModuleReview {
+  id            String   @id @default(cuid())
+  moduleId      String
+  module        MarketplaceModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  userId        String
+  userName      String
+
+  rating        Int
+  title         String?
+  review        String
+  pros          String?
+  cons          String?
+
+  versionUsed   String?
+  sukitVersion  String?
+
+  verified      Boolean  @default(false)
+  helpful       Int      @default(0)
+  notHelpful    Int      @default(0)
+
+  status        String   @default("approved")
+  moderatorNote String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  responses     ReviewResponse[]
+}
+
+model ReviewResponse {
+  id            String   @id @default(cuid())
+  reviewId      String
+  review        ModuleReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  authorId      String
+  authorType    String   @default("developer")
+  response      String
+
+  createdAt     DateTime @default(now())
+}
+
+model Developer {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  email         String
+  name          String
+  companyName   String?
+  website       String?
+  bio           String?
+  avatar        String?
+
+  taxId         String?
+  payoutMethod  String?
+  payoutEmail   String?
+  payoutCountry String?
+  totalEarnings Float    @default(0)
+  unpaidEarnings Float   @default(0)
+
+  status        String   @default("pending")
+  approvedAt    DateTime?
+  agreementAccepted Boolean @default(false)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  modules       MarketplaceModule[]
+  apiKeys       DeveloperApiKey[]
+}
+
+model DeveloperApiKey {
+  id            String   @id @default(cuid())
+  developerId   String
+  developer     Developer @relation(fields: [developerId], references: [id], onDelete: Cascade)
+
+  name          String
+  key           String   @unique
+  permissions   String[]
+  ipWhitelist   String[]
+  rateLimit     Int      @default(100)
+
+  lastUsed      DateTime?
+  expiresAt     DateTime?
+
+  createdAt     DateTime @default(now())
+  revokedAt     DateTime?
+}
+
+model SubmissionReview {
+  id            String   @id @default(cuid())
+  moduleId      String
+  module        MarketplaceModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  reviewerId    String
+
+  status        String   @default("pending")
+  notes         String?
+  validationResults Json?
+
+  createdAt     DateTime @default(now())
+  reviewedAt    DateTime?
+}
+
+model SupportTicket {
+  id            String   @id @default(cuid())
+  moduleId      String
+  module        MarketplaceModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  userId        String
+  userName      String
+  userEmail     String
+
+  subject       String
+  message       String
+  priority      String   @default("normal")
+  status        String   @default("open")
+  category      String   @default("question")
+
+  attachments   String[]
+  metadata      Json?
+
+  resolvedAt    DateTime?
+  satisfaction  Int?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  responses     TicketResponse[]
+}
+
+model TicketResponse {
+  id            String   @id @default(cuid())
+  ticketId      String
+  ticket        SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId      String
+  authorType    String
+  message       String
+  attachments   String[]
+  privateNote   String?
+
+  createdAt     DateTime @default(now())
+}
+
+model Transaction {
+  id              String   @id @default(cuid())
+  moduleId        String
+  module          MarketplaceModule @relation(fields: [moduleId], references: [id])
+  buyerId         String
+  buyerName       String
+  buyerEmail      String
+
+  amount          Float
+  currency        String   @default("USD")
+  fee             Float    @default(0)
+  developerAmount Float    @default(0)
+
+  paymentMethod   String
+  paymentId       String
+  type            String   @default("purchase")
+  status          String   @default("pending")
+
+  licenseKey      String?
+  invoiceUrl      String?
+  receiptUrl      String?
+
+  refundedAt      DateTime?
+  refundAmount    Float?
+  refundReason    String?
+
+  createdAt       DateTime @default(now())
+  completedAt     DateTime?
+}
+
+model Subscription {
+  id                String   @id @default(cuid())
+  moduleId          String
+  module            MarketplaceModule @relation(fields: [moduleId], references: [id])
+  userId            String
+  userEmail         String?
+
+  plan              String   @default("monthly")
+  status            String   @default("active")
+
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean  @default(false)
+  canceledAt         DateTime?
+  pausedAt           DateTime?
+
+  paymentMethod     String?
+  gatewayId         String?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model License {
+  id              String   @id @default(cuid())
+  key             String   @unique
+  moduleId        String
+  module          MarketplaceModule @relation(fields: [moduleId], references: [id])
+  userId          String
+  transactionId   String?
+
+  status          String   @default("active")
+  domains         String[]
+  maxActivations  Int      @default(3)
+
+  activatedAt     DateTime?
+  expiresAt       DateTime?
+  revokedAt       DateTime?
+
+  metadata        Json?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model KnowledgeBaseArticle {
+  id            String   @id @default(cuid())
+  title         String
+  slug          String   @unique
+  content       String
+  excerpt       String?
+  category      String
+  tags          String[]
+
+  views         Int      @default(0)
+  helpful       Int      @default(0)
+  notHelpful    Int      @default(0)
+
+  published     Boolean  @default(false)
+  publishedAt   DateTime?
+  authorId      String
+  authorName    String
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  moduleId  String
+  event     String
+  metadata  Json?
+
+  userId    String?
+  siteId    String?
+  version   String?
+  ip        String?
+  country   String?
+  userAgent String?
+
+  duration  Int?
+  error     String?
+
+  createdAt DateTime @default(now())
+
+  @@index([moduleId, event, createdAt])
+}
+
+model WebhookConfig {
+  id          String   @id @default(cuid())
+  name        String
+  url         String
+  events      String[]
+  secret      String
+  active      Boolean  @default(true)
+  retryCount  Int      @default(3)
+  timeoutMs   Int      @default(10000)
+  format      String   @default("json")
+  headers     Json?
+  moduleId    String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastUsedAt  DateTime?
+}
+
+model WebhookLog {
+  id          String   @id @default(cuid())
+  webhookId   String
+  event       String
+  status      String
+  requestUrl  String
+  requestBody Json?
+  responseStatus Int?
+  responseBody   String?
+  durationMs  Int?
+  error       String?
+  attempt     Int      @default(1)
+
+  createdAt   DateTime @default(now())
+
+  @@index([webhookId, createdAt])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  userName    String?
+  action      String
+  resourceType String
+  resourceId  String?
+  changes     Json?
+  ipAddress   String?
+  userAgent   String?
+  sessionId   String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([resourceType, resourceId])
+  @@index([action])
+}
+
+model SearchIndex {
+  id          String   @id @default(cuid())
+  documentId  String
+  siteId      String
+  siteName    String
+  title       String
+  slug        String
+  content     String
+  tags        String[]
+  author      String
+  status      String   @default("published")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([documentId, siteId])
+  @@index([siteId, status])
+}

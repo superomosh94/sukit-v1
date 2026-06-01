@@ -1,0 +1,9 @@
+{
+  "name": "@sukit/docker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SUKIT Docker Support - Dockerfile, compose, kubernetes generation",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": { "@sukit/core": "workspace:*" }
+}

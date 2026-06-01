@@ -1,0 +1,9 @@
+{
+  "name": "@sukit/health",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SUKIT Health Check - /health, /ready, /live endpoints, component checks",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": { "@sukit/core": "workspace:*" }
+}

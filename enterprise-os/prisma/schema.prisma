@@ -1,0 +1,178 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model EnterpriseOrg {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  domain        String?
+  logo          String?
+  plan          String   @default("starter")
+  config        Json?
+
+  ssoProvider   String?
+  ssoIssuer     String?
+  ssoEntryPoint String?
+  ssoCert       String?
+  ssoEnabled    Boolean  @default(false)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  members       EnterpriseMember[]
+  teams         Team[]
+  apiKeys       EnterpriseAPIKey[]
+  invoices      EnterpriseInvoice[]
+}
+
+model EnterpriseMember {
+  id            String   @id @default(cuid())
+  orgId         String
+  org           EnterpriseOrg @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  userId        String
+  email         String
+  name          String
+  role          String   @default("member")
+  teams         String[]
+  mfaEnabled    Boolean  @default(false)
+  lastActive    DateTime?
+
+  joinedAt      DateTime @default(now())
+
+  @@unique([orgId, userId])
+}
+
+model Team {
+  id            String   @id @default(cuid())
+  orgId         String
+  org           EnterpriseOrg @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name          String
+  description   String?
+  memberIds     String[]
+  permissions   String[]
+
+  createdAt     DateTime @default(now())
+}
+
+model EnterpriseAPIKey {
+  id            String   @id @default(cuid())
+  orgId         String
+  org           EnterpriseOrg @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name          String
+  key           String   @unique
+  keyPrefix     String
+  scopes        String[]
+  ipWhitelist   String[]
+  expiresAt     DateTime?
+  lastUsed      DateTime?
+  requests24h   Int      @default(0)
+  totalRequests Int      @default(0)
+
+  createdAt     DateTime @default(now())
+}
+
+model APIUsageLog {
+  id            String   @id @default(cuid())
+  keyId         String
+  keyPrefix     String
+  endpoint      String
+  method        String
+  statusCode    Int
+  latency       Int
+  ip            String
+
+  timestamp     DateTime @default(now())
+
+  @@index([keyId, timestamp])
+}
+
+model EnterpriseInvoice {
+  id            String   @id @default(cuid())
+  orgId         String
+  org           EnterpriseOrg @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  number        String   @unique
+  periodStart   DateTime
+  periodEnd     DateTime
+  subtotal      Float
+  tax           Float    @default(0)
+  total         Float
+  currency      String   @default("USD")
+  status        String   @default("draft")
+  paidAt        DateTime?
+  pdfUrl        String?
+
+  lines         InvoiceLine[]
+  createdAt     DateTime @default(now())
+}
+
+model InvoiceLine {
+  id            String   @id @default(cuid())
+  invoiceId     String
+  invoice       EnterpriseInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description   String
+  quantity      Int
+  unitPrice     Float
+  total         Float
+  metered       Boolean  @default(false)
+}
+
+model ComplianceCheck {
+  id            String   @id @default(cuid())
+  orgId         String
+  framework     String
+  control       String
+  description   String
+  status        String   @default("in-progress")
+  evidence      String[]
+  lastChecked   DateTime?
+  nextAudit     DateTime?
+  owner         String
+}
+
+model ResellerOrg {
+  id            String   @id @default(cuid())
+  parentOrgId   String
+  name          String
+  slug          String
+  tier          String   @default("silver")
+  branding      Json?
+  customDomain  String?
+  commissionRate Float   @default(0.2)
+  totalRevenue  Float    @default(0)
+  customerCount Int      @default(0)
+  status        String   @default("active")
+
+  createdAt     DateTime @default(now())
+}
+
+model EnterpriseSupportTicket {
+  id            String   @id @default(cuid())
+  orgId         String
+  severity      String   @default("P3")
+  status        String   @default("new")
+  subject       String
+  description   String
+  assigneeId    String?
+  slaDeadline   DateTime?
+  escalatedAt   DateTime?
+  resolution    String?
+  customerScore Int      @default(50)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model ScalingEvent {
+  id            String   @id @default(cuid())
+  type          String
+  region        String
+  action        String
+  details       Json?
+  createdAt     DateTime @default(now())
+}
