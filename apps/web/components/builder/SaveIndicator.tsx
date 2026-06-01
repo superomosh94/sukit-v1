@@ -9,25 +9,23 @@ export function SaveIndicator() {
     | string
     | null;
   const [saving, setSaving] = useState(false);
-  const [lastSaveTime, setLastSaveTime] = useState<string>('');
+  const [lastSaveTime, setLastSaveTime] = useState<string>(() => {
+    if (!lastSaved) return '';
+    return new Date(lastSaved).toLocaleTimeString();
+  });
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (lastSaved) {
-      const date = new Date(lastSaved);
-      setLastSaveTime(date.toLocaleTimeString());
-    }
-  }, [lastSaved]);
+    if (!isDirty || !lastSaved) return;
 
-  useEffect(() => {
-    if (isDirty && lastSaved) {
-      timerRef.current = setInterval(() => {
-        const seconds = Math.floor(
-          (Date.now() - new Date(lastSaved).getTime()) / 1000
-        );
-        if (seconds > 0) setLastSaveTime(`${seconds}s ago`);
-      }, 5000);
-    }
+    const date = new Date(lastSaved);
+    timerRef.current = setInterval(() => {
+      const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+      if (seconds > 0) {
+        setLastSaveTime(`${seconds}s ago`);
+      }
+    }, 5000);
+
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };

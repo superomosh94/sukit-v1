@@ -1,21 +1,29 @@
-import { useState, useEffect } from "react";
+import { useSyncExternalStore } from 'react';
 
-export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(false);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia(query);
-    setMatches(mediaQuery.matches);
-
-    const handler = (event: MediaQueryListEvent) => setMatches(event.matches);
-    mediaQuery.addEventListener("change", handler);
-    return () => mediaQuery.removeEventListener("change", handler);
-  }, [query]);
-
-  return matches;
+function getMediaQueryList(query: string) {
+  if (typeof window === 'undefined') return null;
+  return window.matchMedia(query);
 }
 
-export const useIsMobile = () => useMediaQuery("(max-width: 768px)");
+export function useMediaQuery(query: string): boolean {
+  const subscribe = (callback: () => void) => {
+    const mql = getMediaQueryList(query);
+    if (!mql) return () => {};
+    mql.addEventListener('change', callback);
+    return () => mql.removeEventListener('change', callback);
+  };
+
+  const getSnapshot = () => {
+    const mql = getMediaQueryList(query);
+    return mql ? mql.matches : false;
+  };
+
+  const getServerSnapshot = () => false;
+
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+
+export const useIsMobile = () => useMediaQuery('(max-width: 768px)');
 export const useIsTablet = () =>
-  useMediaQuery("(min-width: 769px) and (max-width: 1024px)");
-export const useIsDesktop = () => useMediaQuery("(min-width: 1025px)");
+  useMediaQuery('(min-width: 769px) and (max-width: 1024px)');
+export const useIsDesktop = () => useMediaQuery('(min-width: 1025px)');

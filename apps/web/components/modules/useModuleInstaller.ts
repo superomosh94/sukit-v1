@@ -21,11 +21,7 @@ function setStored(ids: string[]) {
 }
 
 export function useModuleInstaller() {
-  const [installedIds, setInstalledIds] = useState<string[]>([]);
-
-  useEffect(() => {
-    setInstalledIds(getStored());
-  }, []);
+  const [installedIds, setInstalledIds] = useState<string[]>(() => getStored());
 
   const isInstalled = useCallback(
     (id: string) => installedIds.includes(id),

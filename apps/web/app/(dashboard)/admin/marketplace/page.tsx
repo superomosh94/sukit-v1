@@ -13,15 +13,13 @@ export default function AdminMarketplacePage() {
   const [tab, setTab] = useState<'pending' | 'approved' | 'reports'>('pending');
 
   useEffect(() => {
-    loadPending();
-  }, []);
-
-  async function loadPending() {
-    const result = await marketplace.registry.listModules({
-      status: 'submitted',
-    });
-    setPendingModules(result.modules);
-  }
+    (async () => {
+      const result = await marketplace.registry.listModules({
+        status: 'submitted',
+      });
+      setPendingModules(result.modules);
+    })();
+  }, [marketplace.registry]);
 
   async function handleApprove(moduleId: string) {
     await marketplace.registry.setFeatured(moduleId, true);

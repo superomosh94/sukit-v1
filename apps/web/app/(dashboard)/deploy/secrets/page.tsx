@@ -43,7 +43,17 @@ export default function SecretsPage() {
   };
 
   useEffect(() => {
-    loadSecrets();
+    (async () => {
+      try {
+        const res = await fetch('/api/settings/secrets');
+        const data = await res.json();
+        setSecrets(Array.isArray(data) ? data : []);
+      } catch {
+        setSecrets([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
   const toggleVisible = (id: string) => {

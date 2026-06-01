@@ -39,7 +39,8 @@ export default function ModuleDetailPage() {
           Module not found
         </h2>
         <p className="text-sm text-gray-500 mt-1">
-          The module you're looking for doesn't exist or has been removed.
+          The module you&apos;re looking for doesn&apos;t exist or has been
+          removed.
         </p>
       </div>
     );

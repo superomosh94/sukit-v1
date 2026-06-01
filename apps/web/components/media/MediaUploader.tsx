@@ -1,21 +1,21 @@
-'use client'
+'use client';
 
-import { useState, useCallback, useRef } from 'react'
-import { Upload, X, File, ImageIcon, Loader2 } from 'lucide-react'
-import { cn } from '@/lib/utils/cn'
+import { useState, useCallback, useRef } from 'react';
+import { Upload, X, File, ImageIcon, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils/cn';
 
 interface UploadFile {
-  file: File
-  preview: string
-  progress: number
-  status: 'pending' | 'uploading' | 'done' | 'error'
+  file: File;
+  preview: string;
+  progress: number;
+  status: 'pending' | 'uploading' | 'done' | 'error';
 }
 
 interface MediaUploaderProps {
-  onUploadComplete?: (files: { url: string; filename: string }[]) => void
-  accept?: string
-  maxFiles?: number
-  maxSizeMB?: number
+  onUploadComplete?: (files: { url: string; filename: string }[]) => void;
+  accept?: string;
+  maxFiles?: number;
+  maxSizeMB?: number;
 }
 
 const ACCEPTED_TYPES = [
@@ -27,7 +27,7 @@ const ACCEPTED_TYPES = [
   'application/pdf',
   'video/mp4',
   'video/webm',
-]
+];
 
 export default function MediaUploader({
   onUploadComplete,
@@ -35,14 +35,56 @@ export default function MediaUploader({
   maxFiles = 10,
   maxSizeMB = 10,
 }: MediaUploaderProps) {
-  const [files, setFiles] = useState<UploadFile[]>([])
-  const [isDragOver, setIsDragOver] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [files, setFiles] = useState<UploadFile[]>([]);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const simulateUpload = (uploadFile: UploadFile, index: number) => {
+    setFiles((prev) =>
+      prev.map((f) =>
+        f.file === uploadFile.file ? { ...f, status: 'uploading' as const } : f
+      )
+    );
+
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += Math.random() * 30 + 5;
+      if (progress >= 100) {
+        clearInterval(interval);
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.file === uploadFile.file
+              ? { ...f, progress: 100, status: 'done' as const }
+              : f
+          )
+        );
+        const allDone = files.every(
+          (f) => f.status === 'done' || f.file === uploadFile.file
+        );
+        if (allDone) {
+          onUploadComplete?.(
+            files.map((f) => ({
+              url: f.preview || URL.createObjectURL(f.file),
+              filename: f.file.name,
+            }))
+          );
+        }
+      } else {
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.file === uploadFile.file
+              ? { ...f, progress: Math.min(progress, 99) }
+              : f
+          )
+        );
+      }
+    }, 200);
+  };
 
   const addFiles = useCallback(
     (incoming: File[]) => {
-      const remaining = maxFiles - files.length
-      const toAdd = incoming.slice(0, remaining)
+      const remaining = maxFiles - files.length;
+      const toAdd = incoming.slice(0, remaining);
 
       const newFiles: UploadFile[] = toAdd.map((file) => ({
         file,
@@ -51,97 +93,53 @@ export default function MediaUploader({
           : '',
         progress: 0,
         status: 'pending' as const,
-      }))
+      }));
 
-      setFiles((prev) => [...prev, ...newFiles])
+      setFiles((prev) => [...prev, ...newFiles]);
 
-      newFiles.forEach((f, i) => simulateUpload(f, i + files.length))
+      newFiles.forEach((f, i) => simulateUpload(f, i + files.length));
     },
-    [files.length, maxFiles],
-  )
-
-  const simulateUpload = (uploadFile: UploadFile, index: number) => {
-    setFiles((prev) =>
-      prev.map((f) =>
-        f.file === uploadFile.file ? { ...f, status: 'uploading' as const } : f,
-      ),
-    )
-
-    let progress = 0
-    const interval = setInterval(() => {
-      progress += Math.random() * 30 + 5
-      if (progress >= 100) {
-        clearInterval(interval)
-        setFiles((prev) =>
-          prev.map((f) =>
-            f.file === uploadFile.file
-              ? { ...f, progress: 100, status: 'done' as const }
-              : f,
-          ),
-        )
-        const allDone = files.every(
-          (f) => f.status === 'done' || f.file === uploadFile.file,
-        )
-        if (allDone) {
-          onUploadComplete?.(
-            files.map((f) => ({
-              url: f.preview || URL.createObjectURL(f.file),
-              filename: f.file.name,
-            })),
-          )
-        }
-      } else {
-        setFiles((prev) =>
-          prev.map((f) =>
-            f.file === uploadFile.file
-              ? { ...f, progress: Math.min(progress, 99) }
-              : f,
-          ),
-        )
-      }
-    }, 200)
-  }
+    [files.length, maxFiles]
+  );
 
   const removeFile = useCallback((index: number) => {
     setFiles((prev) => {
-      const file = prev[index]
-      if (file.preview) URL.revokeObjectURL(file.preview)
-      return prev.filter((_, i) => i !== index)
-    })
-  }, [])
+      const file = prev[index];
+      if (file.preview) URL.revokeObjectURL(file.preview);
+      return prev.filter((_, i) => i !== index);
+    });
+  }, []);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
-      e.preventDefault()
-      setIsDragOver(false)
+      e.preventDefault();
+      setIsDragOver(false);
       const dropped = Array.from(e.dataTransfer.files).filter((f) =>
-        ACCEPTED_TYPES.includes(f.type),
-      )
-      if (dropped.length > 0) addFiles(dropped)
+        ACCEPTED_TYPES.includes(f.type)
+      );
+      if (dropped.length > 0) addFiles(dropped);
     },
-    [addFiles],
-  )
+    [addFiles]
+  );
 
   const handleInput = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (e.target.files) addFiles(Array.from(e.target.files))
+      if (e.target.files) addFiles(Array.from(e.target.files));
     },
-    [addFiles],
-  )
+    [addFiles]
+  );
 
   const totalProgress =
     files.length > 0
-      ? Math.round(
-          files.reduce((sum, f) => sum + f.progress, 0) / files.length,
-        )
-      : 0
+      ? Math.round(files.reduce((sum, f) => sum + f.progress, 0) / files.length)
+      : 0;
 
   return (
     <div className="space-y-4">
       <div
         onDragOver={(e) => {
-          e.preventDefault()
-          setIsDragOver(true)
+          e.preventDefault();
+          setIsDragOver(true);
         }}
         onDragLeave={() => setIsDragOver(false)}
         onDrop={handleDrop}
@@ -150,7 +148,7 @@ export default function MediaUploader({
           'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-8 text-center transition-colors',
           isDragOver
             ? 'border-primary bg-primary/5'
-            : 'border-muted-foreground/25 hover:border-muted-foreground/50',
+            : 'border-muted-foreground/25 hover:border-muted-foreground/50'
         )}
       >
         <Upload className="size-8 text-muted-foreground" />
@@ -174,7 +172,8 @@ export default function MediaUploader({
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm text-muted-foreground">
             <span>
-              {files.filter((f) => f.status === 'done').length}/{files.length} uploaded
+              {files.filter((f) => f.status === 'done').length}/{files.length}{' '}
+              uploaded
             </span>
             {totalProgress < 100 && (
               <span className="text-xs">{totalProgress}%</span>
@@ -240,5 +239,5 @@ export default function MediaUploader({
         </div>
       )}
     </div>
-  )
+  );
 }

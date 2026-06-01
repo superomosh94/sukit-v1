@@ -1,10 +1,13 @@
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef } from 'react';
 
 type HotkeyMap = Record<string, () => void>;
 
 export function useHotkeys(hotkeys: HotkeyMap, enabled: boolean = true) {
   const hotkeysRef = useRef(hotkeys);
-  hotkeysRef.current = hotkeys;
+
+  useEffect(() => {
+    hotkeysRef.current = hotkeys;
+  }, [hotkeys]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -16,13 +19,13 @@ export function useHotkeys(hotkeys: HotkeyMap, enabled: boolean = true) {
         e.target instanceof HTMLSelectElement;
 
       const key = [
-        e.ctrlKey || e.metaKey ? "mod" : "",
-        e.shiftKey ? "shift" : "",
-        e.altKey ? "alt" : "",
+        e.ctrlKey || e.metaKey ? 'mod' : '',
+        e.shiftKey ? 'shift' : '',
+        e.altKey ? 'alt' : '',
         e.key.toLowerCase(),
       ]
         .filter(Boolean)
-        .join("+");
+        .join('+');
 
       const handler = hotkeysRef.current[key];
       if (handler) {
@@ -30,11 +33,11 @@ export function useHotkeys(hotkeys: HotkeyMap, enabled: boolean = true) {
         handler();
       }
     },
-    [enabled],
+    [enabled]
   );
 
   useEffect(() => {
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 }

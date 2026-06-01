@@ -42,27 +42,6 @@ export default function ThemesPage() {
   const [loading, setLoading] = useState(true);
   const [installing, setInstalling] = useState(false);
 
-  const fetchThemes = useCallback(async () => {
-    try {
-      const res = await fetch('/api/themes');
-      if (!res.ok) throw new Error('Failed to fetch themes');
-      const data = await res.json();
-      setThemes(data.themes || []);
-      setActiveSlug(data.active?.slug || null);
-      setAvailableThemes(data.available || []);
-      if (
-        (!data.themes || data.themes.length === 0) &&
-        data.available?.length > 0
-      ) {
-        installAllThemes();
-      }
-    } catch {
-      toast.error('Failed to load themes');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   const installAllThemes = async () => {
     setInstalling(true);
     try {
@@ -88,8 +67,27 @@ export default function ThemesPage() {
   };
 
   useEffect(() => {
-    fetchThemes();
-  }, [fetchThemes]);
+    (async () => {
+      try {
+        const res = await fetch('/api/themes');
+        if (!res.ok) throw new Error('Failed to fetch themes');
+        const data = await res.json();
+        setThemes(data.themes || []);
+        setActiveSlug(data.active?.slug || null);
+        setAvailableThemes(data.available || []);
+        if (
+          (!data.themes || data.themes.length === 0) &&
+          data.available?.length > 0
+        ) {
+          installAllThemes();
+        }
+      } catch {
+        toast.error('Failed to load themes');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   const handleActivate = (slug: string) => {
     setThemes((prev) => prev.map((t) => ({ ...t, active: t.slug === slug })));

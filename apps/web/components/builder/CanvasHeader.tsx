@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   Undo2,
   Redo2,
@@ -16,13 +16,13 @@ import {
   Minimize2,
   Keyboard,
   Save,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useBuilderStore } from "@/lib/builder/store";
-import { cn } from "@/lib/utils/cn";
-import { KeyboardShortcutsPanel } from "./KeyboardShortcutsPanel";
-import { ZoomControls } from "./ZoomControls";
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useBuilderStore } from '@/lib/builder/store';
+import { cn } from '@/lib/utils/cn';
+import { KeyboardShortcutsPanel } from './KeyboardShortcutsPanel';
+import { ZoomControls } from './ZoomControls';
 
 export function CanvasHeader() {
   const undo = useBuilderStore((s) => s.undo);
@@ -45,65 +45,62 @@ export function CanvasHeader() {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const titleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    setTitle(pageTitle);
-  }, [pageTitle]);
-
-  const handleTitleChange = useCallback(
-    (value: string) => {
-      setTitle(value);
-      if (titleTimer.current) clearTimeout(titleTimer.current);
-      titleTimer.current = setTimeout(() => {
-        useBuilderStore.setState({ pageTitle: value, isDirty: true });
-      }, 500);
-    },
-    [],
-  );
+  const handleTitleChange = useCallback((value: string) => {
+    setTitle(value);
+    if (titleTimer.current) clearTimeout(titleTimer.current);
+    titleTimer.current = setTimeout(() => {
+      useBuilderStore.setState({ pageTitle: value, isDirty: true });
+    }, 500);
+  }, []);
 
   const saveStatus = useMemo(() => {
-    if (isDirty) return { text: "Unsaved", color: "text-amber-500" };
-    if (lastSaved) return { text: "Saved", color: "text-green-500" };
-    return { text: "Ready", color: "text-muted-foreground" };
+    if (isDirty) return { text: 'Unsaved', color: 'text-amber-500' };
+    if (lastSaved) return { text: 'Saved', color: 'text-green-500' };
+    return { text: 'Ready', color: 'text-muted-foreground' };
   }, [isDirty, lastSaved]);
 
   // Global keyboard shortcuts for header actions
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      if (e.key === "f" || e.key === "F") {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      )
+        return;
+      if (e.key === 'f' || e.key === 'F') {
         toggleFullscreen();
       }
-      if (e.key === "g" || e.key === "G") {
+      if (e.key === 'g' || e.key === 'G') {
         setShowGrid(!useBuilderStore.getState().showGrid);
       }
-      if (e.key === "?" || (e.key === "/" && !e.ctrlKey)) {
+      if (e.key === '?' || (e.key === '/' && !e.ctrlKey)) {
         setShowShortcuts(true);
       }
-      if (e.key === "=" || e.key === "+") {
+      if (e.key === '=' || e.key === '+') {
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
           setZoom(useBuilderStore.getState().zoom + 10);
         }
       }
-      if (e.key === "-") {
+      if (e.key === '-') {
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
           setZoom(useBuilderStore.getState().zoom - 10);
         }
       }
-      if (e.key === "0" && (e.ctrlKey || e.metaKey)) {
+      if (e.key === '0' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
         setZoom(100);
       }
     }
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
   }, [toggleFullscreen, setShowGrid, setZoom]);
 
   const deviceButtons = [
-    { id: "desktop" as const, icon: Monitor, label: "Desktop" },
-    { id: "tablet" as const, icon: Tablet, label: "Tablet (810px)" },
-    { id: "phone" as const, icon: Smartphone, label: "Phone (390px)" },
+    { id: 'desktop' as const, icon: Monitor, label: 'Desktop' },
+    { id: 'tablet' as const, icon: Tablet, label: 'Tablet (810px)' },
+    { id: 'phone' as const, icon: Smartphone, label: 'Phone (390px)' },
   ];
 
   return (
@@ -132,7 +129,7 @@ export function CanvasHeader() {
           </Button>
           <div className="mx-1 h-6 w-px bg-border" />
           <Button
-            variant={showGrid ? "secondary" : "ghost"}
+            variant={showGrid ? 'secondary' : 'ghost'}
             size="icon"
             className="size-8"
             onClick={() => setShowGrid(!showGrid)}
@@ -158,7 +155,7 @@ export function CanvasHeader() {
             className="h-8 w-48 text-center text-sm font-medium"
             placeholder="Page title..."
           />
-          <div className={cn("text-xs font-medium", saveStatus.color)}>
+          <div className={cn('text-xs font-medium', saveStatus.color)}>
             {saveStatus.text}
           </div>
         </div>
@@ -170,7 +167,7 @@ export function CanvasHeader() {
               return (
                 <Button
                   key={btn.id}
-                  variant={viewport === btn.id ? "secondary" : "ghost"}
+                  variant={viewport === btn.id ? 'secondary' : 'ghost'}
                   size="icon"
                   className="size-7"
                   onClick={() => setViewport(btn.id)}
@@ -242,7 +239,10 @@ export function CanvasHeader() {
           </div>
         </div>
       </header>
-      <KeyboardShortcutsPanel open={showShortcuts} onOpenChange={setShowShortcuts} />
+      <KeyboardShortcutsPanel
+        open={showShortcuts}
+        onOpenChange={setShowShortcuts}
+      />
     </>
   );
 }

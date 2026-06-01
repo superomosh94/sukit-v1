@@ -117,7 +117,17 @@ export default function DeployPage() {
   };
 
   useEffect(() => {
-    loadDeployments();
+    (async () => {
+      try {
+        const res = await fetch('/api/deploy');
+        const data = await res.json();
+        setDeployments(Array.isArray(data) ? data : []);
+      } catch {
+        setDeployments([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
   useEffect(() => {

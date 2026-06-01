@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   useBuilderStore,
   useBuilderActions,
@@ -53,7 +52,6 @@ export function BuilderEditor({
   const setRightSidebarOpen = useBuilderStore((s) => s.setRightSidebarOpen);
   const actions = useBuilderActions();
   const [leftTab, setLeftTab] = useState('blocks');
-  const [ready, setReady] = useState(false);
 
   // Wire up global hotkeys
   useHotkeys(
@@ -68,17 +66,16 @@ export function BuilderEditor({
   );
 
   // Initialize store with IDs and lazy-load block registration on mount
-  useEffect(() => {
+  const initialized = useRef<boolean | null>(null);
+  if (initialized.current == null) {
     useBuilderStore.setState({
       siteId,
       pageId,
       pageTitle: 'Untitled Page',
     });
     registerAllBlocks();
-    setReady(true);
-  }, [siteId, pageId]);
-
-  if (!ready) return null;
+    initialized.current = true;
+  }
 
   // Fullscreen mode: canvas only
   if (fullscreen) {
