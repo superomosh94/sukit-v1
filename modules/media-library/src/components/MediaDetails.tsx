@@ -59,14 +59,22 @@ function EditableField({
           {multiline ? (
             <textarea
               value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
+              onChange={(e) =>
+                setEditValue(
+                  (e.target as HTMLInputElement | HTMLTextAreaElement).value
+                )
+              }
               className="h-16 w-full rounded border px-2 py-1 text-xs resize-none outline-none"
               autoFocus
             />
           ) : (
             <input
               value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
+              onChange={(e) =>
+                setEditValue(
+                  (e.target as HTMLInputElement | HTMLTextAreaElement).value
+                )
+              }
               className="h-7 flex-1 rounded border px-2 text-xs outline-none"
               autoFocus
               onKeyDown={(e) => e.key === 'Enter' && handleSave()}
@@ -152,7 +160,7 @@ export function MediaDetails() {
         text = getSrcSet(currentAsset.id);
         break;
     }
-    navigator.clipboard.writeText(text);
+    (navigator as any).clipboard.writeText(text);
     setCopied(format);
     setTimeout(() => setCopied(null), 2000);
   };

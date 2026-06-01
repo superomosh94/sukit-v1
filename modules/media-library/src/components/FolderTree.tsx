@@ -49,8 +49,8 @@ function FolderNode({
 
   useEffect(() => {
     if (editing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
+      (inputRef.current as HTMLInputElement)?.focus();
+      (inputRef.current as HTMLInputElement)?.select();
     }
   }, [editing]);
 
@@ -130,7 +130,7 @@ function FolderNode({
             <input
               ref={inputRef}
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => setName((e.target as HTMLInputElement).value)}
               onBlur={handleRename}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleRename();
@@ -247,7 +247,7 @@ export function FolderTree() {
 
   useEffect(() => {
     if (creating && inputRef.current) {
-      inputRef.current.focus();
+      (inputRef.current as HTMLInputElement)?.focus();
     }
   }, [creating]);
 
@@ -282,7 +282,9 @@ export function FolderTree() {
           <Search className="absolute left-2 top-1/2 size-3 -translate-y-1/2 text-muted-foreground" />
           <input
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) =>
+              setSearchQuery((e.target as HTMLInputElement).value)
+            }
             placeholder="Search folders..."
             className="h-7 w-full rounded-md border bg-background pl-6 pr-2 text-[11px] outline-none"
           />
@@ -337,7 +339,9 @@ export function FolderTree() {
             <input
               ref={inputRef}
               value={newFolderName}
-              onChange={(e) => setNewFolderName(e.target.value)}
+              onChange={(e) =>
+                setNewFolderName((e.target as HTMLInputElement).value)
+              }
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleCreateFolder();
                 if (e.key === 'Escape') {

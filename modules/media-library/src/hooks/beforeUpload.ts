@@ -1,17 +1,31 @@
-import type { EventPayload } from '../types';
+import type { MediaAsset } from '../types';
 
-export function beforeUpload(payload: EventPayload) {
-  console.log('[MediaLibrary] media:beforeUpload', payload);
+export interface BeforeUploadEvent {
+  file: File;
+  asset?: MediaAsset;
 }
 
-export function afterUpload(payload: EventPayload) {
-  console.log('[MediaLibrary] media:afterUpload', payload);
+export type BeforeUploadHandler = (
+  event: BeforeUploadEvent
+) => Promise<boolean | void>;
+
+const hooks: BeforeUploadHandler[] = [];
+
+export function addBeforeUploadHook(handler: BeforeUploadHandler) {
+  hooks.push(handler);
 }
 
-export function beforeDelete(payload: EventPayload) {
-  console.log('[MediaLibrary] media:beforeDelete', payload);
+export function removeBeforeUploadHook(handler: BeforeUploadHandler) {
+  const idx = hooks.indexOf(handler);
+  if (idx >= 0) hooks.splice(idx, 1);
 }
 
-export function afterDelete(payload: EventPayload) {
-  console.log('[MediaLibrary] media:afterDelete', payload);
+export async function runBeforeUploadHooks(
+  event: BeforeUploadEvent
+): Promise<boolean> {
+  for (const hook of hooks) {
+    const result = await hook(event);
+    if (result === false) return false;
+  }
+  return true;
 }

@@ -73,7 +73,9 @@ export function UploadDialog({ onClose }: UploadDialogProps) {
     (e: React.DragEvent) => {
       e.preventDefault();
       setDragOver(false);
-      const files = Array.from(e.dataTransfer.files);
+      const files = Array.from(
+        (e as React.DragEvent).dataTransfer?.files ?? []
+      );
       const validation = validateFiles(files);
       if (validation.valid) {
         uploadFiles(files, settings.destinationFolder ?? undefined);
@@ -86,14 +88,14 @@ export function UploadDialog({ onClose }: UploadDialogProps) {
 
   const handleFileSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = Array.from(e.target.files ?? []);
+      const files = Array.from((e.target as HTMLInputElement).files ?? []);
       const validation = validateFiles(files);
       if (validation.valid) {
         uploadFiles(files, settings.destinationFolder ?? undefined);
       } else {
         setValidationErrors(validation.errors);
       }
-      e.target.value = '';
+      (e.target as HTMLInputElement).value = '';
     },
     [uploadFiles, settings.destinationFolder]
   );
@@ -108,7 +110,7 @@ export function UploadDialog({ onClose }: UploadDialogProps) {
 
   const handlePasteUpload = useCallback(async () => {
     try {
-      const text = await navigator.clipboard.readText();
+      const text = await (navigator as any).clipboard.readText();
       if (text && (text.startsWith('http://') || text.startsWith('https://'))) {
         setUrl(text);
         setTab('url');
@@ -389,7 +391,7 @@ export function UploadDialog({ onClose }: UploadDialogProps) {
               <div className="flex gap-2">
                 <input
                   value={url}
-                  onChange={(e) => setUrl(e.target.value)}
+                  onChange={(e) => setUrl((e.target as HTMLInputElement).value)}
                   placeholder="https://example.com/image.jpg"
                   className="h-9 flex-1 rounded-md border px-3 text-sm outline-none"
                   onKeyDown={(e) => e.key === 'Enter' && handleUrlUpload()}

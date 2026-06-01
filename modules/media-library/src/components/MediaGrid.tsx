@@ -86,7 +86,7 @@ export function MediaGrid({ assets }: MediaGridProps) {
   const handleCopyUrl = useCallback(
     (assetId: string, format: 'direct' | 'markdown' | 'html') => {
       const text = copyUrl(assetId, format);
-      navigator.clipboard.writeText(text);
+      (navigator as any).clipboard.writeText(text);
       setCopiedId(assetId);
       setTimeout(() => setCopiedId(null), 2000);
       setContextMenu(null);

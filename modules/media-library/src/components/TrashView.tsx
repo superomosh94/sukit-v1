@@ -149,7 +149,9 @@ export function TrashView() {
           <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <input
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) =>
+              setSearchQuery((e.target as HTMLInputElement).value)
+            }
             placeholder="Search trash..."
             className="h-8 w-full rounded-md border bg-background pl-8 pr-3 text-xs outline-none"
           />

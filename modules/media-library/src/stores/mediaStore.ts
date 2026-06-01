@@ -29,7 +29,7 @@ async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
     const err = await res.json().catch(() => ({ message: res.statusText }));
     throw new Error(err.message || 'API request failed');
   }
-  return res.json();
+  return res.json() as Promise<T>;
 }
 
 let uploadIdCounter = 0;
@@ -114,7 +114,7 @@ export const useMediaStore = create<MediaStore>()(
             formData.append('file', file);
             if (folderId) formData.append('folderId', folderId);
 
-            const asset = await fetch(`${API_BASE}/upload`, {
+            const asset: MediaAsset = await fetch(`${API_BASE}/upload`, {
               method: 'POST',
               body: formData,
             }).then((r) => {
@@ -959,13 +959,19 @@ export const useMediaStore = create<MediaStore>()(
       openPicker: async (options) => {
         return new Promise((resolve) => {
           const handler = (event: CustomEvent) => {
-            window.removeEventListener('media-picker-select', handler as any);
+            (globalThis as any).removeEventListener(
+              'media-picker-select',
+              handler as any
+            );
             resolve(event.detail);
           };
-          window.addEventListener('media-picker-select', handler as any);
+          (globalThis as any).addEventListener(
+            'media-picker-select',
+            handler as any
+          );
 
-          window.dispatchEvent(
-            new CustomEvent('media-picker-open', {
+          (globalThis as any).dispatchEvent(
+            new (globalThis as any).CustomEvent('media-picker-open', {
               detail: options,
             })
           );
@@ -974,16 +980,16 @@ export const useMediaStore = create<MediaStore>()(
 
       // ---- Visual Builder ----
       insertIntoBlock: (asset, blockId, property) => {
-        window.dispatchEvent(
-          new CustomEvent('media:insertIntoBlock', {
+        (globalThis as any).dispatchEvent(
+          new (globalThis as any).CustomEvent('media:insertIntoBlock', {
             detail: { asset, blockId, property },
           })
         );
       },
 
       setAsBackground: (asset, blockId) => {
-        window.dispatchEvent(
-          new CustomEvent('media:setAsBackground', {
+        (globalThis as any).dispatchEvent(
+          new (globalThis as any).CustomEvent('media:setAsBackground', {
             detail: { asset, blockId },
           })
         );

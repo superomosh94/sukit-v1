@@ -26,7 +26,7 @@ export function UploadButton({ onClick }: { onClick?: () => void }) {
       setDragOver(true);
     };
     const handleDragLeave = (e: DragEvent) => {
-      const related = e.relatedTarget as Node | null;
+      const related = (e as DragEvent).relatedTarget as Node | null;
       if (!related || related.ownerDocument?.body.contains(related) === false) {
         setDragOver(false);
       }
@@ -34,7 +34,7 @@ export function UploadButton({ onClick }: { onClick?: () => void }) {
     const handleDrop = (e: DragEvent) => {
       e.preventDefault();
       setDragOver(false);
-      const files = Array.from(e.dataTransfer?.files ?? []);
+      const files = Array.from((e as DragEvent).dataTransfer?.files ?? []);
       if (files.length > 0) {
         uploadFiles(files, useMediaStore.getState().currentFolder ?? undefined);
       }
@@ -53,7 +53,7 @@ export function UploadButton({ onClick }: { onClick?: () => void }) {
 
   const handlePasteUpload = useCallback(async () => {
     try {
-      const items = await navigator.clipboard.read();
+      const items = await (navigator as any).clipboard.read();
       const files: File[] = [];
       for (const item of items) {
         for (const type of item.types) {
@@ -90,11 +90,11 @@ export function UploadButton({ onClick }: { onClick?: () => void }) {
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = Array.from(e.target.files ?? []);
+      const files = Array.from((e.target as HTMLInputElement).files ?? []);
       if (files.length > 0) {
         uploadFiles(files, useMediaStore.getState().currentFolder ?? undefined);
       }
-      e.target.value = '';
+      (e.target as HTMLInputElement).value = '';
     },
     [uploadFiles]
   );

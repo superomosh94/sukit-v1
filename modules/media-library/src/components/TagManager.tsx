@@ -57,7 +57,7 @@ export function TagManager({
   const editInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (inputRef.current) inputRef.current.focus();
+    if (inputRef.current) (inputRef.current as HTMLInputElement)?.focus();
   }, []);
 
   useEffect(() => {
@@ -153,7 +153,9 @@ export function TagManager({
             <input
               ref={inputRef}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) =>
+                setSearchQuery((e.target as HTMLInputElement).value)
+              }
               placeholder="Search tags..."
               className="h-8 w-full rounded-md border bg-background pl-8 pr-3 text-xs outline-none"
             />
@@ -164,7 +166,9 @@ export function TagManager({
               <Hash className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
               <input
                 value={newTagName}
-                onChange={(e) => setNewTagName(e.target.value)}
+                onChange={(e) =>
+                  setNewTagName((e.target as HTMLInputElement).value)
+                }
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}
                 placeholder="New tag name..."
                 className="h-8 w-full rounded-md border bg-background pl-8 pr-3 text-xs outline-none"
@@ -240,7 +244,9 @@ export function TagManager({
                     <input
                       ref={editInputRef}
                       value={editingName}
-                      onChange={(e) => setEditingName(e.target.value)}
+                      onChange={(e) =>
+                        setEditingName((e.target as HTMLInputElement).value)
+                      }
                       onBlur={() => handleRenameTag(tag.id)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') handleRenameTag(tag.id);

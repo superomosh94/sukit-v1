@@ -373,7 +373,9 @@ export function ImageEditor({ assetId, onClose }: ImageEditorProps) {
                             : resizeWidth
                         }
                         onChange={(e) => {
-                          const val = Number(e.target.value);
+                          const val = Number(
+                            (e.target as HTMLInputElement).value
+                          );
                           if (resizeMode === 'percent') {
                             const w = Math.round(
                               (val / 100) * (asset.width ?? 1)
@@ -400,7 +402,9 @@ export function ImageEditor({ assetId, onClose }: ImageEditorProps) {
                             : resizeHeight
                         }
                         onChange={(e) => {
-                          const val = Number(e.target.value);
+                          const val = Number(
+                            (e.target as HTMLInputElement).value
+                          );
                           if (resizeMode === 'percent') {
                             const h = Math.round(
                               (val / 100) * (asset.height ?? 1)
@@ -503,7 +507,11 @@ export function ImageEditor({ assetId, onClose }: ImageEditorProps) {
                       min={-180}
                       max={180}
                       value={rotation}
-                      onChange={(e) => setRotation(Number(e.target.value))}
+                      onChange={(e) =>
+                        setRotation(
+                          Number((e.target as HTMLInputElement).value)
+                        )
+                      }
                       className="mt-1 w-full"
                     />
                   </div>
@@ -560,7 +568,9 @@ export function ImageEditor({ assetId, onClose }: ImageEditorProps) {
                           setSelectedPreset('');
                           setFilters((f) => ({
                             ...f,
-                            brightness: Number(e.target.value),
+                            brightness: Number(
+                              (e.target as HTMLInputElement).value
+                            ),
                           }));
                         }}
                         className="w-full"
@@ -579,7 +589,9 @@ export function ImageEditor({ assetId, onClose }: ImageEditorProps) {
                           setSelectedPreset('');
                           setFilters((f) => ({
                             ...f,
-                            contrast: Number(e.target.value),
+                            contrast: Number(
+                              (e.target as HTMLInputElement).value
+                            ),
                           }));
                         }}
                         className="w-full"
@@ -598,7 +610,9 @@ export function ImageEditor({ assetId, onClose }: ImageEditorProps) {
                           setSelectedPreset('');
                           setFilters((f) => ({
                             ...f,
-                            saturation: Number(e.target.value),
+                            saturation: Number(
+                              (e.target as HTMLInputElement).value
+                            ),
                           }));
                         }}
                         className="w-full"
@@ -618,7 +632,7 @@ export function ImageEditor({ assetId, onClose }: ImageEditorProps) {
                           setSelectedPreset('');
                           setFilters((f) => ({
                             ...f,
-                            blur: Number(e.target.value),
+                            blur: Number((e.target as HTMLInputElement).value),
                           }));
                         }}
                         className="w-full"
@@ -635,7 +649,9 @@ export function ImageEditor({ assetId, onClose }: ImageEditorProps) {
                         value={sharpness}
                         onChange={(e) => {
                           setSelectedPreset('');
-                          setSharpness(Number(e.target.value));
+                          setSharpness(
+                            Number((e.target as HTMLInputElement).value)
+                          );
                         }}
                         className="w-full"
                       />

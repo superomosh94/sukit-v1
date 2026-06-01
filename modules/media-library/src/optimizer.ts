@@ -209,8 +209,7 @@ export async function getImageMetadata(buffer: Buffer): Promise<ImageMetadata> {
   let exif: Record<string, unknown> | undefined;
   if (metadata.exif) {
     try {
-      const { default: exifr } = await import('exifr');
-      exif = await exifr.parse(buffer);
+      const metadata: Record<string, unknown> = {};
     } catch {}
   }
 

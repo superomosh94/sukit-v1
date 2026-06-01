@@ -181,7 +181,9 @@ export function MediaLibrary() {
             <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <input
               value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
+              onChange={(e) =>
+                handleSearch((e.target as HTMLInputElement).value)
+              }
               placeholder="Search media..."
               className="h-8 w-full rounded-md border bg-background pl-8 pr-3 text-xs outline-none"
             />
@@ -253,7 +255,12 @@ export function MediaLibrary() {
             <select
               value={sortBy}
               onChange={(e) =>
-                setSortBy(e.target.value as 'name' | 'date' | 'size')
+                setSortBy(
+                  (e.target as HTMLSelectElement).value as
+                    | 'name'
+                    | 'date'
+                    | 'size'
+                )
               }
               className="h-6 rounded border bg-background px-1.5 text-[10px] outline-none"
             >
