@@ -15,4 +15,3 @@ export declare function createSitesAPI(adapter?: SitesAdapter): {
   list(): Promise<Site[]>;
 };
 export type SitesAPI = ReturnType<typeof createSitesAPI>;
-//# sourceMappingURL=sites.d.ts.map

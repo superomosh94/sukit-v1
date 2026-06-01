@@ -18,4 +18,3 @@ export function createLogAPI(moduleId) {
         },
     };
 }
-//# sourceMappingURL=log.js.map

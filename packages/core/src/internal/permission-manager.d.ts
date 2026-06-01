@@ -16,4 +16,3 @@ export declare class PermissionManager {
   revokeAll(moduleId: string): void;
   getPermissions(moduleId: string): Map<string, string>;
 }
-//# sourceMappingURL=permission-manager.d.ts.map

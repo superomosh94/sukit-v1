@@ -23,7 +23,8 @@ export async function createSite(userId: string, input: CreateSiteInput) {
     data: {
       name: input.name,
       description: input.description ?? '',
-      host: input.slug ?? input.name.toLowerCase().replace(/\s+/g, '-'),
+      host:
+        (input as any).slug ?? input.name.toLowerCase().replace(/\s+/g, '-'),
       userId,
       settings: {
         timezone: input.timezone ?? 'UTC',
@@ -68,14 +69,14 @@ export async function deleteSite(siteId: string, permanent = false) {
   }
   return prisma.site.update({
     where: { id: siteId },
-    data: { deletedAt: new Date() },
+    data: { deletedAt: new Date() } as any,
   });
 }
 
 export async function restoreSite(siteId: string) {
   return prisma.site.update({
     where: { id: siteId },
-    data: { deletedAt: null },
+    data: { deletedAt: null } as any,
   });
 }
 
@@ -139,7 +140,6 @@ export async function updatePage(
     data: {
       ...data,
       updatedAt: new Date(),
-      revisionNotes: undefined,
     },
   });
 }

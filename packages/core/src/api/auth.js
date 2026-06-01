@@ -33,4 +33,3 @@ export function createAuthAPI(adapter) {
         },
     };
 }
-//# sourceMappingURL=auth.js.map

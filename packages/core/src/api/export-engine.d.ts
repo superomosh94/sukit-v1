@@ -14,4 +14,3 @@ export declare function createExportAPI(adapter?: ExportAdapter): {
   deploy(siteId: string, provider: 'netlify' | 'vercel'): Promise<Deployment>;
 };
 export type ExportAPI = ReturnType<typeof createExportAPI>;
-//# sourceMappingURL=export-engine.d.ts.map

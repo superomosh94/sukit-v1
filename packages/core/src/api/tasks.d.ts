@@ -13,4 +13,3 @@ export declare function createTasksAPI(adapter?: TasksAdapter): {
   cancel(taskId: string): Promise<boolean>;
 };
 export type TasksAPI = ReturnType<typeof createTasksAPI>;
-//# sourceMappingURL=tasks.d.ts.map

@@ -914,7 +914,7 @@ function SectionSettings({ section }: { section: Section }) {
           className="h-8 text-xs font-mono"
           placeholder="https://example.com/video.mp4"
         />
-        {settings.backgroundVideoUrl && (
+        {(settings.backgroundVideoUrl as string) && (
           <video
             src={settings.backgroundVideoUrl as string}
             muted

@@ -24,9 +24,9 @@ export interface ImageMetadata {
 
 export async function optimizeImage(
   buffer: Buffer,
-  options: OptimizeOptions = {}
+  options: OptimizeOptions
 ): Promise<Buffer> {
-  const { default: sharp } = await import('sharp');
+  const sharp = Function('return import("sharp")')();
   const {
     quality = 80,
     format = 'webp',

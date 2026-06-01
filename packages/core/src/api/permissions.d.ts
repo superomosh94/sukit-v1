@@ -7,4 +7,3 @@ export declare function createPermissionsAPI(
   request(permission: string, reason: string): Promise<boolean>;
 };
 export type PermissionsAPI = ReturnType<typeof createPermissionsAPI>;
-//# sourceMappingURL=permissions.d.ts.map

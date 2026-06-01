@@ -14,4 +14,3 @@ export function createEventsAPI(bus) {
         },
     };
 }
-//# sourceMappingURL=events.js.map

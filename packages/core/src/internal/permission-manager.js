@@ -25,4 +25,3 @@ export class PermissionManager {
         return new Map(this.granted.get(moduleId) ?? []);
     }
 }
-//# sourceMappingURL=permission-manager.js.map

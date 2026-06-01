@@ -92,4 +92,3 @@ export function createKernel(config) {
 }
 export { setAuthAdapter, setFSAdapter, setStorageAdapter, setSitesAdapter, setPagesAdapter, setMediaAdapter, setExportAdapter, setTasksAdapter, setCacheAdapter, setSettingsAdapter };
 export * from "./types";
-//# sourceMappingURL=index.js.map

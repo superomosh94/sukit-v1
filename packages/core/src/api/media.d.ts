@@ -15,4 +15,3 @@ export declare function createMediaAPI(adapter?: MediaAdapter): {
   delete(id: string): Promise<void>;
 };
 export type MediaAPI = ReturnType<typeof createMediaAPI>;
-//# sourceMappingURL=media.d.ts.map

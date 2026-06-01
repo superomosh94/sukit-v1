@@ -22,4 +22,3 @@ export function createPagesAPI(adapter) {
         },
     };
 }
-//# sourceMappingURL=pages.js.map

@@ -20,4 +20,3 @@ export function createStorageAPI(prefix, adapter) {
         },
     };
 }
-//# sourceMappingURL=storage.js.map

@@ -14,4 +14,3 @@ export declare function createUIAPI(): {
   }[];
 };
 export type UIAPI = ReturnType<typeof createUIAPI>;
-//# sourceMappingURL=ui.d.ts.map

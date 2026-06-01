@@ -13,4 +13,3 @@ export declare function createCacheAPI(adapter?: CacheAdapter): {
   clear(): Promise<void>;
 };
 export type CacheAPI = ReturnType<typeof createCacheAPI>;
-//# sourceMappingURL=cache.d.ts.map

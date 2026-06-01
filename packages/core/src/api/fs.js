@@ -22,4 +22,3 @@ export function createFSAPI(adapter) {
         },
     };
 }
-//# sourceMappingURL=fs.js.map

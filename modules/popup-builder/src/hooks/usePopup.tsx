@@ -5,21 +5,24 @@ import { popupApi, PopupData } from '../services/api';
 export function usePopups() {
   const { popups, isLoading, setPopups, setLoading } = usePopupStore();
 
-  const fetchPopups = useCallback(async (params?: { status?: string }) => {
-    setLoading(true);
-    try {
-      const data = await popupApi.list(params);
-      setPopups(data);
-    } finally {
-      setLoading(false);
-    }
-  }, [setPopups, setLoading]);
+  const fetchPopups = useCallback(
+    async (params?: { status?: string }) => {
+      setLoading(true);
+      try {
+        const data = await popupApi.list(params);
+        setPopups(data);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [setPopups, setLoading]
+  );
 
   return { popups, isLoading, fetchPopups };
 }
 
 export function usePopupTriggers(popups: PopupData[]) {
-  const activePopups = popups.filter(p => p.status === 'ACTIVE');
+  const activePopups = popups.filter((p) => p.status === 'ACTIVE');
   const shownPopups = useRef<Set<string>>(new Set());
   const pageViews = useRef(0);
 
@@ -28,7 +31,7 @@ export function usePopupTriggers(popups: PopupData[]) {
   }, []);
 
   const getTriggeredPopups = useCallback(() => {
-    return activePopups.filter(popup => {
+    return activePopups.filter((popup) => {
       if (shownPopups.current.has(popup.id!)) return false;
 
       switch (popup.triggerType) {

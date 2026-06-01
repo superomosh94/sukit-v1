@@ -28,4 +28,3 @@ export function createAPIRoutesAPI() {
         },
     };
 }
-//# sourceMappingURL=api-routes.js.map

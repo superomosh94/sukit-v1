@@ -20,4 +20,3 @@ export function createModulesAPI(loader) {
         },
     };
 }
-//# sourceMappingURL=modules.js.map

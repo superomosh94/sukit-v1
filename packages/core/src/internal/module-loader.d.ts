@@ -24,4 +24,3 @@ export declare class ModuleLoader {
     }>
   ): Promise<void>;
 }
-//# sourceMappingURL=module-loader.d.ts.map

@@ -22,4 +22,3 @@ export function createSitesAPI(adapter) {
         },
     };
 }
-//# sourceMappingURL=sites.js.map

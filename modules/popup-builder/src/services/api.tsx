@@ -24,7 +24,13 @@ export interface PopupAnalytics {
 }
 
 export const popupApi = {
-  async list(params?: { status?: string; type?: string; search?: string; limit?: number; offset?: number }): Promise<PopupData[]> {
+  async list(params?: {
+    status?: string;
+    type?: string;
+    search?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<PopupData[]> {
     const searchParams = new URLSearchParams();
     if (params?.status) searchParams.set('status', params.status);
     if (params?.type) searchParams.set('type', params.type);
@@ -75,12 +81,17 @@ export const popupApi = {
     return res.json();
   },
 
-  async getAnalytics(period: '7d' | '30d' | '90d' = '30d'): Promise<PopupAnalytics> {
+  async getAnalytics(
+    period: '7d' | '30d' | '90d' = '30d'
+  ): Promise<PopupAnalytics> {
     const res = await fetch(`${API_BASE}/analytics?period=${period}`);
     return res.json();
   },
 
-  async trackEvent(popupId: string, eventType: 'view' | 'conversion' | 'close'): Promise<void> {
+  async trackEvent(
+    popupId: string,
+    eventType: 'view' | 'conversion' | 'close'
+  ): Promise<void> {
     await fetch(`${API_BASE}/track`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

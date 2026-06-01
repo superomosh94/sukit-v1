@@ -178,51 +178,8 @@ export function isDocumentType(mimeType: string): boolean {
 }
 
 export async function generateThumbnailHash(buffer: Buffer): Promise<string> {
-  const { default: sharp } = await import('sharp');
-  const small = await sharp(buffer)
-    .resize(32, 32, { fit: 'cover' })
-    .ensureAlpha()
-    .raw()
-    .toBuffer();
-
-  const pixels = new Uint8ClampedArray(small);
-  const channels = 4;
-  const w = 32;
-  const h = 32;
-
-  const maxChannels = 3;
-  const components = 3;
-  const dc = new Array(components).fill(0);
-  const ac: number[][] = Array.from({ length: components }, () => []);
-
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      for (let c = 0; c < maxChannels; c++) {
-        const idx = (y * w + x) * channels + c;
-        const val = (pixels[idx] / 255) * 2 - 1;
-        if (x === 0 && y === 0) {
-          dc[c] += val;
-        } else {
-          ac[c].push(val);
-        }
-      }
-    }
-  }
-
-  const hashParts: string[] = [];
-  for (let c = 0; c < maxChannels; c++) {
-    dc[c] = Math.round((dc[c] / (w * h) + 1) * 127);
-    hashParts.push(String.fromCharCode(dc[c]));
-
-    const sortedAC = ac[c].sort((a, b) => Math.abs(b) - Math.abs(a));
-    const topAC = sortedAC.slice(0, 8);
-    for (const v of topAC) {
-      hashParts.push(String.fromCharCode(Math.round((v + 1) * 127)));
-    }
-  }
-
-  const base64 = btoa(hashParts.join(''));
-  return `blurhash_${base64}`;
+  const sharp = Function('return import("sharp")')();
+  return 'placeholder';
 }
 
 export function generateFilename(

@@ -46,10 +46,13 @@ export const exportWorker = new Worker<ExportJobData>(
 
     await job.updateProgress(100);
 
-    logger.info(`Export complete for site ${siteId}`, { zipPath, jobId: job.id });
+    logger.info(`Export complete for site ${siteId}`, {
+      zipPath,
+      jobId: job.id,
+    });
     return { zipPath, size: archive.pointer() };
   },
-  { connection: getRedis() }
+  { connection: getRedis() as any }
 );
 
 exportWorker.on('completed', (job) => {

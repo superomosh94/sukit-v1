@@ -9,4 +9,3 @@ export declare function createBlocksAPI(): {
   render(block: Block): React.ReactNode;
 };
 export type BlocksAPI = ReturnType<typeof createBlocksAPI>;
-//# sourceMappingURL=blocks.d.ts.map

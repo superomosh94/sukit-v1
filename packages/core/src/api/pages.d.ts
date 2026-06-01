@@ -15,4 +15,3 @@ export declare function createPagesAPI(adapter?: PagesAdapter): {
   list(siteId: string): Promise<Page[]>;
 };
 export type PagesAPI = ReturnType<typeof createPagesAPI>;
-//# sourceMappingURL=pages.d.ts.map

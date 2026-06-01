@@ -461,10 +461,59 @@ const ICON_MAP: Record<string, typeof LayoutTemplateIcon> = {
   LayoutTemplate: LayoutTemplateIcon,
 };
 
-function EmptyCanvas() {
+function EmptyCanvasFallback() {
+  const addSection = useBuilderStore((s) => s.addSection);
+
+  return (
+    <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center p-8">
+      <div className="rounded-full bg-muted p-4 mb-4">
+        <LayoutTemplateIcon className="size-8 text-muted-foreground" />
+      </div>
+      <h3 className="text-lg font-semibold mb-1">No sections yet</h3>
+      <p className="text-sm text-muted-foreground mb-4 max-w-sm">
+        Start building your page by adding a section.
+      </p>
+      <button
+        onClick={() => addSection('default')}
+        className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90"
+      >
+        Add Section
+      </button>
+    </div>
+  );
+}
+
+function sortByKeyFn(items: any[]) {
+  return [...items].sort((a, b) =>
+    a.sortKey < b.sortKey ? -1 : a.sortKey > b.sortKey ? 1 : 0
+  );
+}
+
+export function Canvas({ siteId, pageId }: { siteId: string; pageId: string }) {
   const addSection = useBuilderStore((s) => s.addSection);
   const sections = useBuilderStore((s) => s.sections);
   const setSections = useBuilderStore((s) => s.setSections);
+  const reorderSections = useBuilderStore((s) => s.reorderSections);
+  const moveBlock = useBuilderStore((s) => s.moveBlock);
+  const clearSelection = useBuilderStore((s) => s.clearSelection);
+  const toggleSelection = useBuilderStore((s) => s.toggleSelection);
+  const select = useBuilderStore((s) => s.select);
+  const copySelection = useBuilderStore((s) => s.copySelection);
+  const nudgeBlock = useBuilderStore((s) => s.nudgeBlock);
+  const duplicateBlock = useBuilderStore((s) => s.duplicateBlock);
+  const addBlock = useBuilderStore((s) => s.addBlock);
+  const isPanning = useBuilderStore((s) => s.isPanning);
+  const selectedIds = useBuilderStore((s) => s.selectedIds);
+  const showGrid = useBuilderStore((s) => s.showGrid);
+  const setIsPanning = useBuilderStore((s) => s.setIsPanning);
+  const viewport = useBuilderStore((s) => s.viewport);
+  const zoom = useBuilderStore((s) => s.zoom);
+  const panOffset = useBuilderStore((s) => s.panOffset);
+  const gridSize = useBuilderStore((s) => s.gridSize);
+  const showOutlines = useBuilderStore((s) => s.showOutlines);
+  const deleteBlock = useBuilderStore((s) => s.deleteBlock);
+  const selection = useBuilderStore((s) => s.selection);
+  const setPanOffset = useBuilderStore((s) => s.setPanOffset);
   const [showPicker, setShowPicker] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -483,14 +532,9 @@ function EmptyCanvas() {
     currentY: number;
   } | null>(null);
   const marqueeRef = useRef<HTMLDivElement>(null);
-  const canvasInnerRef = useRef<HTMLDivElement>(null);
-  const [contextMenu, setContextMenu] = useState<{
-    x: number;
-    y: number;
-    items: ContextMenuItem[];
-  } | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const spaceHeldRef = useRef(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -701,7 +745,7 @@ function EmptyCanvas() {
         addSection('container');
         return;
       }
-      const col = lastSection.columns.find((c) => c.id === columnId);
+      const col = lastSection.columns.find((c: any) => c.id === columnId);
       if (col) {
         addBlock(lastSection.id, columnId, 'text');
       }
@@ -718,7 +762,7 @@ function EmptyCanvas() {
     } else {
       for (const s of state.sections) {
         for (const c of s.columns) {
-          if (c.blocks.find((b) => b.id === confirmDelete.id)) {
+          if (c.blocks.find((b: any) => b.id === confirmDelete.id)) {
             state.deleteBlock(s.id, c.id, confirmDelete.id);
             showToast('Block deleted', 'info');
             return;
@@ -773,7 +817,7 @@ function EmptyCanvas() {
         if (e.key === 'ArrowRight') dx = step;
         for (const s of state.sections) {
           for (const c of s.columns) {
-            const block = c.blocks.find((b) => b.id === sel.id);
+            const block = c.blocks.find((b: any) => b.id === sel.id);
             if (block) {
               nudgeBlock(s.id, c.id, sel.id, dx, dy);
               return;
@@ -801,7 +845,7 @@ function EmptyCanvas() {
         } else if (sel.type === 'block') {
           for (const s of state.sections) {
             for (const c of s.columns) {
-              if (c.blocks.find((b) => b.id === sel.id)) {
+              if (c.blocks.find((b: any) => b.id === sel.id)) {
                 duplicateBlock(s.id, c.id, sel.id);
                 return;
               }
@@ -824,7 +868,7 @@ function EmptyCanvas() {
         } else if (sel.type === 'block') {
           for (const s of state.sections) {
             for (const c of s.columns) {
-              if (c.blocks.find((b) => b.id === sel.id)) {
+              if (c.blocks.find((b: any) => b.id === sel.id)) {
                 state.deleteBlock(s.id, c.id, sel.id);
                 return;
               }
@@ -1009,36 +1053,44 @@ function EmptyCanvas() {
                       {
                         label: 'Group Blocks',
                         icon: <LayoutGrid className="size-3.5" />,
-                        onClick: () => state.groupBlocks?.(selectedIds),
+                        onClick: () =>
+                          (state as any).groupBlocks?.(selectedIds),
                       } as ContextMenuItem,
                       {
                         label: 'Align Left',
                         icon: <LayoutGrid className="size-3.5" />,
-                        onClick: () => state.alignBlocks?.(selectedIds, 'left'),
+                        onClick: () =>
+                          (state as any).alignBlocks?.(selectedIds, 'left'),
                       } as ContextMenuItem,
                       {
                         label: 'Align Center',
                         icon: <LayoutGrid className="size-3.5" />,
                         onClick: () =>
-                          state.alignBlocks?.(selectedIds, 'center'),
+                          (state as any).alignBlocks?.(selectedIds, 'center'),
                       } as ContextMenuItem,
                       {
                         label: 'Align Right',
                         icon: <LayoutGrid className="size-3.5" />,
                         onClick: () =>
-                          state.alignBlocks?.(selectedIds, 'right'),
+                          (state as any).alignBlocks?.(selectedIds, 'right'),
                       } as ContextMenuItem,
                       {
                         label: 'Distribute Horizontal',
                         icon: <LayoutGrid className="size-3.5" />,
                         onClick: () =>
-                          state.distributeBlocks?.(selectedIds, 'horizontal'),
+                          (state as any).distributeBlocks?.(
+                            selectedIds,
+                            'horizontal'
+                          ),
                       } as ContextMenuItem,
                       {
                         label: 'Distribute Vertical',
                         icon: <LayoutGrid className="size-3.5" />,
                         onClick: () =>
-                          state.distributeBlocks?.(selectedIds, 'vertical'),
+                          (state as any).distributeBlocks?.(
+                            selectedIds,
+                            'vertical'
+                          ),
                       } as ContextMenuItem,
                     ]
                   : []),
@@ -1095,7 +1147,7 @@ function EmptyCanvas() {
             }}
           >
             {sortedSections.length === 0 ? (
-              <EmptyCanvas />
+              <EmptyCanvasFallback />
             ) : (
               <DndContext
                 sensors={sensors}
@@ -1128,7 +1180,7 @@ function EmptyCanvas() {
                         onBlockSelect={handleBlockSelect}
                         onBlockDelete={(blockId) => {
                           for (const c of section.columns) {
-                            if (c.blocks.find((b) => b.id === blockId)) {
+                            if (c.blocks.find((b: any) => b.id === blockId)) {
                               deleteBlock(section.id, c.id, blockId);
                               return;
                             }
@@ -1136,7 +1188,7 @@ function EmptyCanvas() {
                         }}
                         onBlockDuplicate={(blockId) => {
                           for (const c of section.columns) {
-                            if (c.blocks.find((b) => b.id === blockId)) {
+                            if (c.blocks.find((b: any) => b.id === blockId)) {
                               duplicateBlock(section.id, c.id, blockId);
                               return;
                             }
@@ -1160,7 +1212,8 @@ function EmptyCanvas() {
                         {blockRegistry.getBlockType(
                           sections
                             .flatMap((s) => s.columns.flatMap((c) => c.blocks))
-                            .find((b) => b.id === activeId)?.blockType ?? ''
+                            .find((b: any) => b.id === activeId)?.blockType ??
+                            ''
                         )?.label ?? 'Moving...'}
                       </span>
                     </div>

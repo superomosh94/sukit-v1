@@ -8,7 +8,11 @@ interface WebhookJobData {
   payload: any;
 }
 
-async function deliverWebhook(url: string, event: string, payload: any): Promise<void> {
+async function deliverWebhook(
+  url: string,
+  event: string,
+  payload: any
+): Promise<void> {
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -24,7 +28,9 @@ async function deliverWebhook(url: string, event: string, payload: any): Promise
   });
 
   if (!response.ok) {
-    throw new Error(`Webhook delivery failed: ${response.status} ${await response.text()}`);
+    throw new Error(
+      `Webhook delivery failed: ${response.status} ${await response.text()}`
+    );
   }
 }
 
@@ -32,15 +38,18 @@ export const webhookWorker = new Worker<WebhookJobData>(
   'sukit-webhooks',
   async (job: Job<WebhookJobData>) => {
     const { url, event, payload } = job.data;
-    logger.info(`Delivering webhook`, { event, url, jobId: job.id, attempt: job.attemptsMade + 1 });
+    logger.info(`Delivering webhook`, {
+      event,
+      url,
+      jobId: job.id,
+      attempt: job.attemptsMade + 1,
+    });
     await deliverWebhook(url, event, payload);
     logger.info(`Webhook delivered`, { event, url, jobId: job.id });
   },
   {
-    connection: getRedis(),
-    attempts: 3,
-    backoff: { type: 'exponential', delay: 5000 },
-  }
+    connection: getRedis() as any,
+  } as any
 );
 
 webhookWorker.on('completed', (job) => {

@@ -12,4 +12,3 @@ export declare function createAPIRoutesAPI(): {
   ): Promise<Response | null>;
 };
 export type APIRoutesAPI = ReturnType<typeof createAPIRoutesAPI>;
-//# sourceMappingURL=api-routes.d.ts.map

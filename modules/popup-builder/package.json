@@ -12,13 +12,14 @@
   "dependencies": {
     "@sukit/core": "workspace:*",
     "@sukit/module-sdk": "workspace:*",
+    "@sukit/shared": "workspace:*",
+    "@sukit/ui": "workspace:*",
+    "framer-motion": "^12.40.0",
+    "lucide-react": "^0.400.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "zustand": "^5.0.0",
-    "lucide-react": "^0.400.0",
     "recharts": "^2.12.0",
-    "@sukit/shared": "workspace:*",
-    "@sukit/ui": "workspace:*"
+    "zustand": "^5.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",

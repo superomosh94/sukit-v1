@@ -19,4 +19,3 @@ export function createTasksAPI(adapter) {
         },
     };
 }
-//# sourceMappingURL=tasks.js.map

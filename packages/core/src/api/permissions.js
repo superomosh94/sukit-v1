@@ -8,4 +8,3 @@ export function createPermissionsAPI(manager, moduleId) {
         },
     };
 }
-//# sourceMappingURL=permissions.js.map

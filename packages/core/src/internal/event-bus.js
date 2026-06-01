@@ -50,4 +50,3 @@ export class EventBus {
         return (this.handlers.get(event)?.size ?? 0) + (this.onceHandlers.get(event)?.size ?? 0);
     }
 }
-//# sourceMappingURL=event-bus.js.map

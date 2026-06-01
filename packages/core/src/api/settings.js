@@ -31,4 +31,3 @@ export function createSettingsAPI(prefix, adapter) {
         },
     };
 }
-//# sourceMappingURL=settings.js.map

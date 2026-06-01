@@ -25,4 +25,3 @@ export function createBlocksAPI() {
         },
     };
 }
-//# sourceMappingURL=blocks.js.map

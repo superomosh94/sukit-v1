@@ -15,4 +15,3 @@ export declare function createStorageAPI(
   has(key: string): Promise<boolean>;
 };
 export type StorageAPI = ReturnType<typeof createStorageAPI>;
-//# sourceMappingURL=storage.d.ts.map

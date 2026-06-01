@@ -19,4 +19,3 @@ export function createCacheAPI(adapter) {
         },
     };
 }
-//# sourceMappingURL=cache.js.map

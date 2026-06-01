@@ -15,4 +15,3 @@ export declare function createSettingsAPI(
   getAllPanels(): SettingsPanel[];
 };
 export type SettingsAPI = ReturnType<typeof createSettingsAPI>;
-//# sourceMappingURL=settings.d.ts.map

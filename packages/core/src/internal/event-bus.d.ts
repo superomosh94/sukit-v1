@@ -10,4 +10,3 @@ export declare class EventBus {
   listenerCount(event: string): number;
 }
 export {};
-//# sourceMappingURL=event-bus.d.ts.map

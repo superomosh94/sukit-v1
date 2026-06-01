@@ -16,4 +16,3 @@ export declare function createFSAPI(adapter?: FSAdapter): {
   delete(path: string): Promise<void>;
 };
 export type FSAPI = ReturnType<typeof createFSAPI>;
-//# sourceMappingURL=fs.d.ts.map

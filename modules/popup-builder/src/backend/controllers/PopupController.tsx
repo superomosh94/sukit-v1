@@ -3,11 +3,19 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 export class PopupController {
-  async list(query: { status?: string; type?: string; search?: string; siteId: string; limit?: number; offset?: number }) {
+  async list(query: {
+    status?: string;
+    type?: string;
+    search?: string;
+    siteId: string;
+    limit?: number;
+    offset?: number;
+  }) {
     const where: any = { siteId: query.siteId };
     if (query.status) where.status = query.status;
     if (query.type) where.popupType = query.type;
-    if (query.search) where.name = { contains: query.search, mode: 'insensitive' };
+    if (query.search)
+      where.name = { contains: query.search, mode: 'insensitive' };
 
     const [popups, total] = await Promise.all([
       prisma.popup.findMany({
@@ -32,7 +40,7 @@ export class PopupController {
   }
 
   async create(data: any) {
-    return prisma.popup.create({ data });
+    return prisma.popup.create({ data } as any);
   }
 
   async update(id: string, data: any) {
@@ -45,11 +53,17 @@ export class PopupController {
   }
 
   async activate(id: string) {
-    return prisma.popup.update({ where: { id }, data: { status: 'ACTIVE' as any } });
+    return prisma.popup.update({
+      where: { id },
+      data: { status: 'ACTIVE' as any },
+    });
   }
 
   async pause(id: string) {
-    return prisma.popup.update({ where: { id }, data: { status: 'PAUSED' as any } });
+    return prisma.popup.update({
+      where: { id },
+      data: { status: 'PAUSED' as any },
+    });
   }
 
   async duplicate(id: string) {
@@ -58,7 +72,7 @@ export class PopupController {
     const { id: _, createdAt, updatedAt, ...rest } = original;
     return prisma.popup.create({
       data: { ...rest, name: `${rest.name} (Copy)`, status: 'DRAFT' as any },
-    });
+    } as any);
   }
 
   async trackEvent(popupId: string, eventType: string, sessionId?: string) {
@@ -81,7 +95,10 @@ export class PopupController {
       const updated = await prisma.popup.findUnique({ where: { id: popupId } });
       if (updated && updated.views > 0) {
         updateData.conversionRate = updated.conversions / updated.views;
-        await prisma.popup.update({ where: { id: popupId }, data: { conversionRate: updateData.conversionRate } });
+        await prisma.popup.update({
+          where: { id: popupId },
+          data: { conversionRate: updateData.conversionRate },
+        });
       }
     }
 
@@ -96,8 +113,10 @@ export class PopupController {
       where: { createdAt: { gte: since }, popup: { siteId } },
     });
 
-    const views = events.filter(e => e.eventType === 'VIEW').length;
-    const conversions = events.filter(e => e.eventType === 'CONVERSION').length;
+    const views = events.filter((e) => e.eventType === 'VIEW').length;
+    const conversions = events.filter(
+      (e) => e.eventType === 'CONVERSION'
+    ).length;
     const conversionRate = views > 0 ? conversions / views : 0;
 
     const dailyMap = new Map<string, { views: number; conversions: number }>();

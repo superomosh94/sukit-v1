@@ -73,4 +73,3 @@ export class ModuleLoader {
         await this.load(moduleId, manifest, factory);
     }
 }
-//# sourceMappingURL=module-loader.js.map

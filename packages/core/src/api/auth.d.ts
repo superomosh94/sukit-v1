@@ -19,4 +19,3 @@ export declare function createAuthAPI(adapter?: AuthAdapter): {
   register(email: string, password: string, name?: string): Promise<User>;
 };
 export type AuthAPI = ReturnType<typeof createAuthAPI>;
-//# sourceMappingURL=auth.d.ts.map

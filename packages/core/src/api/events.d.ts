@@ -9,4 +9,3 @@ export declare function createEventsAPI(bus: EventBus): {
   off(event: string, handler: (payload: any) => void | Promise<void>): void;
 };
 export type EventsAPI = ReturnType<typeof createEventsAPI>;
-//# sourceMappingURL=events.d.ts.map

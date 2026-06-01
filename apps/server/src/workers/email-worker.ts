@@ -8,7 +8,11 @@ interface EmailJobData {
   data: Record<string, any>;
 }
 
-async function sendEmail(type: string, to: string, data: Record<string, any>): Promise<void> {
+async function sendEmail(
+  type: string,
+  to: string,
+  data: Record<string, any>
+): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     logger.warn('RESEND_API_KEY not set, skipping email');
@@ -40,7 +44,7 @@ async function sendEmail(type: string, to: string, data: Record<string, any>): P
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
+      Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -52,7 +56,9 @@ async function sendEmail(type: string, to: string, data: Record<string, any>): P
   });
 
   if (!response.ok) {
-    throw new Error(`Resend API error: ${response.status} ${await response.text()}`);
+    throw new Error(
+      `Resend API error: ${response.status} ${await response.text()}`
+    );
   }
 }
 
@@ -63,7 +69,7 @@ export const emailWorker = new Worker<EmailJobData>(
     logger.info(`Sending email`, { type, to, jobId: job.id });
     await sendEmail(type, to, data);
   },
-  { connection: getRedis() }
+  { connection: getRedis() as any }
 );
 
 emailWorker.on('completed', (job) => {

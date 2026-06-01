@@ -230,4 +230,3 @@ export interface ModuleLogger {
   error(message: string, error?: Error): void;
   forModule(moduleId: string): ModuleLogger;
 }
-//# sourceMappingURL=index.d.ts.map

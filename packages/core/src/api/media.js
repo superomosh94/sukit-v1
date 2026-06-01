@@ -22,4 +22,3 @@ export function createMediaAPI(adapter) {
         },
     };
 }
-//# sourceMappingURL=media.js.map

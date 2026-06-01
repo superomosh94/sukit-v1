@@ -27,10 +27,13 @@ export const usePopupStore = create<PopupStore>()(
       setCurrentPopup: (popup) => set({ currentPopup: popup }),
       setLoading: (loading) => set({ isLoading: loading }),
       setEditorContent: (content) => set({ editorContent: content }),
-      addPopup: (popup) => set((state) => ({ popups: [...state.popups, popup] })),
+      addPopup: (popup) =>
+        set((state) => ({ popups: [...state.popups, popup] })),
       updatePopup: (id, data) =>
         set((state) => ({
-          popups: state.popups.map((p) => (p.id === id ? { ...p, ...data } : p)),
+          popups: state.popups.map((p) =>
+            p.id === id ? { ...p, ...data } : p
+          ),
         })),
       removePopup: (id) =>
         set((state) => ({

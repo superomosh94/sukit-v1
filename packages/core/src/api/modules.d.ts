@@ -15,4 +15,3 @@ export declare function createModulesAPI(loader: ModuleLoader): {
   getAll(): ActiveModule[];
 };
 export type ModulesAPI = ReturnType<typeof createModulesAPI>;
-//# sourceMappingURL=modules.d.ts.map
