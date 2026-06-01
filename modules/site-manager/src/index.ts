@@ -7,6 +7,16 @@ export { PageSettings } from './components/PageSettings';
 export { SiteDashboard } from './components/SiteDashboard';
 export { TeamManager } from './components/TeamManager';
 export { CreateSiteDialog } from './components/CreateSiteDialog';
+export { PageIconPicker } from './components/PageIconPicker';
+export { StatusBadge } from './components/StatusBadge';
+export { StatusFilter } from './components/StatusFilter';
+export { CollisionPresence } from './components/CollisionPresence';
+export { PageLockIndicator } from './components/PageLockIndicator';
+export { PermissionOverrides } from './components/PermissionOverrides';
+export { CodeInjection } from './components/CodeInjection';
+export { BackupSettings } from './components/BackupSettings';
+export { useKeyboardNavigation } from './hooks/useKeyboardNavigation';
+export { useTreeExpandCollapse } from './hooks/useTreeExpandCollapse';
 
 export {
   handleGetSites,

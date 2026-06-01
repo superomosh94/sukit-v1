@@ -1,4 +1,9 @@
 import manifest from "../manifest.json";
+export { useChatStore } from "./stores/chatStore";
+export { TrainingConfig } from "./components/TrainingConfig";
+export { LeadCapture } from "./components/LeadCapture";
+export { ChatAnalytics } from "./components/ChatAnalytics";
+export { ConversationList } from "./components/ConversationList";
 const chatModule = {
     manifest: manifest,
     async activate(kernel) {

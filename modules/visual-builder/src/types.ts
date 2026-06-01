@@ -316,6 +316,8 @@ export interface BuilderState {
   showMargin: boolean;
   showBorderRadius: boolean;
   themeColors: string[];
+  favoriteBlocks: string[];
+  recentBlocks: string[];
 }
 
 export interface BuilderSnapshot {
@@ -413,6 +415,10 @@ export interface BuilderActions {
   setThemeColors: (colors: string[]) => void;
   addTemplateCategory: (templateId: string, category: string) => void;
   setTemplateThumbnail: (templateId: string, url: string) => void;
+  toggleFavoriteBlock: (blockType: string) => void;
+  isFavoriteBlock: (blockType: string) => boolean;
+  trackRecentBlock: (blockType: string) => void;
+  clearRecentBlocks: () => void;
 }
 
 export type BuilderStore = BuilderState & BuilderActions;

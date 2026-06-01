@@ -630,6 +630,37 @@ export class CLI {
     return this.formatOutput(result, flags);
   }
 
+  async setTelemetry(
+    enabled: boolean,
+    flags: CLIFlags = {}
+  ): Promise<CommandResult> {
+    await this.kernel.settings.set('cli:telemetry', enabled ? 'true' : 'false');
+    return this.formatOutput(
+      {
+        success: true,
+        message: `Telemetry ${enabled ? 'enabled' : 'disabled'}`,
+        data: { telemetry: enabled },
+      },
+      flags
+    );
+  }
+
+  async getTelemetry(flags: CLIFlags = {}): Promise<CommandResult> {
+    const value = await this.kernel.settings.get('cli:telemetry');
+    const enabled = value === 'true';
+    if (flags.json)
+      return {
+        success: true,
+        message: '',
+        data: { telemetry: enabled },
+      };
+    return {
+      success: true,
+      message: `Telemetry is ${enabled ? 'enabled' : 'disabled'}`,
+      data: { telemetry: enabled },
+    };
+  }
+
   async version(flags: CLIFlags = {}): Promise<CommandResult> {
     const current = '1.0.0';
     const latest = '1.0.0'; // In production, check npm registry
@@ -719,7 +750,7 @@ _sukit() {
     args)
       case $line[1] in
         module) _sukit_module_commands ;;
-        config) _arguments '2:subcommand:(get set)' ;;
+        config) _arguments '2:subcommand:(get set list telemetry)' ;;
         migrate) _arguments '2:platform:(wordpress webflow wix squarespace ghost static-html)' ;;
       esac
   esac
@@ -761,7 +792,7 @@ complete -c sukit -l yes -d "Skip prompts and use defaults"`;
 
   case $prev in
     module) COMPREPLY=($(compgen -W "\$module_commands" -- "$cur")) ;;
-    config) COMPREPLY=($(compgen -W "get set list" -- "$cur")) ;;
+    config) COMPREPLY=($(compgen -W "get set list telemetry" -- "$cur")) ;;
     migrate) COMPREPLY=($(compgen -W "wordpress webflow wix squarespace ghost static-html" -- "$cur")) ;;
     export) COMPREPLY=($(compgen -W "zip next static" -- "$cur")) ;;
     deploy) COMPREPLY=($(compgen -W "netlify vercel github-pages s3 cloudflare" -- "$cur")) ;;

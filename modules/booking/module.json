@@ -1,0 +1,26 @@
+{
+  "id": "@sukit/module-booking",
+  "name": "Booking",
+  "version": "1.0.0",
+  "description": "Complete booking and reservation system with calendar, staff management, payments, reminders, and analytics",
+  "author": "SUKIT Team",
+  "license": "MIT",
+  "icon": "CalendarCheck",
+  "minAppVersion": "1.0.0",
+  "category": "business",
+  "features": [
+    "services", "calendar", "time-slots", "payments", "staff-management",
+    "customer-management", "analytics", "zoom-integration", "google-meet",
+    "recurring-bookings", "waitlist", "email-reminders", "sms-reminders",
+    "cancellation-policies", "booking-form", "availability", "blocked-dates",
+    "multi-location", "deposits", "gift-cards", "coupons", "loyalty-points",
+    "invoice-generation", "public-booking-page", "custom-fields",
+    "notifications", "sms-notifications", "webhooks", "ical-export", "reports"
+  ],
+  "settings": {
+    "defaultDuration": { "type": "number", "label": "Default Appointment Duration (min)", "default": 60 },
+    "enableReminders": { "type": "boolean", "label": "Enable Email Reminders", "default": true },
+    "bufferTime": { "type": "number", "label": "Buffer Between Appointments (min)", "default": 15 },
+    "currency": { "type": "select", "label": "Currency", "default": "USD", "options": [{ "label": "USD", "value": "USD" }, { "label": "EUR", "value": "EUR" }, { "label": "GBP", "value": "GBP" }] }
+  }
+}

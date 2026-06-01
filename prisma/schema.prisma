@@ -703,20 +703,29 @@ model SiteEntry {
 }
 
 model Media {
-  id        String   @id @default(cuid())
-  siteId    String
-  filename  String
-  url       String
-  mimeType  String
-  size      Int
-  width     Int?
-  height    Int?
-  alt       String?
-  folderId  String?
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  siteId     String
+  filename   String
+  key        String   @default("")
+  url        String
+  mimeType   String
+  size       Int
+  width      Int?
+  height     Int?
+  alt        String?
+  caption    String?
+  folderId   String?
+  uploadedById String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  site     Site           @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  folder   Folder?        @relation(fields: [folderId], references: [id])
+  tags     MediaTag[]
+  versions MediaVersion[]
+  uploader User?          @relation(fields: [uploadedById], references: [id])
 
+  @@index([siteId, folderId])
   @@map("media")
 }
 
@@ -724,225 +733,13 @@ model Form {
   id        String   @id @default(cuid())
   siteId    String
   name      String
-  fields    Json     @default("[]")
   settings  Json     @default("{}")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   site        Site             @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  fields      FormField[]
   submissions FormSubmission[]
-
-  @@map("forms")
-}
-
-model FormSubmission {
-  id        String   @id @default(cuid())
-  formId    String
-  data      Json     @default("{}")
-  ip        String?
-  userAgent String?
-  createdAt DateTime @default(now())
-
-  form Form @relation(fields: [formId], references: [id], onDelete: Cascade)
-
-  @@map("form_submissions")
-}
-
-model Module {
-  id        String   @id @default(cuid())
-  siteId    String
-  moduleId  String
-  enabled   Boolean  @default(false)
-  settings  Json     @default("{}")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
-
-  @@unique([siteId, moduleId])
-  @@map("modules")
-}
-
-model Export {
-  id        String   @id @default(cuid())
-  siteId    String
-  status    String   @default("pending")
-  url       String?
-  size      Int?
-  createdAt DateTime @default(now())
-
-  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
-
-  @@map("exports")
-}
-
-model PublishedPage {
-  id        String   @id @default(cuid())
-  pageId    String
-  version   Int
-  content   Json
-  createdAt DateTime @default(now())
-
-  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
-
-  @@unique([pageId, version])
-  @@map("published_pages")
-}
-
-model CustomSection {
-  id          String   @id @default(cuid())
-  siteId      String
-  name        String
-  slug        String
-  description String?
-  thumbnail   String?
-  category    String?
-  sectionData Json     @default("{}")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
-
-  @@unique([siteId, slug])
-  @@map("custom_sections")
-}
-
-model Menu {
-  id        String   @id @default(cuid())
-  siteId    String
-  name      String
-  slug      String   @default("main")
-  items     Json     @default("[]")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
-
-  @@map("menus")
-}
-
-enum PopupType {
-  MODAL
-  SLIDE_IN
-  FLOATING_BAR
-  FULLSCREEN
-  NOTIFICATION
-  INLINE
-
-  @@map("popup_type")
-}
-
-enum TriggerType {
-  TIME
-  SCROLL
-  EXIT_INTENT
-  CLICK
-  INACTIVITY
-  PAGE_VIEWS
-  ELEMENT_VISIBILITY
-  ON_LOAD
-
-  @@map("trigger_type")
-}
-
-enum PopupStatus {
-  DRAFT
-  ACTIVE
-  PAUSED
-  ARCHIVED
-
-  @@map("popup_status")
-}
-
-enum EventType {
-  VIEW
-  CONVERSION
-  CLOSE
-
-  @@map("event_type")
-}
-
-model Popup {
-  id                String      @id @default(cuid())
-  pageId            String
-  siteId            String
-  name              String
-  description       String?
-  popupType         PopupType   @default(MODAL)
-  triggerType       TriggerType @default(TIME)
-  triggerValue      String?
-  triggerElement    String?
-  animation         String      @default("fade")
-  animationDuration Int         @default(300)
-  content           Json        @default("{}")
-  settings          Json        @default("{}")
-  pages             Json        @default("[]")
-  devices           Json        @default("[]")
-  userStatus        String?
-  showFrequency     String?
-  startDate         DateTime?
-  endDate           DateTime?
-  priority          Int         @default(0)
-  status            PopupStatus @default(DRAFT)
-  views             Int         @default(0)
-  conversions       Int         @default(0)
-  conversionRate    Float       @default(0)
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
-
-  page   Page         @relation(fields: [pageId], references: [id], onDelete: Cascade)
-  site   Site         @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  events PopupEvent[]
-  tests  PopupTest[]
-
-  @@map("popups")
-}
-
-model PopupEvent {
-  id        String    @id @default(cuid())
-  popupId   String
-  eventType EventType @default(VIEW)
-  sessionId String?
-  userId    String?
-  userAgent String?
-  ip        String?
-  createdAt DateTime  @default(now())
-
-  popup Popup @relation(fields: [popupId], references: [id], onDelete: Cascade)
-
-  @@map("popup_events")
-}
-
-model PopupTest {
-  id          String   @id @default(cuid())
-  popupId     String
-  name        String
-  variant     String
-  weight      Int      @default(50)
-  content     Json     @default("{}")
-  views       Int      @default(0)
-  conversions Int      @default(0)
-  createdAt   DateTime @default(now())
-
-  popup Popup @relation(fields: [popupId], references: [id], onDelete: Cascade)
-
-  @@map("popup_tests")
-}
-
-model Deployment {
-  id          String       @id @default(cuid())
-  siteId      String
-  status      DeployStatus @default(PENDING)
-  type        String       @default("static")
-  outputUrl   String?
-  error       String?
-  pages       Int          @default(0)
-  assets      Int          @default(0)
-  size        Int          @default(0)
-  createdAt   DateTime     @default(now())
-  completedAt DateTime?
-
-  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
 
   @@index([siteId])
   @@map("deployments")
@@ -1426,4 +1223,868 @@ model TrashItem {
   expiresAt DateTime
 
   @@map("trash_items")
+}
+
+// =============================================================================
+// LAYER 5: MARKETPLACE ECOSYSTEM
+// =============================================================================
+
+enum MarketplaceModuleStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  DEPRECATED
+  SUSPENDED
+
+  @@map("marketplace_module_status")
+}
+
+model MarketplaceModule {
+  id          String @id @default(cuid())
+  moduleId    String @unique
+  name        String
+  description String
+  version     String
+  authorId    String
+  authorName  String
+
+  category String
+  tags     String[]
+
+  price                    Float?
+  priceModel               String @default("free")
+  subscriptionPriceMonthly Float?
+  subscriptionPriceYearly  Float?
+
+  downloads   Int   @default(0)
+  rating      Float @default(0)
+  ratingCount Int   @default(0)
+
+  screenshots String[]
+  icon        String?
+  banner      String?
+
+  documentation String?
+  changelog     String?
+
+  minSukitVersion       String   @default("1.0.0")
+  maxSukitVersion       String?
+  sukCompatibleVersions String[] @default(["1.0.0"])
+
+  dependencies Json?
+  permissions  String[]
+
+  status          String  @default("draft")
+  rejectionReason String?
+
+  demoUrl    String?
+  supportUrl String?
+  sourceUrl  String?
+
+  featured      Boolean   @default(false)
+  featuredUntil DateTime?
+  staffPick     Boolean   @default(false)
+  trendingScore Float     @default(0)
+
+  metadata Json?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  publishedAt DateTime?
+
+  versions          ModuleVersion[]
+  reviews           ModuleReview[]
+  supportTickets    SupportTicket[]
+  installs          ModuleInstall[]
+  transactions      Transaction[]
+  subscriptions     Subscription[]
+  licenses          License[]
+  submissionReviews SubmissionReview[]
+  analyticsEvents   AnalyticsEvent[]
+  developer         Developer?         @relation(fields: [developerId], references: [id])
+  developerId       String?
+
+  @@index([status, publishedAt])
+  @@index([category, status])
+  @@index([featured, status])
+  @@index([downloads])
+  @@index([rating])
+  @@index([trendingScore])
+  @@map("marketplace_modules")
+}
+
+model ModuleVersion {
+  id       String            @id @default(cuid())
+  moduleId String
+  module   MarketplaceModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  version     String
+  changelog   String?
+  downloadUrl String
+  fileSize    Int     @default(0)
+  fileHash    String?
+  sukVersion  String
+
+  isLatest      Boolean @default(false)
+  isDeprecated  Boolean @default(false)
+  isSecurityFix Boolean @default(false)
+  isBeta        Boolean @default(false)
+
+  downloads     Int   @default(0)
+  compatibility Json?
+
+  createdAt DateTime @default(now())
+
+  @@unique([moduleId, version])
+  @@index([moduleId, isLatest])
+  @@map("module_versions")
+}
+
+model ModuleInstall {
+  id       String            @id @default(cuid())
+  moduleId String
+  module   MarketplaceModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  userId   String
+  siteId   String?
+
+  version         String
+  previousVersion String?
+  status          String  @default("installed")
+  autoUpdate      Boolean @default(false)
+  pinnedVersion   String?
+  channel         String  @default("stable")
+  installPath     String?
+
+  installedAt   DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  uninstalledAt DateTime?
+
+  @@index([userId, status])
+  @@index([moduleId])
+  @@index([siteId])
+  @@map("module_installs")
+}
+
+model ModuleReview {
+  id       String            @id @default(cuid())
+  moduleId String
+  module   MarketplaceModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  userId   String
+  userName String
+
+  rating Int
+  title  String?
+  review String
+  pros   String?
+  cons   String?
+
+  versionUsed  String?
+  sukitVersion String?
+
+  verified   Boolean @default(false)
+  helpful    Int     @default(0)
+  notHelpful Int     @default(0)
+
+  status        String  @default("approved")
+  moderatorNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  responses ReviewResponse[]
+
+  @@index([moduleId, status, createdAt])
+  @@index([userId])
+  @@map("module_reviews")
+}
+
+model ReviewResponse {
+  id         String       @id @default(cuid())
+  reviewId   String
+  review     ModuleReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  authorId   String
+  authorType String       @default("developer")
+  response   String
+
+  createdAt DateTime @default(now())
+
+  @@index([reviewId])
+  @@map("review_responses")
+}
+
+model Developer {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  email       String
+  name        String
+  companyName String?
+  website     String?
+  bio         String?
+  avatar      String?
+
+  taxId          String?
+  payoutMethod   String?
+  payoutEmail    String?
+  payoutCountry  String?
+  totalEarnings  Float   @default(0)
+  unpaidEarnings Float   @default(0)
+
+  status            String    @default("pending")
+  approvedAt        DateTime?
+  agreementAccepted Boolean   @default(false)
+  agreementVersion  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  modules MarketplaceModule[]
+  apiKeys DeveloperApiKey[]
+
+  @@index([status])
+  @@map("developers")
+}
+
+model DeveloperApiKey {
+  id          String    @id @default(cuid())
+  developerId String
+  developer   Developer @relation(fields: [developerId], references: [id], onDelete: Cascade)
+
+  name        String
+  key         String   @unique
+  keyHash     String?
+  permissions String[]
+  ipWhitelist String[]
+  rateLimit   Int      @default(100)
+
+  lastUsed  DateTime?
+  expiresAt DateTime?
+
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  @@index([developerId])
+  @@map("developer_api_keys")
+}
+
+model SubmissionReview {
+  id         String            @id @default(cuid())
+  moduleId   String
+  module     MarketplaceModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  reviewerId String
+
+  status            String  @default("pending")
+  notes             String?
+  validationResults Json?
+
+  createdAt  DateTime  @default(now())
+  reviewedAt DateTime?
+
+  @@index([status])
+  @@index([moduleId])
+  @@map("submission_reviews")
+}
+
+model SupportTicket {
+  id        String            @id @default(cuid())
+  moduleId  String
+  module    MarketplaceModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  userId    String
+  userName  String
+  userEmail String
+
+  subject    String
+  message    String
+  priority   String  @default("normal")
+  status     String  @default("open")
+  category   String  @default("question")
+  assignedTo String?
+
+  attachments String[]
+  metadata    Json?
+
+  resolvedAt   DateTime?
+  closedAt     DateTime?
+  satisfaction Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  responses TicketResponse[]
+
+  @@index([userId, status])
+  @@index([moduleId, status])
+  @@index([assignedTo, status])
+  @@map("support_tickets")
+}
+
+model TicketResponse {
+  id          String        @id @default(cuid())
+  ticketId    String
+  ticket      SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId    String
+  authorType  String
+  authorName  String?
+  message     String
+  attachments String[]
+  privateNote String?
+
+  createdAt DateTime @default(now())
+
+  @@index([ticketId, createdAt])
+  @@map("ticket_responses")
+}
+
+model Transaction {
+  id         String            @id @default(cuid())
+  moduleId   String
+  module     MarketplaceModule @relation(fields: [moduleId], references: [id])
+  buyerId    String
+  buyerName  String
+  buyerEmail String
+
+  amount          Float
+  currency        String @default("USD")
+  fee             Float  @default(0)
+  developerAmount Float  @default(0)
+
+  paymentMethod String
+  paymentId     String
+  type          String @default("purchase")
+  status        String @default("pending")
+
+  licenseKey String?
+  invoiceUrl String?
+  receiptUrl String?
+
+  refundedAt   DateTime?
+  refundAmount Float?
+  refundReason String?
+
+  metadata Json?
+
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@index([buyerId, status, createdAt])
+  @@index([moduleId, status, createdAt])
+  @@map("transactions")
+}
+
+model Subscription {
+  id          String            @id @default(cuid())
+  moduleId    String
+  module      MarketplaceModule @relation(fields: [moduleId], references: [id])
+  userId      String
+  userEmail   String?
+  developerId String?
+
+  plan   String @default("monthly")
+  status String @default("active")
+
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean   @default(false)
+  canceledAt         DateTime?
+  pausedAt           DateTime?
+  resumedAt          DateTime?
+
+  paymentMethod         String?
+  gatewayId             String?
+  gatewayCustomerId     String?
+  gatewaySubscriptionId String?
+
+  amount   Float  @default(0)
+  currency String @default("USD")
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([moduleId, status])
+  @@map("subscriptions")
+}
+
+model License {
+  id            String            @id @default(cuid())
+  key           String            @unique
+  moduleId      String
+  module        MarketplaceModule @relation(fields: [moduleId], references: [id])
+  userId        String
+  transactionId String?
+
+  status         String   @default("active")
+  domains        String[]
+  maxActivations Int      @default(3)
+
+  activatedAt   DateTime?
+  expiresAt     DateTime?
+  revokedAt     DateTime?
+  revokedReason String?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([moduleId])
+  @@map("licenses")
+}
+
+model KnowledgeBaseArticle {
+  id       String   @id @default(cuid())
+  title    String
+  slug     String   @unique
+  content  String
+  excerpt  String?
+  category String
+  tags     String[]
+
+  views      Int @default(0)
+  helpful    Int @default(0)
+  notHelpful Int @default(0)
+
+  published   Boolean   @default(false)
+  publishedAt DateTime?
+  authorId    String
+  authorName  String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category, published])
+  @@map("knowledge_base_articles")
+}
+
+model AnalyticsEvent {
+  id       String            @id @default(cuid())
+  moduleId String
+  module   MarketplaceModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  event    String
+  metadata Json?
+
+  userId    String?
+  siteId    String?
+  version   String?
+  ip        String?
+  country   String?
+  userAgent String?
+
+  duration Int?
+  error    String?
+
+  createdAt DateTime @default(now())
+
+  @@index([moduleId, event, createdAt])
+  @@index([userId, createdAt])
+  @@map("analytics_events")
+}
+
+model WebhookConfig {
+  id         String   @id @default(cuid())
+  name       String
+  url        String
+  events     String[]
+  secret     String
+  active     Boolean  @default(true)
+  retryCount Int      @default(3)
+  timeoutMs  Int      @default(10000)
+  format     String   @default("json")
+  headers    Json?
+  moduleId   String?
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  lastUsedAt DateTime?
+
+  @@index([active])
+  @@map("webhook_configs")
+}
+
+model WebhookLog {
+  id             String  @id @default(cuid())
+  webhookId      String
+  event          String
+  status         String
+  requestUrl     String
+  requestBody    Json?
+  responseStatus Int?
+  responseBody   String?
+  durationMs     Int?
+  error          String?
+  attempt        Int     @default(1)
+
+  createdAt DateTime @default(now())
+
+  @@index([webhookId, createdAt])
+  @@map("webhook_logs")
+}
+
+model AuditLog {
+  id           String  @id @default(cuid())
+  userId       String?
+  userName     String?
+  action       String
+  resourceType String
+  resourceId   String?
+  changes      Json?
+  ipAddress    String?
+  userAgent    String?
+  sessionId    String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([resourceType, resourceId])
+  @@index([action])
+  @@map("audit_logs")
+}
+
+model ModuleBackup {
+  id        String   @id @default(cuid())
+  moduleId  String
+  userId    String
+  version   String
+  filePath  String
+  fileSize  Int      @default(0)
+  reason    String   @default("manual")
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([moduleId, userId])
+  @@map("module_backups")
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("password_resets")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  lastUsedAt DateTime @default(now())
+  createdAt DateTime  @default(now())
+  metadata  Json     @default("{}")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("sessions")
+}
+
+model SocialAccount {
+  id         String @id @default(cuid())
+  userId     String
+  provider   String
+  providerId String
+  email      String?
+  name       String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+  @@index([userId])
+  @@map("social_accounts")
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  siteId      String
+  name        String
+  permissions String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  site  Site       @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  users UserRole[]
+
+  @@unique([siteId, name])
+  @@map("roles")
+}
+
+model UserRole {
+  userId  String
+  roleId  String
+  siteId  String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId, siteId])
+  @@map("user_roles")
+}
+
+model Folder {
+  id        String   @id @default(cuid())
+  siteId    String
+  name      String
+  parentId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site     Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  parent   Folder?  @relation("FolderToFolder", fields: [parentId], references: [id])
+  children Folder[] @relation("FolderToFolder")
+  media    Media[]
+
+  @@unique([siteId, parentId, name])
+  @@index([siteId])
+  @@map("folders")
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  siteId    String
+  name      String
+  createdAt DateTime @default(now())
+
+  media MediaTag[]
+  site  Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([siteId, name])
+  @@map("tags")
+}
+
+model MediaTag {
+  mediaId String
+  tagId   String
+  createdAt DateTime @default(now())
+
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  tag   Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([mediaId, tagId])
+  @@map("media_tags")
+}
+
+model MediaVersion {
+  id        String   @id @default(cuid())
+  mediaId   String
+  width     Int?
+  height    Int?
+  format    String?
+  size      Int?
+  key       String
+  url       String
+  createdAt DateTime @default(now())
+
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@index([mediaId])
+  @@map("media_versions")
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  siteId      String
+  name        String
+  description String?
+  price       Float
+  compareAtPrice Float?
+  costPerItem Float?
+  sku         String?
+  barcode     String?
+  category    String?
+  tags        String[]
+  images      Json     @default("[]")
+  weight      Float?
+  requiresShipping Boolean @default(true)
+  trackQuantity Boolean @default(false)
+  quantity    Int      @default(0)
+  allowBackorder Boolean @default(false)
+  status      String   @default("active")
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  site     Site        @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  variants ProductVariant[]
+  cartItems   CartItem[]
+
+  @@index([siteId, status])
+  @@index([siteId, category])
+  @@map("products")
+}
+
+model ProductVariant {
+  id        String   @id @default(cuid())
+  productId String
+  name      String
+  sku       String?
+  price     Float?
+  quantity  Int      @default(0)
+  options   Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_variants")
+}
+
+model Cart {
+  id        String   @id @default(cuid())
+  userId    String
+  siteId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  site  Site       @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  items CartItem[]
+
+  @@unique([userId, siteId])
+  @@map("carts")
+}
+
+model CartItem {
+  id        String @id @default(cuid())
+  cartId    String
+  productId String
+  variantId String?
+  quantity  Int    @default(1)
+  createdAt DateTime @default(now())
+
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([cartId])
+  @@map("cart_items")
+}
+
+model Order {
+  id              String   @id @default(cuid())
+  userId          String
+  siteId          String
+  status          String   @default("pending")
+  total           Float
+  subtotal        Float?
+  tax             Float?
+  shippingCost    Float?
+  discount        Float?
+  couponCode      String?
+  currency        String   @default("USD")
+  paymentMethodId String?
+  paymentIntentId String?
+  shippingAddress Json?
+  billingAddress  Json?
+  notes           String?
+  metadata        Json     @default("{}")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  site  Site        @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  items OrderItem[]
+
+  @@index([siteId, status])
+  @@index([userId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id         String @id @default(cuid())
+  orderId    String
+  productId  String?
+  productName String
+  variantId  String?
+  quantity   Int
+  price      Float
+  total      Float?
+  createdAt  DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model SeoSettings {
+  id                String   @id @default(cuid())
+  siteId            String   @unique
+  siteUrl           String?
+  metaTitle         String?
+  metaDescription   String?
+  ogImage           String?
+  twitterHandle     String?
+  googleAnalyticsId String?
+  googleTagManagerId String?
+  facebookPixelId   String?
+  robotsTxt         String?
+  customHead        String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@map("seo_settings")
+}
+
+model ChatConversation {
+  id        String   @id @default(cuid())
+  userId    String
+  siteId    String?
+  title     String   @default("New conversation")
+  model     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages ChatMessage[]
+
+  @@index([userId, siteId])
+  @@map("chat_conversations")
+}
+
+model ChatMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String
+  content        String
+  model          String?
+  tokens         Int?
+  metadata       Json     @default("{}")
+  createdAt      DateTime @default(now())
+
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@map("chat_messages")
+}
+
+model FormField {
+  id     String @id @default(cuid())
+  formId String
+  name   String
+  type   String
+  label  String
+  placeholder String?
+  required Boolean @default(false)
+  options Json?   @default("[]")
+  validation Json? @default("{}")
+  position Int    @default(0)
+
+  form Form @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@index([formId])
+  @@map("form_fields")
 }

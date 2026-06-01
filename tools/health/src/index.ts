@@ -145,6 +145,36 @@ export class HealthCheck {
     return results;
   }
 
+  async generatePrometheusMetrics(): Promise<string> {
+    const summary = await this.detailed();
+    const lines: string[] = [];
+    lines.push(
+      '# HELP sukit_health_status Health check status (1=healthy, 0=unhealthy)'
+    );
+    lines.push('# TYPE sukit_health_status gauge');
+    for (const check of summary.checks) {
+      lines.push(
+        `sukit_health_status{name="${check.name}"} ${check.status === 'healthy' ? 1 : 0}`
+      );
+    }
+    lines.push(
+      '# HELP sukit_health_latency_ms Health check latency in milliseconds'
+    );
+    lines.push('# TYPE sukit_health_latency_ms gauge');
+    for (const check of summary.checks) {
+      lines.push(
+        `sukit_health_latency_ms{name="${check.name}"} ${check.latency}`
+      );
+    }
+    lines.push('# HELP sukit_health_uptime_seconds System uptime in seconds');
+    lines.push('# TYPE sukit_health_uptime_seconds counter');
+    lines.push(`sukit_health_uptime_seconds ${summary.uptime}`);
+    lines.push('# HELP sukit_health_timestamp Last health check timestamp');
+    lines.push('# TYPE sukit_health_timestamp gauge');
+    lines.push(`sukit_health_timestamp ${Date.now()}`);
+    return lines.join('\n');
+  }
+
   private async checkComponent(
     name: string,
     check: () => Promise<any>

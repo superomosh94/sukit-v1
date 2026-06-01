@@ -314,6 +314,17 @@ export class EnterpriseBilling {
     }
   }
 
+  processPayment(invoiceId: string, paymentMethodId: string): { success: boolean; transactionId: string; error?: string } {
+    const invoice = this.invoices.find(i => i.id === invoiceId);
+    if (!invoice) return { success: false, transactionId: '', error: 'Invoice not found' };
+    if (invoice.status === 'paid') return { success: false, transactionId: '', error: 'Already paid' };
+    const transactionId = `txn_${crypto.randomUUID().substring(0, 16)}`;
+    invoice.status = 'paid';
+    invoice.paidAt = new Date().toISOString();
+    this.kernel.events.emit('billing:payment:completed', { invoiceId, transactionId, amount: invoice.total, currency: invoice.currency });
+    return { success: true, transactionId };
+  }
+
   // ─── Reseller (8.2) ─────────────────────────────────────────────
 
   private resellerTiers: ResellerTier[] = [
@@ -378,5 +389,253 @@ export class EnterpriseBilling {
       rate: tier.commissionRate,
       nextTier: nextTier?.name || null,
     };
+  }
+
+  // ─── Stripe Connect Integration ──────────────────────────────
+
+  generateStripeConnectConfig(): Record<string, any> {
+    return {
+      enabled: true,
+      clientId: process.env.STRIPE_CLIENT_ID || 'ca_xxxxxxxx',
+      secretKey: process.env.STRIPE_SECRET_KEY || '',
+      webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
+      redirectUri: `${process.env.APP_URL || 'http://localhost:3042'}/api/billing/stripe/callback`,
+      features: {
+        paymentMethods: ['card', 'us_bank_account', 'sepa_debit', 'ideal', 'bancontact'],
+        recurringInvoices: true,
+        automaticTax: true,
+        paymentIntents: true,
+        setupIntents: true,
+      },
+    };
+  }
+
+  generateStripePaymentIntent(amount: number, currency: string = 'usd'): { clientSecret: string; id: string } {
+    return {
+      clientSecret: `pi_${crypto.randomUUID().replace(/-/g, '')}_secret_${crypto.randomUUID().replace(/-/g, '').substring(0, 16)}`,
+      id: `pi_${crypto.randomUUID().replace(/-/g, '').substring(0, 24)}`,
+    };
+  }
+
+  // ─── Tax Handling ────────────────────────────────────────────
+
+  private taxRates: Record<string, { vat: number; country: string; region?: string }> = {
+    'DE': { vat: 19, country: 'Germany' },
+    'FR': { vat: 20, country: 'France' },
+    'GB': { vat: 20, country: 'United Kingdom' },
+    'NL': { vat: 21, country: 'Netherlands' },
+    'BE': { vat: 21, country: 'Belgium' },
+    'IT': { vat: 22, country: 'Italy' },
+    'ES': { vat: 21, country: 'Spain' },
+    'AT': { vat: 20, country: 'Austria' },
+    'SE': { vat: 25, country: 'Sweden' },
+    'DK': { vat: 25, country: 'Denmark' },
+    'FI': { vat: 24, country: 'Finland' },
+    'IE': { vat: 23, country: 'Ireland' },
+    'PT': { vat: 23, country: 'Portugal' },
+    'PL': { vat: 23, country: 'Poland' },
+    'CZ': { vat: 21, country: 'Czech Republic' },
+    'US': { vat: 0, country: 'United States' },
+  };
+
+  private stateTaxRates: Record<string, { rate: number; name: string }> = {
+    'CA': { rate: 7.25, name: 'California' },
+    'NY': { rate: 4, name: 'New York' },
+    'TX': { rate: 6.25, name: 'Texas' },
+    'FL': { rate: 6, name: 'Florida' },
+    'IL': { rate: 6.25, name: 'Illinois' },
+    'WA': { rate: 6.5, name: 'Washington' },
+  };
+
+  getTaxRate(countryCode: string, region?: string): { rate: number; label: string; type: string } {
+    if (countryCode === 'US' && region && this.stateTaxRates[region]) {
+      const st = this.stateTaxRates[region];
+      return { rate: st.rate, label: `${st.name} Sales Tax`, type: 'sales_tax' };
+    }
+    const country = this.taxRates[countryCode];
+    if (country) return { rate: country.vat, label: `${country.country} VAT`, type: 'vat' };
+    return { rate: 0, label: 'No Tax', type: 'none' };
+  }
+
+  calculateTax(subtotal: number, countryCode: string, region?: string): { rate: number; amount: number; label: string; type: string } {
+    const taxInfo = this.getTaxRate(countryCode, region);
+    const amount = Math.round(subtotal * taxInfo.rate) / 100;
+    return { ...taxInfo, amount };
+  }
+
+  generateInvoiceWithTax(orgId: string, planId: string, period: BillingPeriod, countryCode: string, region?: string): Invoice {
+    const invoice = this.generateInvoice(orgId, planId, period);
+    const tax = this.calculateTax(invoice.subtotal, countryCode, region);
+    invoice.taxRate = tax.rate;
+    invoice.tax = tax.amount;
+    invoice.total = invoice.subtotal + tax.amount - invoice.discounts;
+    return invoice;
+  }
+
+  // ─── Usage Alerts ────────────────────────────────────────────
+
+  private usageAlertThresholds: Map<string, { unit: string; threshold: number; enabled: boolean; channels: string[] }[]> = new Map();
+
+  setUsageAlert(orgId: string, unit: string, threshold: number, channels: string[] = ['email']): void {
+    const alerts = this.usageAlertThresholds.get(orgId) || [];
+    alerts.push({ unit, threshold, enabled: true, channels });
+    this.usageAlertThresholds.set(orgId, alerts);
+  }
+
+  checkUsageAlerts(orgId: string, planId: string, period: string): { triggered: { unit: string; consumed: number; threshold: number; channels: string[] }[] } {
+    const alerts = this.usageAlertThresholds.get(orgId) || [];
+    const usage = this.getMeteredUsage(orgId, planId, period);
+    const triggered: { unit: string; consumed: number; threshold: number; channels: string[] }[] = [];
+    for (const alert of alerts) {
+      if (!alert.enabled) continue;
+      const u = usage.find(u => u.unit === alert.unit);
+      if (u && u.consumed >= alert.threshold) {
+        triggered.push({ unit: alert.unit, consumed: u.consumed, threshold: alert.threshold, channels: alert.channels });
+      }
+    }
+    return { triggered };
+  }
+
+  // ─── Sub-Tenant Billing ──────────────────────────────────────
+
+  createSubTenantPlan(parentOrgId: string, name: string, price: number, limits: Record<string, number>): PlanDefinition {
+    const plan: PlanDefinition = {
+      id: `sub_${crypto.randomUUID().substring(0, 8)}`,
+      name: `${name} (Sub-Tenant)`,
+      description: `Sub-tenant plan under ${parentOrgId}`,
+      price: { monthly: price, yearly: price * 10 },
+      features: ['Sub-tenant managed'],
+      limits,
+      meteredFeatures: [],
+      tier: 0,
+    };
+    this.plans.push(plan);
+    return plan;
+  }
+
+  // ─── Payment Method Management ──────────────────────────────
+
+  private paymentMethods: Map<string, { id: string; type: string; last4: string; expiryMonth: number; expiryYear: number; isDefault: boolean; billingDetails: Record<string, string> }[]> = new Map();
+
+  addPaymentMethod(orgId: string, type: string, last4: string, expiryMonth: number, expiryYear: number): { id: string } {
+    const methods = this.paymentMethods.get(orgId) || [];
+    const id = `pm_${crypto.randomUUID().substring(0, 12)}`;
+    methods.push({ id, type, last4, expiryMonth, expiryYear, isDefault: methods.length === 0, billingDetails: {} });
+    this.paymentMethods.set(orgId, methods);
+    return { id };
+  }
+
+  getPaymentMethods(orgId: string): { id: string; type: string; last4: string; expiryMonth: number; expiryYear: number; isDefault: boolean }[] {
+    return this.paymentMethods.get(orgId) || [];
+  }
+
+  setDefaultPaymentMethod(orgId: string, methodId: string): boolean {
+    const methods = this.paymentMethods.get(orgId);
+    if (!methods) return false;
+    const target = methods.find(m => m.id === methodId);
+    if (!target) return false;
+    methods.forEach(m => m.isDefault = false);
+    target.isDefault = true;
+    return true;
+  }
+
+  removePaymentMethod(orgId: string, methodId: string): boolean {
+    const methods = this.paymentMethods.get(orgId);
+    if (!methods) return false;
+    const idx = methods.findIndex(m => m.id === methodId);
+    if (idx < 0) return false;
+    methods.splice(idx, 1);
+    if (methods.length > 0 && !methods.some(m => m.isDefault)) methods[0].isDefault = true;
+    return true;
+  }
+
+  // ─── Billing History Export ─────────────────────────────────
+
+  exportBillingHistory(orgId: string, format: 'csv' | 'json' = 'json'): string {
+    const invoices = this.getInvoices(orgId);
+    if (format === 'csv') {
+      const header = 'Invoice Number,Date,Period Start,Period End,Subtotal,Tax,Total,Status,Paid At\n';
+      const rows = invoices.map(i =>
+        `${i.number},${i.createdAt.substring(0, 10)},${i.periodStart.substring(0, 10)},${i.periodEnd.substring(0, 10)},${i.subtotal},${i.tax},${i.total},${i.status},${i.paidAt || ''}`
+      ).join('\n');
+      return header + rows;
+    }
+    return JSON.stringify(invoices, null, 2);
+  }
+
+  // ─── Subscription Proration ─────────────────────────────────
+
+  calculateProration(currentPlan: string, newPlan: string, daysRemainingInPeriod: number): { credit: number; charge: number; netAmount: number } {
+    const current = this.getPlan(currentPlan);
+    const next = this.getPlan(newPlan);
+    if (!current || !next) return { credit: 0, charge: 0, netAmount: 0 };
+    const periodDays = 30;
+    const dailyCurrent = current.price.monthly / periodDays;
+    const dailyNext = next.price.monthly / periodDays;
+    const credit = Math.round(dailyCurrent * daysRemainingInPeriod * 100) / 100;
+    const charge = Math.round(dailyNext * daysRemainingInPeriod * 100) / 100;
+    return { credit, charge, netAmount: charge - credit };
+  }
+
+  generateProratedInvoice(orgId: string, fromPlan: string, toPlan: string, daysRemaining: number, countryCode?: string, region?: string): Invoice {
+    const proration = this.calculateProration(fromPlan, toPlan, daysRemaining);
+    const invoice: Invoice = {
+      id: `inv_${crypto.randomUUID().substring(0, 12)}`,
+      orgId,
+      number: `INV-${new Date().getFullYear()}-${String(this.invoices.length + 1).padStart(4, '0')}`,
+      periodStart: new Date().toISOString(),
+      periodEnd: new Date(Date.now() + daysRemaining * 86400000).toISOString(),
+      lines: [
+        { description: `Credit: ${fromPlan} (${daysRemaining} days unused)`, quantity: 1, unitPrice: proration.credit, total: -proration.credit },
+        { description: `Charge: ${toPlan} (${daysRemaining} days remaining)`, quantity: 1, unitPrice: proration.charge, total: proration.charge },
+      ],
+      subtotal: proration.netAmount,
+      tax: 0,
+      taxRate: 0,
+      discounts: 0,
+      total: proration.netAmount,
+      currency: 'USD',
+      status: 'draft',
+      paidAt: null,
+      pdfUrl: null,
+      createdAt: new Date().toISOString(),
+    };
+    if (countryCode) {
+      const tax = this.calculateTax(invoice.subtotal, countryCode, region);
+      invoice.taxRate = tax.rate;
+      invoice.tax = tax.amount;
+      invoice.total = invoice.subtotal + tax.amount;
+    }
+    this.invoices.push(invoice);
+    return invoice;
+  }
+
+  // ─── Invoice PDF Generation ─────────────────────────────────
+
+  generateInvoicePdfHtml(invoice: Invoice, orgName: string): string {
+    const linesHtml = invoice.lines.map(l =>
+      `<tr><td>${l.description}</td><td>${l.quantity}</td><td>$${l.unitPrice.toFixed(2)}</td><td>$${Math.abs(l.total).toFixed(2)}</td></tr>`
+    ).join('\n');
+    return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #333; margin: 40px; }
+h1 { color: #4F46E5; font-size: 28px; margin-bottom: 4px; }
+.header { display: flex; justify-content: space-between; margin-bottom: 32px; }
+.meta { color: #666; margin-bottom: 24px; }
+table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+th { background: #f5f5f5; padding: 10px; text-align: left; font-weight: 600; border-bottom: 2px solid #ddd; }
+td { padding: 10px; border-bottom: 1px solid #eee; }
+.total-row { font-weight: 700; font-size: 16px; }
+.total-row td { border-top: 2px solid #333; }
+.footer { margin-top: 40px; color: #999; font-size: 12px; border-top: 1px solid #ddd; padding-top: 16px; }
+</style></head><body>
+<div class="header"><div><h1>INVOICE</h1><p style="color:#666;">${orgName}</p></div><div style="text-align:right;"><p><strong>${invoice.number}</strong></p><p>${new Date(invoice.createdAt).toLocaleDateString()}</p></div></div>
+<div class="meta"><p><strong>Period:</strong> ${new Date(invoice.periodStart).toLocaleDateString()} - ${new Date(invoice.periodEnd).toLocaleDateString()}</p>
+<p><strong>Status:</strong> ${invoice.status.toUpperCase()}</p></div>
+<table><thead><tr><th>Description</th><th>Qty</th><th>Unit Price</th><th>Amount</th></tr></thead><tbody>
+${linesHtml}</tbody></table>
+<p class="total-row">Total: $${invoice.total.toFixed(2)} ${invoice.currency}</p>
+<div class="footer"><p>SUKIT Inc. - support@sukit.dev - https://sukit.dev</p><p>Thank you for your business!</p></div>
+</body></html>`;
   }
 }

@@ -5,6 +5,7 @@
   "main": "src/index.ts",
   "scripts": { "build": "tsc", "dev": "tsc --watch", "clean": "rm -rf dist" },
   "dependencies": {
+    "@prisma/client": "^6.0.0",
     "@sukit/core": "workspace:*",
     "@sukit/module-sdk": "workspace:*",
     "react": "^19.0.0"

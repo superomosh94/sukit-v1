@@ -355,4 +355,132 @@ export class MonitoringSystem {
     const idx = key.indexOf(':{');
     return idx === -1 ? [key, ''] : [key.substring(0, idx), key.substring(idx)];
   }
+
+  // ─── Business Analytics Dashboard UI ─────────────────────────
+
+  generateBusinessAnalyticsDashboardHtml(): string {
+    return `import { useState, useEffect } from 'react';
+
+export function BusinessAnalyticsDashboard() {
+  const [metrics, setMetrics] = useState({ mrr: 0, arr: 0, arpu: 0, ltv: 0, conversionRate: 0, revenue: 0, activeUsers: 0, churnRate: 0 });
+
+  useEffect(() => {
+    fetch('/api/analytics/business').then(r => r.json()).then(setMetrics);
+  }, []);
+
+  return (
+    <div className="business-analytics">
+      <header><h1>Business Analytics</h1></header>
+      <div className="metrics-grid">
+        <div className="metric-card"><span className="metric-value">$${metrics.mrr.toLocaleString()}</span><span className="metric-label">Monthly Recurring Revenue</span></div>
+        <div className="metric-card"><span className="metric-value">$${metrics.arr.toLocaleString()}</span><span className="metric-label">Annual Recurring Revenue</span></div>
+        <div className="metric-card"><span className="metric-value">$${metrics.arpu}</span><span className="metric-label">Avg Revenue Per User</span></div>
+        <div className="metric-card"><span className="metric-value">$${metrics.ltv.toLocaleString()}</span><span className="metric-label">Lifetime Value</span></div>
+        <div className="metric-card"><span className="metric-value">{metrics.conversionRate}%</span><span className="metric-label">Conversion Rate</span></div>
+        <div className="metric-card"><span className="metric-value">{metrics.activeUsers.toLocaleString()}</span><span className="metric-label">Active Users</span></div>
+        <div className="metric-card"><span className="metric-value">{metrics.churnRate}%</span><span className="metric-label">Churn Rate</span></div>
+        <div className="metric-card"><span className="metric-value">$${metrics.revenue.toLocaleString()}</span><span className="metric-label">Total Revenue</span></div>
+      </div>
+      <section className="chart-section">
+        <h2>Revenue Growth</h2>
+        <div className="chart-placeholder">
+          <svg viewBox="0 0 300 100" className="sparkline">
+            <polyline fill="none" stroke="#4F46E5" strokeWidth="2" points="0,80 30,60 60,70 90,40 120,50 150,30 180,35 210,20 240,25 270,10 300,15" />
+          </svg>
+        </div>
+      </section>
+      <style>{`
+        .business-analytics { padding: 24px; font-family: -apple-system, sans-serif; }
+        header { margin-bottom: 24px; }
+        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 24px; }
+        .metric-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; text-align: center; }
+        .metric-value { font-size: 22px; font-weight: 700; color: #4F46E5; display: block; }
+        .metric-label { font-size: 12px; color: #6B7280; display: block; margin-top: 4px; }
+        .chart-section { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; }
+        .chart-section h2 { font-size: 16px; margin: 0 0 16px; }
+        .sparkline { width: 100%; height: 100px; }
+        @media (prefers-color-scheme: dark) {
+          .metric-card, .chart-section { background: #1f2937; border-color: #374151; }
+        }
+      `}</style>
+    </div>
+  );
+}`;
+  }
+
+  // ─── Long-Term Metric Storage ───────────────────────────────
+
+  private metricStorage: { name: string; value: number; labels: string; timestamp: string }[] = [];
+  private storageEnabled = false;
+
+  enableLongTermStorage(): void {
+    this.storageEnabled = true;
+  }
+
+  queryHistoricalMetrics(metricName: string, startDate: string, endDate: string, aggregation: 'avg' | 'sum' | 'min' | 'max' = 'avg'): { points: { timestamp: string; value: number }[]; aggregation: string } {
+    if (!this.storageEnabled) return { points: [], aggregation };
+    const points = this.metricStorage
+      .filter(m => m.name === metricName && m.timestamp >= startDate && m.timestamp <= endDate)
+      .map(m => ({ timestamp: m.timestamp, value: m.value }));
+    if (points.length === 0) return { points: [], aggregation };
+    const aggValue = aggregation === 'avg' ? points.reduce((s, p) => s + p.value, 0) / points.length
+      : aggregation === 'sum' ? points.reduce((s, p) => s + p.value, 0)
+      : aggregation === 'min' ? Math.min(...points.map(p => p.value))
+      : Math.max(...points.map(p => p.value));
+    return { points: [{ timestamp: new Date().toISOString(), value: Math.round(aggValue * 100) / 100 }], aggregation };
+  }
+
+  storeMetricSnapshot(): void {
+    if (!this.storageEnabled) return;
+    const now = new Date().toISOString();
+    for (const [key, value] of this.counters) {
+      this.metricStorage.push({ name: key, value, labels: '', timestamp: now });
+    }
+    for (const [key, value] of this.gauges) {
+      this.metricStorage.push({ name: key, value, labels: '', timestamp: now });
+    }
+    if (this.metricStorage.length > 100000) this.metricStorage = this.metricStorage.slice(-50000);
+  }
+
+  generateMetricStorageQueryHtml(): string {
+    return `import { useState } from 'react';
+
+export function MetricStorageQuery() {
+  const [metricName, setMetricName] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [results, setResults] = useState(null);
+
+  const queryMetrics = async () => {
+    const res = await fetch('/api/metrics/historical?' + new URLSearchParams({ metric: metricName, start: startDate, end: endDate }));
+    const data = await res.json();
+    setResults(data);
+  };
+
+  return (
+    <div className="metric-query">
+      <h2>Historical Metric Query</h2>
+      <div className="query-form">
+        <input placeholder="Metric name" value={metricName} onChange={e => setMetricName(e.target.value)} />
+        <label>Start: <input type="datetime-local" value={startDate} onChange={e => setStartDate(e.target.value)} /></label>
+        <label>End: <input type="datetime-local" value={endDate} onChange={e => setEndDate(e.target.value)} /></label>
+        <button onClick={queryMetrics}>Query</button>
+      </div>
+      {results && (
+        <div className="query-results">
+          <h3>Results ({results.points?.length || 0} points)</h3>
+          <pre>{JSON.stringify(results, null, 2)}</pre>
+        </div>
+      )}
+      <style>{`
+        .metric-query { padding: 16px; font-family: -apple-system, sans-serif; }
+        .query-form { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 16px; flex-wrap: wrap; }
+        .query-form input { padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 4px; }
+        .query-form button { padding: 6px 16px; background: #4F46E5; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+        .query-results pre { background: #1f2937; color: #f3f4f6; padding: 16px; border-radius: 8px; overflow-x: auto; }
+      `}</style>
+    </div>
+  );
+}`;
+  }
 }

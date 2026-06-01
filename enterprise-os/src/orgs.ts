@@ -116,6 +116,7 @@ export class OrganizationManager {
       ...(this.userOrgs.get(ownerUserId) || []),
       id,
     ]);
+    this.triggerAutoPersist();
     return org;
   }
 
@@ -136,6 +137,7 @@ export class OrganizationManager {
     const org = this.orgs.get(orgId);
     if (!org) return null;
     Object.assign(org, updates, { updatedAt: new Date().toISOString() });
+    this.triggerAutoPersist();
     return org;
   }
 
@@ -146,9 +148,12 @@ export class OrganizationManager {
       const userOrgs = this.userOrgs.get(m.userId) || [];
       this.userOrgs.set(
         m.userId,
-        userOrgs.filter((id) => id !== orgId)
-      );
-    }
+      userOrgs.filter((id) => id !== orgId)
+    );
+    const result = this.orgs.delete(orgId);
+    this.triggerAutoPersist();
+    return result;
+  }
     return this.orgs.delete(orgId);
   }
 
@@ -179,6 +184,7 @@ export class OrganizationManager {
       ...(this.userOrgs.get(member.userId) || []),
       orgId,
     ]);
+    this.triggerAutoPersist();
     return member;
   }
 
@@ -194,6 +200,7 @@ export class OrganizationManager {
       userId,
       userOrgs.filter((id) => id !== orgId)
     );
+    this.triggerAutoPersist();
     return true;
   }
 
@@ -203,6 +210,7 @@ export class OrganizationManager {
     const member = org.members.find((m) => m.userId === userId);
     if (!member) return false;
     member.role = role;
+    this.triggerAutoPersist();
     return true;
   }
 
@@ -218,6 +226,7 @@ export class OrganizationManager {
       createdAt: new Date().toISOString(),
     };
     org.teams.push(team);
+    this.triggerAutoPersist();
     return team;
   }
 
@@ -228,6 +237,7 @@ export class OrganizationManager {
     if (!team || !member || team.memberIds.includes(userId)) return false;
     team.memberIds.push(userId);
     if (!member.teams.includes(teamId)) member.teams.push(teamId);
+    this.triggerAutoPersist();
     return true;
   }
 
@@ -235,6 +245,7 @@ export class OrganizationManager {
     const org = this.orgs.get(orgId);
     if (!org) return false;
     org.sso = config;
+    this.triggerAutoPersist();
     return true;
   }
 
@@ -294,5 +305,229 @@ export class OrganizationManager {
       inviteId,
       link: `https://app.sukit.dev/invite/${inviteId}?org=${orgId}&email=${encodeURIComponent(email)}&role=${role}`,
     };
+  }
+
+  // ─── JIT Provisioning ────────────────────────────────────────
+
+  jitProvision(
+    orgId: string,
+    ssoEmail: string,
+    ssoAttributes: Record<string, string>,
+    defaultRole: OrgRole = 'member'
+  ): { created: boolean; member: OrgMember } | null {
+    const org = this.orgs.get(orgId);
+    if (!org) return null;
+    const existing = org.members.find(m => m.email === ssoEmail);
+    if (existing) return { created: false, member: existing };
+    const member: OrgMember = {
+      userId: `user_${crypto.randomUUID().substring(0, 8)}`,
+      email: ssoEmail,
+      name: ssoAttributes.displayName || ssoAttributes.name || ssoEmail.split('@')[0],
+      role: defaultRole,
+      teams: ssoAttributes.groups ? ssoAttributes.groups.split(',').filter((g: string) => org.teams.some(t => t.name === g.trim())) : [],
+      joinedAt: new Date().toISOString(),
+      lastActive: new Date().toISOString(),
+      mfaEnabled: false,
+    };
+    org.members.push(member);
+    this.userOrgs.set(member.userId, [...(this.userOrgs.get(member.userId) || []), orgId]);
+    this.addAuditEntry(orgId, 'jit_provision', `User ${ssoEmail} auto-provisioned via SSO`, 'system');
+    this.triggerAutoPersist();
+    return { created: true, member };
+  }
+
+  // ─── Cross-Org Analytics ─────────────────────────────────────
+
+  getCrossOrgAnalytics(): {
+    totalOrgs: number;
+    totalMembers: number;
+    totalTeams: number;
+    avgMembersPerOrg: number;
+    avgTeamsPerOrg: number;
+    planDistribution: Record<string, number>;
+    growthRate: number;
+    activeOrgs30d: number;
+  } {
+    const orgs = Array.from(this.orgs.values());
+    const totalMembers = orgs.reduce((s, o) => s + o.members.length, 0);
+    const totalTeams = orgs.reduce((s, o) => s + o.teams.length, 0);
+    const planDist: Record<string, number> = {};
+    for (const o of orgs) planDist[o.plan] = (planDist[o.plan] || 0) + 1;
+    const thirtyDaysAgo = Date.now() - 30 * 86400000;
+    const activeOrgs = orgs.filter(o => o.members.some(m => new Date(m.lastActive).getTime() > thirtyDaysAgo)).length;
+    return {
+      totalOrgs: orgs.length,
+      totalMembers,
+      totalTeams,
+      avgMembersPerOrg: orgs.length > 0 ? Math.round(totalMembers / orgs.length) : 0,
+      avgTeamsPerOrg: orgs.length > 0 ? Math.round(totalTeams / orgs.length) : 0,
+      planDistribution: planDist,
+      growthRate: orgs.length > 0 ? Math.round((orgs.filter(o => new Date(o.createdAt).getTime() > thirtyDaysAgo).length / orgs.length) * 100) : 0,
+      activeOrgs30d: activeOrgs,
+    };
+  }
+
+  // ─── Org Audit Trail ─────────────────────────────────────────
+
+  private auditLog: { orgId: string; action: string; details: string; userId: string; timestamp: string }[] = [];
+
+  private addAuditEntry(orgId: string, action: string, details: string, userId: string): void {
+    this.auditLog.push({ orgId, action, details, userId, timestamp: new Date().toISOString() });
+    if (this.auditLog.length > 1000) this.auditLog = this.auditLog.slice(-500);
+    this.kernel.events.emit('org:audit', { orgId, action, details, userId });
+  }
+
+  getAuditLog(orgId: string, limit = 50): { orgId: string; action: string; details: string; userId: string; timestamp: string }[] {
+    return this.auditLog.filter(e => e.orgId === orgId).slice(-limit).reverse();
+  }
+
+  getGlobalAuditLog(limit = 100): { orgId: string; action: string; details: string; userId: string; timestamp: string }[] {
+    return this.auditLog.slice(-limit).reverse();
+  }
+
+  // ─── Org Deletion with Data Export ──────────────────────────
+
+  deleteOrgWithExport(orgId: string): { deleted: boolean; exportData: Record<string, any> } {
+    const org = this.orgs.get(orgId);
+    if (!org) return { deleted: false, exportData: {} };
+    const exportData = {
+      org: { ...org },
+      exportDate: new Date().toISOString(),
+      format: 'sukit-org-export-v1',
+    };
+    for (const m of org.members) {
+      const userOrgs = this.userOrgs.get(m.userId) || [];
+      this.userOrgs.set(m.userId, userOrgs.filter(id => id !== orgId));
+    }
+    this.orgs.delete(orgId);
+    this.addAuditEntry(orgId, 'org_deleted', `Organization ${org.name} deleted with data export`, 'system');
+    this.triggerAutoPersist();
+    return { deleted: true, exportData };
+  }
+
+  // ─── Custom Role Definitions ─────────────────────────────────
+
+  private customRoles: Map<string, { name: string; permissions: string[]; editable: boolean }[]> = new Map();
+
+  defineCustomRole(orgId: string, name: string, permissions: string[]): boolean {
+    const roles = this.customRoles.get(orgId) || [];
+    if (roles.some(r => r.name === name)) return false;
+    roles.push({ name, permissions, editable: true });
+    this.customRoles.set(orgId, roles);
+    this.addAuditEntry(orgId, 'role_defined', `Custom role '${name}' created with ${permissions.length} permissions`, 'system');
+    this.triggerAutoPersist();
+    return true;
+  }
+
+  getCustomRoles(orgId: string): { name: string; permissions: string[]; editable: boolean }[] {
+    return this.customRoles.get(orgId) || [];
+  }
+
+  deleteCustomRole(orgId: string, name: string): boolean {
+    const roles = this.customRoles.get(orgId);
+    if (!roles) return false;
+    const idx = roles.findIndex(r => r.name === name);
+    if (idx < 0 || !roles[idx].editable) return false;
+    roles.splice(idx, 1);
+    this.addAuditEntry(orgId, 'role_deleted', `Custom role '${name}' deleted`, 'system');
+    this.triggerAutoPersist();
+    return true;
+  }
+
+  // ─── Database Persistence ──────────────────────────────────────
+
+  private persistenceAdapter: { save: (data: string) => Promise<void>; load: () => Promise<string | null> } | null = null;
+  private autoPersist = false;
+
+  setPersistenceAdapter(adapter: { save: (data: string) => Promise<void>; load: () => Promise<string | null> }, autoPersist = false): void {
+    this.persistenceAdapter = adapter;
+    this.autoPersist = autoPersist;
+  }
+
+  private async triggerAutoPersist(): Promise<void> {
+    if (this.autoPersist && this.persistenceAdapter) {
+      const data = this.serializeState();
+      await this.persistenceAdapter.save(data);
+    }
+  }
+
+  private serializeState(): string {
+    return JSON.stringify({
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      orgs: Array.from(this.orgs.entries()),
+      userOrgs: Array.from(this.userOrgs.entries()),
+      customRoles: Array.from(this.customRoles.entries()),
+      auditLog: this.auditLog,
+    });
+  }
+
+  async persistToDisk(): Promise<boolean> {
+    if (!this.persistenceAdapter) return false;
+    try {
+      const data = this.serializeState();
+      await this.persistenceAdapter.save(data);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async loadFromDisk(): Promise<boolean> {
+    if (!this.persistenceAdapter) return false;
+    const prevAutoPersist = this.autoPersist;
+    this.autoPersist = false;
+    try {
+      const data = await this.persistenceAdapter.load();
+      if (!data) return false;
+      const parsed = JSON.parse(data);
+      if (parsed.version !== 1) return false;
+      this.orgs = new Map(parsed.orgs);
+      this.userOrgs = new Map(parsed.userOrgs);
+      this.customRoles = new Map(parsed.customRoles);
+      this.auditLog = parsed.auditLog || [];
+      return true;
+    } catch {
+      return false;
+    } finally {
+      this.autoPersist = prevAutoPersist;
+    }
+  }
+
+  // ─── Team-Based Permission Enforcement ───────────────────────
+
+  setTeamPermissions(orgId: string, teamId: string, permissions: string[]): boolean {
+    const org = this.orgs.get(orgId);
+    const team = org?.teams.find(t => t.id === teamId);
+    if (!team) return false;
+    team.permissions = permissions;
+    this.triggerAutoPersist();
+    return true;
+  }
+
+  getUserEffectivePermissions(orgId: string, userId: string): string[] {
+    const org = this.orgs.get(orgId);
+    if (!org) return [];
+    const member = org.members.find(m => m.userId === userId);
+    if (!member) return [];
+    if (member.role === 'owner') return ['*'];
+    const rolePermissions: Record<string, string[]> = {
+      admin: ['org:manage', 'members:manage', 'teams:manage', 'billing:read', 'settings:write'],
+      member: ['sites:create', 'pages:create', 'media:upload', 'modules:install'],
+      viewer: ['sites:read', 'pages:read'],
+    };
+    const basePerms = rolePermissions[member.role] || [];
+    const custom = this.customRoles.get(orgId)?.find(r => r.name === member.role);
+    const allPerms = new Set([...basePerms, ...(custom?.permissions || [])]);
+    for (const teamId of member.teams) {
+      const team = org.teams.find(t => t.id === teamId);
+      if (team) team.permissions.forEach(p => allPerms.add(p));
+    }
+    return Array.from(allPerms);
+  }
+
+  checkPermission(orgId: string, userId: string, requiredPermission: string): boolean {
+    const perms = this.getUserEffectivePermissions(orgId, userId);
+    return perms.includes('*') || perms.includes(requiredPermission);
   }
 }

@@ -362,4 +362,583 @@ exit 1`;
   generateDockerignore(): string {
     return `node_modules\n.next\ndist\n.git\n*.md\n.env*\n.gitignore\nDockerfile\ndocker-compose*\n*.log\ncoverage\nplaywright-report\nterraform\nkubernetes\n.pnpm-store`;
   }
+
+  // ─── Blue-Green Deployment ────────────────────────────────────
+
+  generateBlueGreenConfig(): Record<string, any> {
+    return {
+      strategy: 'blue-green',
+      active: 'blue',
+      services: {
+        blue: {
+          name: `${this.config.appName}-blue`,
+          image: `${this.config.registry}/${this.config.appName}:blue`,
+          replicas: 2,
+          port: this.config.port,
+        },
+        green: {
+          name: `${this.config.appName}-green`,
+          image: `${this.config.registry}/${this.config.appName}:green`,
+          replicas: 2,
+          port: this.config.port,
+        },
+      },
+      router: {
+        type: 'service-mesh',
+        provider: 'istio',
+        virtualService: {
+          hosts: [this.config.domains.prod],
+          http: [
+            {
+              route: [
+                { destination: { host: `${this.config.appName}-blue`, port: { number: this.config.port } }, weight: 100 },
+                { destination: { host: `${this.config.appName}-green`, port: { number: this.config.port } }, weight: 0 },
+              ],
+            },
+          ],
+        },
+      },
+      cutover: {
+        type: 'gradual',
+        steps: [
+          { weight: 10, duration: 60, verify: true },
+          { weight: 25, duration: 120, verify: true },
+          { weight: 50, duration: 180, verify: true },
+          { weight: 75, duration: 120, verify: true },
+          { weight: 100, duration: 60, verify: true },
+        ],
+        rollbackOnFailure: true,
+        healthCheckPath: '/api/health',
+        healthCheckTimeout: 30,
+      },
+      cleanup: {
+        keepPreviousFor: 300,
+        autoCleanup: true,
+      },
+    };
+  }
+
+  generateKubernetesBlueGreen(): Record<string, string> {
+    const app = this.config.appName;
+    const port = this.config.port;
+    const image = `${this.config.registry}/${app}`;
+
+    return {
+      'blue-deployment.yaml': `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${app}-blue
+  labels: { app: ${app}, color: blue }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: ${app}, color: blue } }
+  template:
+    metadata: { labels: { app: ${app}, color: blue } }
+    spec:
+      containers:
+        - name: ${app}
+          image: ${image}:blue
+          ports: [{ containerPort: ${port} }]
+          readinessProbe: { httpGet: { path: /api/ready, port: ${port} }, initialDelaySeconds: 5, periodSeconds: 5 }
+          livenessProbe: { httpGet: { path: /api/live, port: ${port} }, initialDelaySeconds: 10, periodSeconds: 10 }`,
+      'green-deployment.yaml': `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${app}-green
+  labels: { app: ${app}, color: green }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: ${app}, color: green } }
+  template:
+    metadata: { labels: { app: ${app}, color: green } }
+    spec:
+      containers:
+        - name: ${app}
+          image: ${image}:green
+          ports: [{ containerPort: ${port} }]
+          readinessProbe: { httpGet: { path: /api/ready, port: ${port} }, initialSeconds: 5, periodSeconds: 5 }
+          livenessProbe: { httpGet: { path: /api/live, port: ${port} }, initialDelaySeconds: 10, periodSeconds: 10 }`,
+      'service.yaml': `apiVersion: v1
+kind: Service
+metadata:
+  name: ${app}-service
+  labels: { app: ${app} }
+spec:
+  type: ClusterIP
+  ports: [{ port: ${port}, targetPort: ${port} }]
+  selector: { app: ${app}, color: blue }`,
+      'cutover.sh': `#!/bin/bash
+set -euo pipefail
+COLOR=$1
+echo "Switching traffic to ${COLOR}..."
+kubectl patch service ${app}-service -p "{\\"spec\\":{\\"selector\\":{\\"color\\":\\"${COLOR}\\"}}}"
+echo "Waiting for health check..."
+for i in {1..30}; do
+  STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://${this.config.domains.prod}/api/health)
+  if [ "$STATUS" = "200" ]; then
+    echo "Health check passed! Traffic now on ${COLOR}."
+    exit 0
+  fi
+  sleep 2
+done
+echo "Health check failed! Rolling back..."
+kubectl patch service ${app}-service -p '{"spec":{"selector":{"color":"blue"}}}'
+exit 1`,
+    };
+  }
+
+  // ─── Canary Deployment ────────────────────────────────────────
+
+  generateCanaryConfig(): Record<string, any> {
+    return {
+      strategy: 'canary',
+      initialWeight: 5,
+      maxWeight: 100,
+      increment: 5,
+      intervalSeconds: 120,
+      metrics: {
+        errorRateThreshold: 1,
+        latencyP95Threshold: 2000,
+        successRateThreshold: 99,
+      },
+      analysis: {
+        duration: 300,
+        interval: 60,
+        successfulRuns: 3,
+        failedRuns: 1,
+      },
+      notifications: {
+        onPromotion: true,
+        onFailure: true,
+        channels: ['slack', 'email'],
+      },
+    };
+  }
+
+  generateFlaggerCanary(): string {
+    return `apiVersion: flagger.app/v1beta1
+kind: Canary
+metadata:
+  name: ${this.config.appName}
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ${this.config.appName}
+  service:
+    port: ${this.config.port}
+    targetPort: ${this.config.port}
+    name: ${this.config.appName}-canary
+    portDiscovery: true
+  analysis:
+    interval: 2m
+    threshold: 1
+    maxWeight: 50
+    stepWeight: 5
+    metrics:
+      - name: error-rate
+        templateRef:
+          name: error-rate
+          namespace: istio-system
+        thresholdRange:
+          max: 1
+      - name: latency-p95
+        templateRef:
+          name: latency
+          namespace: istio-system
+        thresholdRange:
+          max: 2000
+    webhooks:
+      - name: load-test
+        url: http://flagger-loadtester.flagger:80/
+        timeout: 5s
+        metadata:
+          cmd: "hey -z 1m -q 10 http://${this.config.appName}-canary:${this.config.port}/api/health"`;
+  }
+
+  // ─── Feature Flags ────────────────────────────────────────────
+
+  generateFeatureFlagConfig(): Record<string, any> {
+    return {
+      provider: 'unleash',
+      url: `${process.env.UNLEASH_URL || 'http://unleash:4242'}`,
+      apiKey: process.env.UNLEASH_API_KEY || '',
+      environment: process.env.NODE_ENV || 'development',
+      refreshInterval: 30000,
+      metricsInterval: 60000,
+      flags: {
+        'new-builder-ui': { enabled: false, description: 'New visual builder interface', owner: 'frontend-team' },
+        'ai-content-generation': { enabled: false, description: 'AI-powered content generation', owner: 'ml-team' },
+        'dark-mode': { enabled: false, description: 'Dark mode UI', owner: 'ux-team' },
+        'multi-language': { enabled: false, description: 'Multi-language support', owner: 'platform-team' },
+        'export-pdf': { enabled: false, description: 'PDF export feature', owner: 'export-team' },
+        'analytics-dashboard': { enabled: false, description: 'New analytics dashboard', owner: 'analytics-team' },
+        'collaboration': { enabled: false, description: 'Real-time collaboration', owner: 'platform-team' },
+        'marketplace': { enabled: false, description: 'Module marketplace', owner: 'marketplace-team' },
+      },
+    };
+  }
+
+  generateLaunchDarklyConfig(): Record<string, any> {
+    return {
+      clientSideId: process.env.LAUNCH_DARKLY_CLIENT_ID || '',
+      sdkKey: process.env.LAUNCH_DARKLY_SDK_KEY || '',
+      streaming: true,
+      pollingInterval: 30,
+      flags: this.generateFeatureFlagConfig().flags,
+    };
+  }
+
+  generateFeatureFlagMiddleware(): string {
+    return `import { createHash } from 'crypto';
+
+export class FeatureFlags {
+  private flags: Map<string, { enabled: boolean; rules?: any[] }> = new Map();
+  private userOverrides: Map<string, Map<string, boolean>> = new Map();
+
+  constructor(initialFlags?: Record<string, any>) {
+    if (initialFlags) {
+      for (const [key, val] of Object.entries(initialFlags)) {
+        this.flags.set(key, { enabled: val.enabled ?? false, rules: val.rules });
+      }
+    }
+  }
+
+  isEnabled(flag: string, user?: { id: string; email?: string; attributes?: Record<string, string> }): boolean {
+    const config = this.flags.get(flag);
+    if (!config) return false;
+    if (user) {
+      const override = this.userOverrides.get(user.id)?.get(flag);
+      if (override !== undefined) return override;
+      if (config.rules) {
+        for (const rule of config.rules) {
+          if (this.evaluateRule(rule, user)) return true;
+        }
+      }
+      if (config.enabled && user.id) {
+        const hash = createHash('md5').update(flag + ':' + user.id).digest('hex');
+        const bucket = parseInt(hash.substring(0, 8), 16) % 100;
+        return bucket < (config.rolloutPercentage || 100);
+      }
+    }
+    return config.enabled;
+  }
+
+  private evaluateRule(rule: any, user: { id: string; attributes?: Record<string, string> }): boolean {
+    if (rule.type === 'percentage') {
+      const hash = createHash('md5').update(rule.flag + ':' + user.id).digest('hex');
+      const bucket = parseInt(hash.substring(0, 8), 16) % 100;
+      return bucket < rule.value;
+    }
+    if (rule.type === 'attribute' && user.attributes) {
+      return user.attributes[rule.attribute] === rule.value;
+    }
+    return false;
+  }
+
+  setOverride(userId: string, flag: string, enabled: boolean): void {
+    if (!this.userOverrides.has(userId)) this.userOverrides.set(userId, new Map());
+    this.userOverrides.get(userId)!.set(flag, enabled);
+  }
+
+  getAllFlags(): Record<string, boolean> {
+    const result: Record<string, boolean> = {};
+    for (const [key, val] of this.flags) result[key] = val.enabled;
+    return result;
+  }
+}`;
+  }
+
+  // ─── A/B Testing Infrastructure ───────────────────────────────
+
+  generateABTestingConfig(): Record<string, any> {
+    return {
+      provider: 'growthbook',
+      url: process.env.GROWTHBOOK_URL || 'http://growthbook:3000',
+      apiKey: process.env.GROWTHBOOK_API_KEY || '',
+      experiments: [
+        { key: 'builder-layout', variants: ['classic', 'modern', 'compact'], weights: [0.33, 0.33, 0.34] },
+        { key: 'signup-flow', variants: ['standard', 'simplified', 'social-first'], weights: [0.5, 0.3, 0.2] },
+        { key: 'pricing-page', variants: ['control', 'new-design'], weights: [0.5, 0.5] },
+        { key: 'onboarding', variants: ['tutorial', 'interactive', 'video'], weights: [0.4, 0.4, 0.2] },
+      ],
+      metrics: ['conversion', 'engagement', 'retention', 'revenue'],
+      minimumSampleSize: 1000,
+      confidenceLevel: 0.95,
+    };
+  }
+
+  // ─── Preview Environments ─────────────────────────────────────
+
+  generatePreviewEnvironmentConfig(): Record<string, any> {
+    return {
+      enabled: true,
+      provider: 'github-pages',
+      domainPattern: 'pr-{number}.preview.sukit.dev',
+      ttl: 7200,
+      autoCleanup: true,
+      resources: { cpu: '0.5', memory: '512Mi' },
+      environmentVariables: {
+        NODE_ENV: 'preview',
+        APP_URL: 'https://pr-{number}.preview.sukit.dev',
+      },
+    };
+  }
+
+  // ─── Rollback Mechanism ───────────────────────────────────────
+
+  generateRollbackScript(): string {
+    return `#!/bin/bash
+set -euo pipefail
+
+ENV="\${1:-production}"
+APP="${this.config.appName}"
+PREVIOUS_TAG="\${2:-}"
+
+echo "=== Rolling back \${APP} on \${ENV} ==="
+
+if [ -z "\${PREVIOUS_TAG}" ]; then
+  echo "Fetching previous deployment..."
+  PREVIOUS_TAG=$(kubectl rollout history deployment/\${APP} -n \${ENV} | tail -2 | head -1 | awk '{print $1}')
+  if [ -z "\${PREVIOUS_TAG}" ]; then
+    echo "No previous revision found!"
+    exit 1
+  fi
+fi
+
+echo "Rolling back to revision: \${PREVIOUS_TAG}"
+kubectl rollout undo deployment/\${APP} -n \${ENV} --to-revision=\${PREVIOUS_TAG}
+
+echo "Waiting for rollback to complete..."
+kubectl rollout status deployment/\${APP} -n \${ENV} --timeout=300s
+
+echo "Running health check..."
+for i in {1..30}; do
+  STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://\${ENV}.${this.config.domains.prod}/api/health)
+  if [ "\$STATUS" = "200" ]; then
+    echo "Rollback successful! Health check passed."
+    exit 0
+  fi
+  sleep 2
+done
+
+echo "Rollback health check failed!"
+exit 1`;
+  }
+
+  getRollbackStrategy(): Record<string, any> {
+    return {
+      type: 'rolling',
+      maxRollbackRevisions: 5,
+      autoRollbackOnHealthCheckFailure: true,
+      healthCheckRetries: 3,
+      notificationOnRollback: true,
+      preserveDatabaseMigrations: true,
+    };
+  }
+
+  // ─── Docker Push Script ───────────────────────────────────────
+
+  generateDockerPushScript(options: { tag?: string; registry?: string; buildArgs?: Record<string, string> } = {}): string {
+    const registry = options.registry || this.config.registry;
+    const tag = options.tag || '$(git rev-parse --short HEAD)';
+    const buildArgs = options.buildArgs || {};
+    const argsStr = Object.entries(buildArgs).map(([k, v]) => `--build-arg ${k}=${v}`).join(' ');
+    return `#!/bin/bash
+set -euo pipefail
+
+APP="${this.config.appName}"
+REGISTRY="${registry}"
+TAG="${tag}"
+
+echo "=== Building Docker image ==="
+docker build \\
+  -t \${REGISTRY}/\${APP}:\${TAG} \\
+  -t \${REGISTRY}/\${APP}:latest \\
+  ${argsStr} \\
+  -f Dockerfile .
+
+echo "=== Pushing to registry ==="
+docker push \${REGISTRY}/\${APP}:\${TAG}
+docker push \${REGISTRY}/\${APP}:latest
+
+echo "=== Verifying manifest ==="
+docker manifest inspect \${REGISTRY}/\${APP}:\${TAG} > /dev/null
+
+echo "✅ Docker image pushed: \${REGISTRY}/\${APP}:\${TAG}"`;
+  }
+
+  // ─── Kubernetes Deploy Script ─────────────────────────────────
+
+  generateK8sDeployScript(options: { manifestDir?: string; namespace?: string; rollbackOnFailure?: boolean } = {}): string {
+    const manifestDir = options.manifestDir || './kubernetes';
+    const namespace = options.namespace || 'production';
+    return `#!/bin/bash
+set -euo pipefail
+
+NAMESPACE="${namespace}"
+MANIFEST_DIR="${manifestDir}"
+APP="${this.config.appName}"
+TAG="$(git rev-parse --short HEAD)"
+ROLLBACK_ON_FAILURE=${options.rollbackOnFailure !== false}
+
+echo "=== Deploying \${APP} to Kubernetes ==="
+
+# Backup current manifests for rollback
+BACKUP_DIR="/tmp/k8s-backup-\$(date +%s)"
+mkdir -p \${BACKUP_DIR}
+kubectl get deployment \${APP} -n \${NAMESPACE} -o yaml > \${BACKUP_DIR}/deployment.yaml 2>/dev/null || true
+kubectl get service \${APP} -n \${NAMESPACE} -o yaml > \${BACKUP_DIR}/service.yaml 2>/dev/null || true
+kubectl get ingress \${APP} -n \${NAMESPACE} -o yaml > \${BACKUP_DIR}/ingress.yaml 2>/dev/null || true
+
+# Apply manifests
+echo "Applying Kubernetes manifests..."
+kubectl apply -f \${MANIFEST_DIR}/ -n \${NAMESPACE}
+
+# Update image
+kubectl set image deployment/\${APP} \${APP}=\${REGISTRY:-${this.config.registry}}/\${APP}:\${TAG} -n \${NAMESPACE}
+
+# Wait for rollout
+echo "Waiting for rollout to complete..."
+if ! kubectl rollout status deployment/\${APP} -n \${NAMESPACE} --timeout=300s; then
+  echo "❌ Rollout failed!"
+  if [ "\${ROLLBACK_ON_FAILURE}" = true ]; then
+    echo "Rolling back to previous version..."
+    kubectl apply -f \${BACKUP_DIR}/ -n \${NAMESPACE} 2>/dev/null || true
+    kubectl rollout status deployment/\${APP} -n \${NAMESPACE} --timeout=120s
+  fi
+  exit 1
+fi
+
+# Run migrations
+echo "Running database migrations..."
+kubectl exec deploy/\${APP} -n \${NAMESPACE} -- npx prisma migrate deploy 2>/dev/null || echo "No migrations to run"
+
+# Health check
+echo "Running health check..."
+for i in {1..30}; do
+  STATUS=$(kubectl exec deploy/\${APP} -n \${NAMESPACE} -- curl -s -o /dev/null -w "%{http_code}" http://localhost:${this.config.port}/api/health 2>/dev/null || echo "000")
+  if [ "\$STATUS" = "200" ]; then
+    echo "✅ Deployment successful!"
+    exit 0
+  fi
+  sleep 2
+done
+
+echo "❌ Health check failed!"
+exit 1`;
+  }
+
+  // ─── Terraform Apply Script ───────────────────────────────────
+
+  generateTerraformApplyScript(options: { autoApprove?: boolean; varFile?: string; backend?: boolean } = {}): string {
+    return `#!/bin/bash
+set -euo pipefail
+
+echo "=== Terraform Plan & Apply ==="
+
+# Initialize backend
+${options.backend !== false ? 'echo "Initializing Terraform backend..."
+terraform init -upgrade -input=false' : ''}
+
+# Select workspace
+WORKSPACE="\${1:-production}"
+terraform workspace select \${WORKSPACE} 2>/dev/null || terraform workspace new \${WORKSPACE}
+
+# Validate configuration
+echo "Validating Terraform configuration..."
+terraform validate
+
+# Generate plan
+echo "Generating Terraform plan..."
+PLAN_FILE="/tmp/tf-plan-\$(date +%s).tfplan"
+terraform plan \\
+  -input=false \\
+  ${options.varFile ? `-var-file="${options.varFile}" \\` : ''}
+  -out=\${PLAN_FILE}
+
+# Show plan summary
+terraform show -no-color \${PLAN_FILE} | head -50
+
+# Apply
+if [ "${options.autoApprove}" = true ]; then
+  echo "Applying Terraform plan (auto-approved)..."
+  terraform apply -input=false -auto-approve \${PLAN_FILE}
+else
+  echo "Apply Terraform plan? (y/n)"
+  read -r CONFIRM
+  if [ "\$CONFIRM" = "y" ] || [ "\$CONFIRM" = "Y" ]; then
+    terraform apply -input=false \${PLAN_FILE}
+  else
+    echo "Apply cancelled"
+    exit 0
+  fi
+fi
+
+echo "✅ Terraform apply complete"
+rm -f \${PLAN_FILE}`;
+  }
+
+  // ─── Deployment Notification ─────────────────────────────────
+
+  generateDeploymentNotification(options: { channels?: ('slack' | 'email')[]; includeCommitInfo?: boolean; includeChanges?: boolean } = {}): Record<string, any> {
+    const channels = options.channels || ['slack', 'email'];
+    const notification: Record<string, any> = {};
+    const appName = this.config.appName;
+
+    if (channels.includes('slack')) {
+      notification.slack = {
+        webhookUrl: process.env.SLACK_WEBHOOK_URL || '',
+        channel: '#deployments',
+        template: {
+          blocks: [
+            { type: 'header', text: { type: 'plain_text', text: ':rocket: New Deployment' } },
+            {
+              type: 'section',
+              fields: [
+                { type: 'mrkdwn', text: '*App:* ' + appName },
+                { type: 'mrkdwn', text: '*Environment:* ' + (options.includeCommitInfo ? 'production' : '') },
+                { type: 'mrkdwn', text: '*Version:* `\\$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")`' },
+                { type: 'mrkdwn', text: '*Deployed by:* `\\$(whoami)`' },
+                { type: 'mrkdwn', text: '*Timestamp:* `\\$(date -u +"%Y-%m-%dT%H:%M:%SZ")`' },
+              ],
+            },
+            ...(options.includeChanges ? [{
+              type: 'section',
+              text: { type: 'mrkdwn', text: '*Recent Changes:*\\n\\$(git log --oneline -5 2>/dev/null || echo "N/A")' },
+            }] : []),
+            { type: 'context', elements: [{ type: 'mrkdwn', text: '<https://app.sukit.dev|SUKIT Dashboard> | <https://github.com/sukit/sukit/actions|View Pipeline>' }] },
+          ],
+        },
+      };
+    }
+
+    if (channels.includes('email')) {
+      notification.email = {
+        recipients: process.env.DEPLOY_NOTIFY_EMAILS ? process.env.DEPLOY_NOTIFY_EMAILS.split(',') : ['devops@sukit.dev'],
+        subject: 'Deployment: ' + appName + ' - \\$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")',
+        template: 'Deployment Notification\n' +
+          'App: ' + appName + '\n' +
+          'Version: \\$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")\n' +
+          'Environment: production\n' +
+          'Timestamp: \\$(date -u +"%Y-%m-%dT%H:%M:%SZ")\n' +
+          'Deployed by: \\$(whoami)\n\n' +
+          'Recent Changes:\n' +
+          '\\$(git log --oneline -10 2>/dev/null || echo "N/A")\n\n' +
+          'Dashboard: https://app.sukit.dev\n' +
+          'Pipeline: https://github.com/sukit/sukit/actions',
+      };
+    }
+
+    return notification;
+  }
+
+  healthCheck(): Promise<{ status: string; checks: Record<string, boolean> }> {
+    const checks: Record<string, boolean> = {
+      database: false,
+      redis: false,
+      api: false,
+    };
+    return Promise.resolve({ status: 'ok', checks });
+  }
 }

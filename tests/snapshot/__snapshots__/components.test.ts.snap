@@ -1,0 +1,142 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SiteHeader renders header with logo and navigation 1`] = `
+<header class="site-header">
+  <div class="header-inner">
+    <a class="logo" href="/">
+      <img src="/logo.svg" alt="SUKIT" width="120" height="32" />
+    </a>
+    <nav class="main-nav">
+      <a href="/features">Features</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/docs">Docs</a>
+      <a href="/blog">Blog</a>
+    </nav>
+    <div class="header-actions">
+      <a class="btn btn-secondary" href="/login">Sign In</a>
+      <a class="btn btn-primary" href="/signup">Get Started</a>
+    </div>
+  </div>
+</header>
+`;
+
+exports[`SiteFooter renders footer with links 1`] = `
+<footer class="site-footer">
+  <div class="footer-grid">
+    <div class="footer-column">
+      <h4>Product</h4>
+      <a href="/features">Features</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/templates">Templates</a>
+      <a href="/marketplace">Marketplace</a>
+    </div>
+    <div class="footer-column">
+      <h4>Resources</h4>
+      <a href="/docs">Documentation</a>
+      <a href="/blog">Blog</a>
+      <a href="/help">Help Center</a>
+      <a href="/api">API Reference</a>
+    </div>
+    <div class="footer-column">
+      <h4>Company</h4>
+      <a href="/about">About</a>
+      <a href="/careers">Careers</a>
+      <a href="/contact">Contact</a>
+      <a href="/status">Status</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>&copy; 2026 SUKIT Inc. All rights reserved.</span>
+    <div class="footer-legal">
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
+      <a href="/cookies">Cookies</a>
+    </div>
+  </div>
+</footer>
+`;
+
+exports[`BlockRenderer renders text block 1`] = `
+<div class="block text-block" data-block-type="text">
+  <p>Hello world</p>
+</div>
+`;
+
+exports[`BlockRenderer renders image block 1`] = `
+<div class="block image-block" data-block-type="image">
+  <img src="https://images.sukit.dev/example.jpg" alt="Example" loading="lazy" />
+</div>
+`;
+
+exports[`BlockRenderer renders button block 1`] = `
+<div class="block button-block" data-block-type="button">
+  <a href="https://sukit.dev" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
+    Click Me
+  </a>
+</div>
+`;
+
+exports[`BlockRenderer renders video block 1`] = `
+<div class="block video-block" data-block-type="video">
+  <div class="video-wrapper">
+    <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" frameborder="0" allowfullscreen></iframe>
+  </div>
+</div>
+`;
+
+exports[`SectionRenderer renders section with columns 1`] = `
+<section class="section" style="background-color: #f9fafb; padding: 40px 16px;">
+  <div class="container" style="max-width: 1200px;">
+    <div class="columns grid-cols-3">
+      <div class="column">
+        <div class="block text-block">
+          <p>Column 1</p>
+        </div>
+      </div>
+      <div class="column">
+        <div class="block text-block">
+          <p>Column 2</p>
+        </div>
+      </div>
+      <div class="column">
+        <div class="block text-block">
+          <p>Column 3</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+`;
+
+exports[`PageSettings renders SEO meta tags 1`] = `
+<head>
+  <title>My Page - SUKIT</title>
+  <meta name="description" content="A sample page description" />
+  <meta name="keywords" content="sukit, builder, sites" />
+  <meta property="og:title" content="My Page" />
+  <meta property="og:description" content="A sample page description" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="My Page" />
+  <meta name="twitter:description" content="A sample page description" />
+</head>
+`;
+
+exports[`MediaLibrary renders media grid 1`] = `
+<div class="media-library">
+  <div class="media-toolbar">
+    <input type="search" placeholder="Search media..." class="media-search" />
+    <button class="btn btn-primary upload-btn">Upload</button>
+  </div>
+  <div class="media-grid">
+    <div class="media-item" data-id="media-1">
+      <img src="https://images.sukit.dev/photo-1.jpg" alt="Photo 1" />
+      <span class="media-name">photo-1.jpg</span>
+    </div>
+    <div class="media-item" data-id="media-2">
+      <img src="https://images.sukit.dev/photo-2.jpg" alt="Photo 2" />
+      <span class="media-name">photo-2.jpg</span>
+    </div>
+  </div>
+</div>
+`;

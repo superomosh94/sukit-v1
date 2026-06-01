@@ -1,0 +1,18 @@
+{
+  "id": "@sukit/membership",
+  "name": "Membership",
+  "version": "1.0.0",
+  "description": "Full membership platform with plans, subscriptions, groups, forums, badges, points, leaderboards, and payments",
+  "author": { "name": "SUKIT Core Team" },
+  "license": "MIT",
+  "icon": "Users",
+  "sukit": {
+    "minVersion": "1.0.0",
+    "capabilities": ["ui:sidebar", "api:routes", "hooks:page"],
+    "permissions": ["database:read", "database:write"],
+    "entrypoints": { "main": "./dist/index.js" },
+    "api": { "basePath": "/api/membership", "routes": "./dist/routes.js" },
+    "dependencies": { "@sukit/core": "^1.0.0" },
+    "peerDependencies": { "react": "^19.0.0" }
+  }
+}

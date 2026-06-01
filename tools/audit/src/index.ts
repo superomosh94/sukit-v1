@@ -6,11 +6,24 @@ interface StoredAuditEvent extends AuditEvent {
   timestamp: Date;
 }
 
+interface ComplianceReport {
+  period: { start: string; end: string };
+  totalEvents: number;
+  eventsByAction: Record<string, number>;
+  eventsByResource: Record<string, number>;
+  uniqueUsers: number;
+  uniqueIPs: number;
+  dataRetentionDays: number;
+  immutable: boolean;
+}
+
 export class AuditLogger {
   private kernel: SukitKernel;
   private buffer: StoredAuditEvent[] = [];
+  private storage: StoredAuditEvent[] = [];
   private retentionDays: number = 90;
   private forwardingUrl?: string;
+  private immutableMode: boolean = true;
 
   constructor(kernel: SukitKernel) {
     this.kernel = kernel;
@@ -23,6 +36,8 @@ export class AuditLogger {
     if (retention) this.retentionDays = parseInt(retention as string);
     const forwarding = await this.kernel.settings.get('audit:forwarding-url');
     if (forwarding) this.forwardingUrl = forwarding as string;
+    const immutable = await this.kernel.settings.get('audit:immutable');
+    if (immutable) this.immutableMode = immutable === 'true';
   }
 
   async log(event: Omit<AuditEvent, 'id' | 'timestamp'>): Promise<void> {
@@ -38,12 +53,15 @@ export class AuditLogger {
     if (this.forwardingUrl) {
       this.forward(entry).catch(() => {});
     }
+
+    await this.kernel.events.emit('audit:logged', { entry });
   }
 
   async search(
     filters: AuditFilters
   ): Promise<{ logs: AuditEvent[]; total: number }> {
-    let results = this.buffer;
+    const source = this.storage.length > 0 ? this.storage : this.buffer;
+    let results = [...source, ...this.buffer];
     if (filters.userId)
       results = results.filter((l) => l.userId === filters.userId);
     if (filters.action)
@@ -105,6 +123,11 @@ export class AuditLogger {
     await this.kernel.settings.set('audit:retention-days', String(days));
   }
 
+  async setImmutable(enabled: boolean): Promise<void> {
+    this.immutableMode = enabled;
+    await this.kernel.settings.set('audit:immutable', String(enabled));
+  }
+
   async getStats(): Promise<{
     totalEvents: number;
     eventsByAction: Record<string, number>;
@@ -112,7 +135,8 @@ export class AuditLogger {
     oldestEvent: string | null;
     newestEvent: string | null;
   }> {
-    const logs = this.buffer;
+    const source = this.storage.length > 0 ? this.storage : this.buffer;
+    const logs = [...source, ...this.buffer];
     const eventsByAction: Record<string, number> = {};
     const eventsByResource: Record<string, number> = {};
     for (const l of logs) {
@@ -127,6 +151,41 @@ export class AuditLogger {
       oldestEvent:
         logs.length > 0 ? logs[logs.length - 1].timestamp.toISOString() : null,
       newestEvent: logs.length > 0 ? logs[0].timestamp.toISOString() : null,
+    };
+  }
+
+  async generateComplianceReport(period?: {
+    start: string;
+    end: string;
+  }): Promise<ComplianceReport> {
+    const start = period?.start
+      ? new Date(period.start)
+      : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const end = period?.end ? new Date(period.end) : new Date();
+    const source = this.storage.length > 0 ? this.storage : this.buffer;
+    const logs = [...source, ...this.buffer].filter(
+      (l) => l.timestamp >= start && l.timestamp <= end
+    );
+    const eventsByAction: Record<string, number> = {};
+    const eventsByResource: Record<string, number> = {};
+    const users = new Set<string>();
+    const ips = new Set<string>();
+    for (const l of logs) {
+      eventsByAction[l.action] = (eventsByAction[l.action] || 0) + 1;
+      eventsByResource[l.resourceType] =
+        (eventsByResource[l.resourceType] || 0) + 1;
+      if (l.userId) users.add(l.userId);
+      if (l.ipAddress) ips.add(l.ipAddress);
+    }
+    return {
+      period: { start: start.toISOString(), end: end.toISOString() },
+      totalEvents: logs.length,
+      eventsByAction,
+      eventsByResource,
+      uniqueUsers: users.size,
+      uniqueIPs: ips.size,
+      dataRetentionDays: this.retentionDays,
+      immutable: this.immutableMode,
     };
   }
 
@@ -151,8 +210,18 @@ export class AuditLogger {
     };
   }
 
+  /** Immutable: stored entries cannot be modified or deleted */
+  async deleteEntry(entryId: string): Promise<boolean> {
+    if (this.immutableMode) return false;
+    const before = this.storage.length;
+    this.storage = this.storage.filter((e) => e.id !== entryId);
+    this.buffer = this.buffer.filter((e) => e.id !== entryId);
+    return this.storage.length < before || this.buffer.length < before;
+  }
+
   private async flush(): Promise<void> {
-    // In production, persist buffer to database
+    this.storage.push(...this.buffer);
+    if (this.storage.length > 10000) this.storage = this.storage.slice(-10000);
     this.buffer = [];
   }
 
@@ -171,7 +240,8 @@ export class AuditLogger {
       const cutoff = new Date(
         Date.now() - this.retentionDays * 24 * 60 * 60 * 1000
       );
-      const before = this.buffer.length;
+      const before = this.storage.length;
+      this.storage = this.storage.filter((e) => e.timestamp > cutoff);
       this.buffer = this.buffer.filter((e) => e.timestamp > cutoff);
     }, 3600000);
   }

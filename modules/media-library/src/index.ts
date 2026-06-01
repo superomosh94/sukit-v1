@@ -6,6 +6,18 @@ export { MediaDetails } from './components/MediaDetails';
 export { UploadButton } from './components/UploadButton';
 export { MediaPicker } from './components/MediaPicker';
 export { MediaDragPreview } from './components/MediaDragPreview';
+export { ClipboardUpload } from './components/ClipboardUpload';
+export { UrlImport } from './components/UrlImport';
+export { BulkUpload } from './components/BulkUpload';
+export { UploadQueueManager } from './components/UploadQueueManager';
+export { CompressionSettings } from './components/CompressionSettings';
+export { ResponsiveSizesPanel } from './components/ResponsiveSizesPanel';
+export { LazyLoadingToggle } from './components/LazyLoadingToggle';
+export { ExifStrippingToggle } from './components/ExifStrippingToggle';
+export { ColorProfileConversion } from './components/ColorProfileConversion';
+export { OrientationCorrection } from './components/OrientationCorrection';
+export { CopyrightCreditEditor } from './components/CopyrightCreditEditor';
+export { UsageTracking } from './components/UsageTracking';
 
 // Module lifecycle for kernel compatibility
 import type { Module, KernelForModule } from '@sukit/core';

@@ -1,5 +1,10 @@
 import type { SukitKernel } from '@sukit/core';
 import type { WebSocketMessage, PresenceInfo } from '../../types';
+import { promisify } from 'util';
+import { deflate, inflate } from 'zlib';
+
+const pDeflate = promisify(deflate);
+const pInflate = promisify(inflate);
 
 type MessageHandler = (
   message: WebSocketMessage,
@@ -15,6 +20,7 @@ interface RoomState {
       socketId: string;
       cursor?: any;
       selectedBlock?: string;
+      lastActive: number;
     }
   >;
   locks: Map<
@@ -30,11 +36,38 @@ interface LockInfo {
   acquiredAt: string;
 }
 
+interface RateLimitConfig {
+  maxPerMinute: number;
+  userBuckets: Map<string, number[]>;
+}
+
 export class WebSocketServer {
   private kernel: SukitKernel;
   private rooms: Map<string, RoomState> = new Map();
   private handlers: Map<string, MessageHandler> = new Map();
   private userSockets: Map<string, Set<string>> = new Map();
+
+  private rateLimits: Map<string, RateLimitConfig> = new Map();
+
+  private presenceTimeoutSeconds: number = 0;
+  private presenceTimer: ReturnType<typeof setInterval> | null = null;
+
+  private roomHistory: Map<
+    string,
+    { userId: string; changes: any; timestamp: string }[]
+  > = new Map();
+
+  private persistenceKernel: SukitKernel | null = null;
+
+  private compressionEnabled: boolean = false;
+
+  private metrics = {
+    totalConnections: 0,
+    disconnectionCount: 0,
+    messageTimestamps: [] as number[],
+    latencyTotal: 0,
+    latencyCount: 0,
+  };
 
   constructor(kernel: SukitKernel) {
     this.kernel = kernel;
@@ -55,8 +88,10 @@ export class WebSocketServer {
         userId,
         joinedAt: new Date().toISOString(),
         socketId: msg.payload.socketId || '',
+        lastActive: Date.now(),
       });
       this.trackUserSocket(userId, msg.payload.socketId || '');
+      this.metrics.totalConnections++;
       this.broadcast(
         pageId,
         {
@@ -78,6 +113,7 @@ export class WebSocketServer {
     this.on('page:leave', async (msg, userId) => {
       const pageId = msg.payload.pageId;
       this.removeFromRoom(pageId, userId);
+      this.metrics.disconnectionCount++;
       this.broadcast(
         pageId,
         {
@@ -94,7 +130,10 @@ export class WebSocketServer {
       const room = this.rooms.get(pageId);
       if (room) {
         const user = room.users.get(userId);
-        if (user) user.cursor = msg.payload.position;
+        if (user) {
+          user.cursor = msg.payload.position;
+          user.lastActive = Date.now();
+        }
       }
       this.broadcast(
         pageId,
@@ -135,6 +174,23 @@ export class WebSocketServer {
           changes: msg.payload.changes,
           timestamp: msg.timestamp,
         });
+
+      const historyEntry = {
+        userId,
+        changes: msg.payload.changes,
+        timestamp: msg.timestamp || new Date().toISOString(),
+      };
+      if (!this.roomHistory.has(pageId)) this.roomHistory.set(pageId, []);
+      this.roomHistory.get(pageId)!.push(historyEntry);
+
+      if (this.persistenceKernel) {
+        const key = `ws:history:${pageId}:${historyEntry.timestamp}`;
+        this.persistenceKernel.storage?.set?.(
+          key,
+          JSON.stringify(historyEntry)
+        );
+      }
+
       this.broadcast(
         pageId,
         {
@@ -236,8 +292,24 @@ export class WebSocketServer {
     userId: string,
     message: WebSocketMessage
   ): Promise<void> {
+    const now = Date.now();
+
+    if (this.isRateLimited(userId)) return;
+
+    const user = this.findUserInRooms(userId);
+    if (user) user.lastActive = now;
+
+    this.metrics.messageTimestamps.push(now);
+    if (this.metrics.messageTimestamps.length > 1000)
+      this.metrics.messageTimestamps.shift();
+
+    const startLatency = now;
     const handler = this.handlers.get(message.type);
-    if (handler) await handler(message, userId);
+    if (handler) {
+      await handler(message, userId);
+      this.metrics.latencyTotal += Date.now() - startLatency;
+      this.metrics.latencyCount++;
+    }
   }
 
   broadcast(
@@ -280,12 +352,23 @@ export class WebSocketServer {
     for (const [blockId, lock] of room.locks) {
       if (lock.userId === userId) room.locks.delete(blockId);
     }
-    if (room.users.size === 0) this.rooms.delete(pageId);
+    if (room.users.size === 0) {
+      this.rooms.delete(pageId);
+      this.roomHistory.delete(pageId);
+    }
   }
 
   private trackUserSocket(userId: string, socketId: string): void {
     if (!this.userSockets.has(userId)) this.userSockets.set(userId, new Set());
     this.userSockets.get(userId)!.add(socketId);
+  }
+
+  private findUserInRooms(userId: string): { lastActive: number } | null {
+    for (const room of this.rooms.values()) {
+      const user = room.users.get(userId);
+      if (user) return user;
+    }
+    return null;
   }
 
   getOnlineUsers(): string[] {
@@ -294,5 +377,145 @@ export class WebSocketServer {
 
   getRoomCount(): number {
     return this.rooms.size;
+  }
+
+  setConnectionRateLimit(webhookId: string, maxPerMinute: number): void {
+    const existing = this.rateLimits.get(webhookId);
+    if (existing) {
+      existing.maxPerMinute = maxPerMinute;
+    } else {
+      this.rateLimits.set(webhookId, {
+        maxPerMinute,
+        userBuckets: new Map(),
+      });
+    }
+  }
+
+  private isRateLimited(userId: string): boolean {
+    const now = Date.now();
+    const window = 60000;
+
+    for (const config of this.rateLimits.values()) {
+      let timestamps = config.userBuckets.get(userId);
+      if (!timestamps) {
+        timestamps = [];
+        config.userBuckets.set(userId, timestamps);
+      }
+
+      while (timestamps.length > 0 && timestamps[0] < now - window) {
+        timestamps.shift();
+      }
+
+      if (timestamps.length >= config.maxPerMinute) return true;
+      timestamps.push(now);
+    }
+
+    return false;
+  }
+
+  setPresenceTimeout(seconds: number): void {
+    this.presenceTimeoutSeconds = seconds;
+    if (this.presenceTimer) {
+      clearInterval(this.presenceTimer);
+      this.presenceTimer = null;
+    }
+    if (seconds <= 0) return;
+    this.presenceTimer = setInterval(
+      () => {
+        this.cleanupStalePresence();
+      },
+      Math.min(seconds * 1000, 30000)
+    );
+  }
+
+  private cleanupStalePresence(): void {
+    if (this.presenceTimeoutSeconds <= 0) return;
+    const cutoff = Date.now() - this.presenceTimeoutSeconds * 1000;
+    for (const [pageId, room] of this.rooms) {
+      const stale: string[] = [];
+      for (const [userId, user] of room.users) {
+        if (user.lastActive < cutoff) stale.push(userId);
+      }
+      for (const userId of stale) {
+        this.removeFromRoom(pageId, userId);
+        this.broadcast(pageId, {
+          type: 'presence:timeout',
+          payload: { userId },
+          timestamp: new Date().toISOString(),
+        });
+      }
+    }
+  }
+
+  getRoomHistory(
+    pageId: string,
+    limit: number = 50
+  ): { userId: string; changes: any; timestamp: string }[] {
+    const history = this.roomHistory.get(pageId);
+    if (!history) return [];
+    return history.slice(-limit);
+  }
+
+  clearRoomHistory(pageId: string): void {
+    this.roomHistory.delete(pageId);
+  }
+
+  enablePersistence(kernel: SukitKernel): void {
+    this.persistenceKernel = kernel;
+  }
+
+  handleBinary(socketId: string, userId: string, buffer: ArrayBuffer): void {
+    const base64 = Buffer.from(buffer).toString('base64');
+    const pageId = this.findUserPage(userId);
+    if (!pageId) return;
+
+    const user = this.rooms.get(pageId)?.users.get(userId);
+    if (user) user.lastActive = Date.now();
+
+    this.broadcast(pageId, {
+      type: 'binary:data',
+      payload: { userId, data: base64 },
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  private findUserPage(userId: string): string | null {
+    for (const [pageId, room] of this.rooms) {
+      if (room.users.has(userId)) return pageId;
+    }
+    return null;
+  }
+
+  enableCompression(): void {
+    this.compressionEnabled = true;
+  }
+
+  async compress(data: string): Promise<Buffer> {
+    return pDeflate(data);
+  }
+
+  async decompress(data: Buffer): Promise<Buffer> {
+    return pInflate(data);
+  }
+
+  getConnectionMetrics(): {
+    totalConnections: number;
+    activeRooms: number;
+    messagesPerSecond: number;
+    avgLatency: number;
+  } {
+    const now = Date.now();
+    const recentMessages = this.metrics.messageTimestamps.filter(
+      (t) => t > now - 1000
+    ).length;
+    return {
+      totalConnections: this.metrics.totalConnections,
+      activeRooms: this.rooms.size,
+      messagesPerSecond: recentMessages,
+      avgLatency:
+        this.metrics.latencyCount > 0
+          ? Math.round(this.metrics.latencyTotal / this.metrics.latencyCount)
+          : 0,
+    };
   }
 }

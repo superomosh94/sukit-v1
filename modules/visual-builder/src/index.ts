@@ -97,6 +97,12 @@ export type { ContextMenuItem } from './components/ContextMenu';
 export { VersionHistoryPanel } from './components/VersionHistoryPanel';
 export { Ruler } from './canvas/Ruler';
 
+// Re-export new builder components
+export { BlockSearch } from './components/BlockSearch';
+export { BlockPreview } from './components/BlockPreview';
+export { BlockVariations } from './components/BlockVariations';
+export { HistorySlider } from './components/HistorySlider';
+
 // Re-export hooks
 export {
   default as BuilderProvider,
@@ -111,6 +117,14 @@ export {
   useBuilderActions,
 } from './hooks/useBuilder';
 export { useBuilderStore } from './stores/builderStore';
+
+// Re-export integration hooks
+export { useCodeEditorIntegration } from './hooks/useCodeEditorIntegration';
+export { useCommerceIntegration } from './hooks/useCommerceIntegration';
+export { useAiChatIntegration } from './hooks/useAiChatIntegration';
+export { usePopupBuilderIntegration } from './hooks/usePopupBuilderIntegration';
+export { useBackupIntegration } from './hooks/useBackupIntegration';
+export { useRedirectManagerIntegration } from './hooks/useRedirectManagerIntegration';
 
 // Module lifecycle for kernel compatibility
 import type { Module, KernelForModule } from '@sukit/core';

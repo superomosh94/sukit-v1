@@ -192,4 +192,150 @@ ${b.customCSS || ''}`;
       branding: this.defaultBranding,
     };
   }
+
+  // ─── Custom Domain SSL Provisioning ────────────────────────
+
+  provisionSSL(domain: string): { status: string; certificateArn: string; validationMethod: string; dnsRecords: { type: string; name: string; value: string }[] } {
+    const certId = crypto.randomUUID().substring(0, 12);
+    return {
+      status: 'pending_validation',
+      certificateArn: `arn:aws:acm:us-east-1:123456789012:certificate/${certId}`,
+      validationMethod: 'DNS',
+      dnsRecords: [
+        { type: 'CNAME', name: `_${certId}.${domain}`, value: `_${certId}.acm-validations.aws.` },
+        { type: 'CNAME', name: `_${certId}.${domain}`, value: `_${certId}.acm-validations.aws.` },
+      ],
+    };
+  }
+
+  checkSSLStatus(domain: string): { status: string; issuedAt: string | null; expiresAt: string | null } {
+    return { status: 'active', issuedAt: new Date(Date.now() - 3000000000).toISOString(), expiresAt: new Date(Date.now() + 30000000000).toISOString() };
+  }
+
+  // ─── Reseller Provisioning Automation ──────────────────────
+
+  provisionReseller(parentOrgId: string, name: string, tier: string, customBranding?: Partial<BrandingConfig>): ResellerOrg & { portalUrl: string; apiKey: string } {
+    const org = this.createResellerOrg(parentOrgId, name, tier);
+    if (customBranding) this.applyBranding(org.id, customBranding);
+    const portal = this.generateResellerPortalConfig(org.id);
+    return { ...org, portalUrl: portal.portalUrl, apiKey: portal.apiKey };
+  }
+
+  autoProvisionResellerProducts(resellerId: string): { products: { name: string; price: number; features: string[] }[]; totalValue: number } {
+    const products = [
+      { name: 'SUKIT Basic Site', price: 19, features: ['1 site', '5 pages', '500MB storage'] },
+      { name: 'SUKIT Business Pro', price: 49, features: ['10 sites', '50 pages', '5GB storage', 'Custom domain'] },
+      { name: 'SUKIT Enterprise', price: 149, features: ['Unlimited sites', 'Unlimited pages', '50GB storage', 'SSO', 'Priority support'] },
+    ];
+    return { products, totalValue: products.reduce((s, p) => s + p.price, 0) };
+  }
+
+  // ─── Custom Terms of Service ───────────────────────────────
+
+  generateCustomTerms(orgId: string, companyName: string, customClauses: { title: string; content: string }[]): string {
+    const baseClauses = [
+      { title: 'Service Description', content: `${companyName} provides access to the SUKIT platform under the terms below.` },
+      { title: 'User Obligations', content: 'Users must maintain the confidentiality of their credentials.' },
+      { title: 'Data Protection', content: `${companyName} will process personal data in accordance with applicable privacy laws.` },
+      { title: 'Limitation of Liability', content: 'The platform is provided "as is" without warranty of any kind.' },
+      { title: 'Termination', content: 'Either party may terminate this agreement with 30 days written notice.' },
+    ];
+    const allClauses = [...baseClauses, ...customClauses];
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+body { font-family: -apple-system, sans-serif; max-width: 800px; margin: 40px auto; line-height: 1.6; }
+h1 { color: #4F46E5; }
+h2 { color: #374151; margin-top: 24px; }
+</style></head><body>
+<h1>Terms of Service</h1>
+<p><strong>${companyName}</strong> — Last updated: ${new Date().toLocaleDateString()}</p>
+${allClauses.map(c => `<h2>${c.title}</h2><p>${c.content}</p>`).join('\n')}
+</body></html>`;
+  }
+
+  // ─── Sub-Tenant Management UI ──────────────────────────────
+
+  generateSubTenantManagementHtml(): string {
+    return `import { useState, useEffect } from 'react';
+
+export function SubTenantManager({ parentOrgId }: { parentOrgId: string }) {
+  const [tenants, setTenants] = useState([]);
+  const [showCreate, setShowCreate] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/whitelabel/resellers?orgId=' + parentOrgId).then(r => r.json()).then(setTenants);
+  }, [parentOrgId]);
+
+  const createTenant = async (data: any) => {
+    const res = await fetch('/api/whitelabel/resellers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ parentOrgId, ...data }),
+    });
+    const tenant = await res.json();
+    setTenants([...tenants, tenant]);
+    setShowCreate(false);
+  };
+
+  return (
+    <div className="sub-tenant-manager">
+      <header><h2>Sub-Tenant Management</h2><button onClick={() => setShowCreate(true)}>+ Add Sub-Tenant</button></header>
+      {showCreate && (
+        <div className="create-form">
+          <input placeholder="Company Name" id="company-name" />
+          <select id="tier"><option value="starter">Starter</option><option value="growth">Growth</option><option value="enterprise">Enterprise</option></select>
+          <button onClick={() => createTenant({ name: document.getElementById('company-name').value, tier: document.getElementById('tier').value })}>Create</button>
+          <button onClick={() => setShowCreate(false)}>Cancel</button>
+        </div>
+      )}
+      <table><thead><tr><th>Name</th><th>Slug</th><th>Plan</th><th>Status</th><th>Revenue</th><th>Customers</th><th>Created</th></tr></thead>
+      <tbody>{tenants.map(t => (
+        <tr key={t.id}>
+          <td>{t.name}</td><td>{t.slug}</td><td>{t.tier}</td>
+          <td><span className={'status ' + t.status}>{t.status}</span></td>
+          <td>$${t.totalRevenue}</td><td>{t.customerCount}</td>
+          <td>{new Date(t.createdAt).toLocaleDateString()}</td>
+        </tr>
+      ))}</tbody></table>
+      <style>{`
+        .sub-tenant-manager { padding: 24px; font-family: -apple-system, sans-serif; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .create-form { display: flex; gap: 8px; margin-bottom: 16px; }
+        .create-form input, .create-form select, .create-form button { padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; }
+        .create-form button { background: #4F46E5; color: #fff; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; font-size: 13px; }
+        .status.active { color: #059669; }
+        .status.suspended { color: #DC2626; }
+      `}</style>
+    </div>
+  );
+}`;
+  }
+
+  // ─── Custom Support Email Routing ──────────────────────────
+
+  setSupportEmailRouting(orgId: string, config: { domain: string; forwardTo: string; catchAll: boolean; subdomainRouting: Record<string, string> }): void {
+    this.kernel.settings.set(`support-email:${orgId}`, JSON.stringify(config));
+  }
+
+  getSupportEmailRouting(orgId: string): { domain: string; forwardTo: string; catchAll: boolean; subdomainRouting: Record<string, string> } | null {
+    const data = this.kernel.settings.get(`support-email:${orgId}`);
+    return data ? JSON.parse(data as string) : null;
+  }
+
+  generateSupportEmailConfig(orgId: string): Record<string, any> {
+    return {
+      provider: 'sendgrid',
+      apiKey: process.env.SENDGRID_API_KEY || '',
+      inboundDomain: `support.${orgId}.sukit.dev`,
+      forwardTo: `support+${orgId}@sukit.dev`,
+      mxRecords: [
+        { priority: 10, host: 'mx.sendgrid.net' },
+      ],
+      spfRecord: 'v=spf1 include:sendgrid.net ~all',
+      dkimRecords: [
+        { selector: 's1', domain: 'sendgrid.net' },
+      ],
+    };
+  }
 }

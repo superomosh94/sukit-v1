@@ -226,6 +226,35 @@ export const useBuilderStore = create<BuilderStore>()(
         '#f1f5f9',
       ],
 
+      // Block favorites & recent
+      favoriteBlocks: [] as string[],
+      recentBlocks: [] as string[],
+
+      toggleFavoriteBlock: (blockType: string) => {
+        const { favoriteBlocks } = get();
+        const next = favoriteBlocks.includes(blockType)
+          ? favoriteBlocks.filter((t) => t !== blockType)
+          : [...favoriteBlocks, blockType];
+        set({ favoriteBlocks: next });
+      },
+
+      isFavoriteBlock: (blockType: string) => {
+        return get().favoriteBlocks.includes(blockType);
+      },
+
+      trackRecentBlock: (blockType: string) => {
+        const { recentBlocks } = get();
+        const next = [
+          blockType,
+          ...recentBlocks.filter((t) => t !== blockType),
+        ].slice(0, 20);
+        set({ recentBlocks: next });
+      },
+
+      clearRecentBlocks: () => {
+        set({ recentBlocks: [] });
+      },
+
       // Meta
       siteId: null as string | null,
       pageId: null as string | null,

@@ -99,6 +99,8 @@ export interface WebhookConfig {
   timeout: number;
   format: 'json' | 'form';
   headers: Record<string, string>;
+  template?: Record<string, unknown> | string;
+  allowedIPs?: string[];
 }
 
 export interface OpenAPISpec {

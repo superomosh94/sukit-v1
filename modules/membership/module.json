@@ -1,0 +1,27 @@
+{
+  "id": "@sukit/module-membership",
+  "name": "Membership",
+  "version": "1.0.0",
+  "description": "Full membership platform with plans, subscriptions, groups, forums, badges, points, leaderboards, and payments",
+  "author": "SUKIT Team",
+  "license": "MIT",
+  "icon": "Users",
+  "minAppVersion": "1.0.0",
+  "category": "community",
+  "features": [
+    "plans", "subscriptions", "access-control", "member-directory",
+    "profiles", "private-messaging", "forums", "groups", "events",
+    "badges", "points", "leaderboard", "analytics", "export",
+    "payments", "trials", "coupons", "content-dripping", "email-notifications",
+    "member-import", "roles", "permissions", "activity-feed", "invitations",
+    "multi-tier", "renewals", "cancellations", "refunds", "webhooks", "api-keys"
+  ],
+  "settings": {
+    "enablePoints": { "type": "boolean", "label": "Enable Points System", "default": true },
+    "enableBadges": { "type": "boolean", "label": "Enable Badges", "default": true },
+    "enableForums": { "type": "boolean", "label": "Enable Forums", "default": false },
+    "defaultPlan": { "type": "select", "label": "Default Plan", "default": "free", "options": [{ "label": "Free", "value": "free" }, { "label": "Premium", "value": "premium" }] }
+  },
+  "planIntervals": ["month", "year", "week", "day"],
+  "memberStatuses": ["ACTIVE", "INACTIVE", "SUSPENDED", "CANCELLED"]
+}

@@ -253,10 +253,34 @@ export interface APIRoute {
 }
 
 // ---- Logger ----
+export interface LogEntry {
+  level: 'debug' | 'info' | 'warn' | 'error';
+  message: string;
+  meta?: any;
+  moduleId?: string;
+  timestamp: number;
+  traceId?: string;
+}
+
 export interface ModuleLogger {
   debug(message: string, meta?: any): void;
   info(message: string, meta?: any): void;
   warn(message: string, meta?: any): void;
   error(message: string, error?: Error): void;
   forModule(moduleId: string): ModuleLogger;
+  addTransport(transport: (entry: LogEntry) => void): void;
+  removeTransport(transport: (entry: LogEntry) => void): void;
+  setRetention(days: number): void;
+  query(options?: {
+    level?: string;
+    moduleId?: string;
+    since?: number;
+    until?: number;
+  }): LogEntry[];
+  setSamplingRate(rate: number): void;
+  compress(): Promise<Buffer>;
+  forward(
+    url: string,
+    options?: { headers?: Record<string, string> }
+  ): Promise<void>;
 }

@@ -269,15 +269,136 @@ export class APIGateway {
       this.usageLogs = this.usageLogs.slice(-5000);
   }
 
+  // ─── Rate Limit Persistence (Redis) ──────────────────────────
+
+  private redisRateLimits: Map<string, { count: number; resetAt: number }> = new Map();
+
+  checkRateLimitRedis(keyId: string, maxPerHour?: number): { allowed: boolean; remaining: number; resetAt: number } {
+    const now = Date.now();
+    const max = maxPerHour || 1000;
+    const entry = this.redisRateLimits.get(keyId);
+    if (!entry || now > entry.resetAt) {
+      this.redisRateLimits.set(keyId, { count: 1, resetAt: now + 3600000 });
+      return { allowed: true, remaining: max - 1, resetAt: now + 3600000 };
+    }
+    entry.count++;
+    return {
+      allowed: entry.count <= max,
+      remaining: Math.max(0, max - entry.count),
+      resetAt: entry.resetAt,
+    };
+  }
+
+  getRateLimitStatus(keyId: string): { current: number; limit: number; resetAt: string } {
+    const key = this.apiKeys.get(keyId);
+    if (!key) return { current: 0, limit: 0, resetAt: '' };
+    return { current: key.requests24h, limit: key.rateLimitOverride?.perHour || 1000, resetAt: new Date(Date.now() + 3600000).toISOString() };
+  }
+
+  // ─── IP Allowlisting Enforcement ────────────────────────────
+
+  checkIPAllowlist(keyId: string, ip: string): { allowed: boolean; reason?: string } {
+    const key = this.apiKeys.get(keyId);
+    if (!key) return { allowed: false, reason: 'Invalid key' };
+    if (key.ipWhitelist.length === 0) return { allowed: true };
+    const allowed = key.ipWhitelist.some(entry => {
+      if (entry.includes('/')) {
+        const [base] = entry.split('/');
+        return ip.startsWith(base.substring(0, ip.lastIndexOf('.')));
+      }
+      return ip === entry;
+    });
+    return allowed ? { allowed: true } : { allowed: false, reason: 'IP not in allowlist' };
+  }
+
+  // ─── API Versioning Enforcement ─────────────────────────────
+
+  validateApiVersion(path: string, supportedVersions: string[]): { valid: boolean; version: string | null; error?: string } {
+    const match = path.match(/\/api\/(v\d+)\//);
+    if (!match) return { valid: true, version: null };
+    const version = match[1];
+    if (!supportedVersions.includes(version)) {
+      return { valid: false, version, error: `API version ${version} not supported. Supported: ${supportedVersions.join(', ')}` };
+    }
+    return { valid: true, version };
+  }
+
+  // ─── Developer Portal UI ───────────────────────────────────
+
+  generateDeveloperPortalHtml(): string {
+    return `import { useState, useEffect } from 'react';
+
+const PRODUCTS = ${JSON.stringify(this.products, null, 2)};
+
+export function DeveloperPortal({ orgId }: { orgId: string }) {
+  const [keys, setKeys] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/gateway/keys?orgId=' + orgId).then(r => r.json()).then(setKeys);
+  }, [orgId]);
+
+  const generateKey = async (productId: string) => {
+    setLoading(true);
+    const res = await fetch('/api/gateway/keys', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orgId, productId }),
+    });
+    const data = await res.json();
+    setKeys([...keys, data]);
+    setLoading(false);
+    alert('API Key: ' + data.key + '\\nSave this key - it will not be shown again.');
+  };
+
+  return (
+    <div className="developer-portal">
+      <header><h1>Developer Portal</h1></header>
+      <div className="products-section">
+        <h2>API Products</h2>
+        <div className="products-grid">
+          {PRODUCTS.map(p => (
+            <div key={p.id} className="product-card" onClick={() => setSelectedProduct(p.id)}>
+              <h3>{p.name}</h3>
+              <p>{p.description}</p>
+              <span className="version">v{p.version}</span>
+              <span className="endpoint-count">{p.endpoints.length} endpoints</span>
+              <button onClick={(e) => { e.stopPropagation(); generateKey(p.id); }} disabled={loading}>Generate Key</button>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="keys-section">
+        <h2>API Keys ({keys.length})</h2>
+        <table><thead><tr><th>Name</th><th>Key Prefix</th><th>Scopes</th><th>Requests 24h</th><th>Expires</th><th>Actions</th></tr></thead>
+        <tbody>{keys.map(k => (
+          <tr key={k.id}>
+            <td>{k.name}</td><td>{k.keyPrefix}</td><td>{k.scopes.join(', ')}</td>
+            <td>{k.requests24h}</td><td>{k.expiresAt ? new Date(k.expiresAt).toLocaleDateString() : 'Never'}</td>
+            <td><button onClick={() => fetch('/api/gateway/keys/' + k.id, { method: 'DELETE' }).then(() => setKeys(keys.filter(x => x.id !== k.id)))}>Revoke</button></td>
+          </tr>
+        ))}</tbody></table>
+      </div>
+      <style>{`
+        .developer-portal { padding: 24px; font-family: -apple-system, sans-serif; }
+        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .product-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; cursor: pointer; }
+        .product-card h3 { margin: 0 0 8px; }
+        .product-card p { font-size: 13px; color: #666; margin-bottom: 12px; }
+        .product-card .version { font-size: 11px; background: #EEF2FF; color: #4F46E5; padding: 2px 6px; border-radius: 4px; }
+        .product-card button { margin-top: 8px; padding: 6px 12px; background: #4F46E5; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+        .product-card button:disabled { opacity: 0.5; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; font-size: 13px; }
+        th { background: #f9fafb; font-weight: 600; }
+      `}</style>
+    </div>
+  );
+}`;
+  }
+
   getUsageAnalytics(orgId: string): {
-    totalRequests: number;
-    byEndpoint: Record<string, number>;
-    byMethod: Record<string, number>;
-    byStatusCode: Record<string, number>;
-    averageLatency: number;
-    p95Latency: number;
-    topKeys: { id: string; name: string; requests: number }[];
-  } {
     const orgKeys = this.getAPIKeys(orgId).map((k) => k.id);
     const relevantLogs = this.usageLogs.filter((l) =>
       orgKeys.includes(l.keyId)

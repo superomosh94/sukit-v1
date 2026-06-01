@@ -14,6 +14,7 @@ export function setCacheAdapter(adapter: CacheAdapter): void {
 
 export function createCacheAPI(adapter?: CacheAdapter) {
   const a = () => adapter ?? _adapter;
+  const events = new Map<string, Array<(event: string, key: string) => void>>();
 
   return {
     async get<T>(key: string): Promise<T | null> {
@@ -21,15 +22,72 @@ export function createCacheAPI(adapter?: CacheAdapter) {
     },
 
     async set<T>(key: string, value: T, ttl?: number): Promise<void> {
-      return a()!.set(key, value, ttl);
+      await a()!.set(key, value, ttl);
+      this._emit('set', key);
     },
 
     async delete(key: string): Promise<void> {
-      return a()!.delete(key);
+      await a()!.delete(key);
+      this._emit('delete', key);
     },
 
     async clear(): Promise<void> {
-      return a()!.clear();
+      await a()!.clear();
+    },
+
+    async increment(key: string, by?: number): Promise<number> {
+      return a()!.increment(key, by);
+    },
+
+    /* --- Tags --- */
+    tagIndex: new Map<string, Set<string>>(),
+
+    async setWithTags<T>(
+      key: string,
+      value: T,
+      tags: string[],
+      ttl?: number
+    ): Promise<void> {
+      await this.set(key, value, ttl);
+      for (const tag of tags) {
+        if (!this.tagIndex.has(tag)) this.tagIndex.set(tag, new Set());
+        this.tagIndex.get(tag)!.add(key);
+      }
+    },
+
+    async invalidateTag(tag: string): Promise<void> {
+      const keys = this.tagIndex.get(tag);
+      if (!keys) return;
+      for (const key of keys) {
+        await this.delete(key);
+      }
+      this.tagIndex.delete(tag);
+    },
+
+    /* --- Namespace --- */
+    namespace(prefix: string) {
+      return {
+        get: <T>(key: string) => this.get<T>(`${prefix}:${key}`),
+        set: <T>(key: string, value: T, ttl?: number) =>
+          this.set(`${prefix}:${key}`, value, ttl),
+        delete: (key: string) => this.delete(`${prefix}:${key}`),
+      };
+    },
+
+    /* --- Stats --- */
+    getStats(): { hits: number; misses: number; entries: number } {
+      return { hits: 0, misses: 0, entries: 0 };
+    },
+
+    /* --- Events --- */
+    on(event: string, handler: (event: string, key: string) => void): void {
+      if (!events.has(event)) events.set(event, []);
+      events.get(event)!.push(handler);
+    },
+
+    _emit(event: string, key: string): void {
+      const handlers = events.get(event) ?? [];
+      for (const handler of handlers) handler(event, key);
     },
   };
 }

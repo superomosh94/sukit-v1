@@ -1,6 +1,21 @@
 import type { Module, KernelForModule } from '@sukit/core';
 import manifest from '../manifest.json';
 
+export { useFormBuilderStore } from './stores/formBuilderStore';
+export type {
+  FormField,
+  ConditionalRule,
+  FormStep,
+  FormIntegration,
+  EmailNotification,
+} from './stores/formBuilderStore';
+export { FormBuilderCanvas } from './components/FormBuilderCanvas';
+export { FieldLibrary } from './components/FieldLibrary';
+export { ConditionalLogic } from './components/ConditionalLogic';
+export { MultiStepEditor } from './components/MultiStepEditor';
+export { FormIntegrations } from './components/FormIntegrations';
+export { EmailNotificationEditor } from './components/EmailNotificationEditor';
+
 const formBuilderModule: Module = {
   manifest: manifest as any,
 

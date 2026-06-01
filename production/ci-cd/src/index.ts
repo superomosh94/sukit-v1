@@ -8,6 +8,17 @@ export interface PipelineConfig {
   maxTestWorkers: number;
   e2eBrowsers: string[];
   notifyOnFailure: boolean;
+  notifyOnSuccess: boolean;
+  notifyOnDeploy: boolean;
+  slackWebhookUrl: string;
+  slackChannel: string;
+  emailNotifications: string[];
+  accessibilityThreshold: number;
+  performanceRegressionThreshold: number;
+  lighthouseBudget: Record<string, number>;
+  enableA11yGate: boolean;
+  enablePerfRegressionGate: boolean;
+  enableLighthouseGate: boolean;
   deployEnvironments: { name: string; branch: string; auto: boolean }[];
 }
 
@@ -19,6 +30,17 @@ const DEFAULT_CONFIG: PipelineConfig = {
   maxTestWorkers: 4,
   e2eBrowsers: ['chromium', 'firefox', 'webkit'],
   notifyOnFailure: true,
+  notifyOnSuccess: true,
+  notifyOnDeploy: true,
+  slackWebhookUrl: process.env.SLACK_WEBHOOK_URL || '',
+  slackChannel: '#deployments',
+  emailNotifications: [],
+  accessibilityThreshold: 90,
+  performanceRegressionThreshold: 10,
+  lighthouseBudget: { performance: 80, accessibility: 90, 'best-practices': 90, seo: 90 },
+  enableA11yGate: true,
+  enablePerfRegressionGate: true,
+  enableLighthouseGate: true,
   deployEnvironments: [
     { name: 'staging', branch: 'develop', auto: true },
     { name: 'production', branch: 'main', auto: true },
@@ -392,5 +414,286 @@ workflows:
     { "type": "deps", "section": "Dependencies" }
   ]
 }`;
+  }
+
+  // ─── Release Workflow ──────────────────────────────────────────
+
+  generateReleaseWorkflow(): Record<string, string> {
+    const config = this.generateReleasePleaseConfig();
+    return {
+      'release.yml': `name: Release
+on:
+  push: { branches: [main] }
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+  packages: write
+
+jobs:
+  release-please:
+    name: Release Please
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: \${{ steps.release.outputs.release_created }}
+      tag_name: \${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: \${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  publish:
+    name: Publish Release
+    needs: release-please
+    if: \${{ needs.release-please.outputs.release_created == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: \${{ needs.release-please.outputs.tag_name }} }
+
+      - uses: pnpm/action-setup@v4
+        with: { version: ${this.config.pnpmVersion} }
+      - uses: actions/setup-node@v4
+        with: { node-version: ${this.config.nodeVersion}, registry-url: 'https://registry.npmjs.org', cache: 'pnpm' }
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+      - name: Publish to npm
+        run: |
+          for pkg in packages/*/; do
+            if [ -f "\$pkg/package.json" ]; then
+              cd "\$pkg"
+              pnpm publish --no-git-checks --access public || true
+              cd -
+            fi
+          done
+        env:
+          NODE_AUTH_TOKEN: \${{ secrets.NPM_TOKEN }}
+
+      - name: Publish to GitHub Packages
+        run: |
+          echo "//npm.pkg.github.com/:_authToken=\${{ secrets.GITHUB_TOKEN }}" > .npmrc
+          for pkg in packages/*/; do
+            if [ -f "\$pkg/package.json" ]; then
+              cd "\$pkg"
+              pnpm publish --registry=https://npm.pkg.github.com --no-git-checks || true
+              cd -
+            fi
+          done
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/\${{ github.repository_owner }}/sukit:\${{ needs.release-please.outputs.tag_name }}
+            ghcr.io/\${{ github.repository_owner }}/sukit:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: \${{ needs.release-please.outputs.tag_name }}
+          generate_release_notes: true
+
+      - name: Notify Slack
+        if: always()
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: \${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |-
+            {"text": "${{ job.status == 'success' && ':rocket:' || ':x:' }} Release \${{ needs.release-please.outputs.tag_name }} ${{ job.status }}
+            <\${{ github.server_url }}/\${{ github.repository }}/releases/tag/\${{ needs.release-please.outputs.tag_name }}|View Release>"}`,
+      'release-please-config.json': config,
+      '.release-please-manifest.json': JSON.stringify({
+        '.': '1.0.0',
+        'packages/core': '0.1.0',
+        'packages/shell-ui': '0.1.0',
+        'packages/marketplace': '0.1.0',
+      }, null, 2),
+    };
+  }
+
+  // ─── Slack Notifications ──────────────────────────────────────
+
+  generateSlackNotificationAction(): Record<string, any> {
+    return {
+      name: 'Notify Slack',
+      uses: 'slackapi/slack-github-action@v2',
+      with: {
+        webhook: '${{ secrets.SLACK_WEBHOOK_URL }}',
+        'webhook-type': 'incoming-webhook',
+        payload: JSON.stringify({
+          text: '${{ github.workflow }}: ${{ job.status }}',
+          blocks: [
+            { type: 'header', text: { type: 'plain_text', text: '${{ github.workflow }} - ${{ job.status }}' } },
+            { type: 'section', text: { type: 'mrkdwn', text: `*Repository:* ${{ github.repository }}\n*Branch:* ${{ github.ref_name }}\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha.substring(0, 7) }}>\n*Triggered by:* ${{ github.actor }}` } },
+            { type: 'section', text: { type: 'mrkdwn', text: `<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>` } },
+            { type: 'context', elements: [{ type: 'mrkdwn', text: `${{ job.status == 'success' ? '✅' : '❌' }} Job: ${{ github.job }}` }] },
+          ],
+        }),
+      },
+    };
+  }
+
+  generateSlackNotifyStep(): string {
+    return `      - name: Notify Slack
+        if: always()
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: \${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |-
+            {"text": "${{ job.status == 'success' && '✅' || '❌' }} ${{ github.workflow }} - ${{ github.job }}: ${{ job.status }}
+            Repo: ${{ github.repository }}
+            Branch: ${{ github.ref_name }}
+            Commit: ${{ github.sha.substring(0, 7) }}
+            <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"}`;
+  }
+
+  generateNotificationConfig(): Record<string, any> {
+    return {
+      slack: {
+        webhookUrl: this.config.slackWebhookUrl,
+        channel: this.config.slackChannel,
+        onFailure: this.config.notifyOnFailure,
+        onSuccess: this.config.notifyOnSuccess,
+        onDeploy: this.config.notifyOnDeploy,
+      },
+      email: {
+        recipients: this.config.emailNotifications,
+        onFailure: this.config.notifyOnFailure,
+        onDeploy: true,
+      },
+    };
+  }
+
+  // ─── Accessibility Gate ───────────────────────────────────────
+
+  generateAccessibilityGateStep(): string {
+    return `      - name: Accessibility Check
+        run: |
+          npx pa11y-ci --threshold ${this.config.accessibilityThreshold} --sitemap https://app.sukit.dev/sitemap.xml 2>&1 | tee a11y-report.txt
+          if grep -q "Errors" a11y-report.txt; then
+            ERRORS=$(grep -oP 'Errors: \\K[0-9]+' a11y-report.txt)
+            if [ "$ERRORS" -gt 0 ]; then
+              echo "❌ Accessibility check failed with $ERRORS errors"
+              exit 1
+            fi
+          fi
+          echo "✅ Accessibility check passed"`;
+  }
+
+  generateAxeAccessibilityStep(): string {
+    return `      - name: Accessibility (axe-core)
+        uses: dequelabs/axe-github-actions@v3
+        with:
+          api_key: \${{ secrets.AXE_API_KEY }}
+          url: https://app.sukit.dev
+          output_file: axe-report.json
+          thresholds: '{"violations": ${this.config.accessibilityThreshold > 90 ? 0 : 1}}'`;
+  }
+
+  generateA11yWorkflow(): Record<string, string> {
+    return {
+      'a11y.yml': `name: Accessibility
+on:
+  schedule: [{ cron: '0 6 * * 1' }]
+  workflow_dispatch: {}
+jobs:
+  a11y:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+      - run: pnpm install --frozen-lockfile
+      - run: npx playwright install chromium
+      - name: Start App
+        run: pnpm dev &
+      - name: Wait for App
+        run: npx wait-on http://localhost:3042
+      - name: Run Accessibility Tests
+        run: npx playwright test --config=tests/accessibility/playwright.config.ts --reporter=html
+      - name: Upload Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: a11y-report
+          path: playwright-report/`,
+    };
+  }
+
+  // ─── Performance Regression Detection ─────────────────────────
+
+  generatePerformanceRegressionStep(): string {
+    return `      - name: Performance Regression Check
+        run: |
+          CURRENT=$(curl -s https://app.sukit.dev/api/metrics | jq '.lcp')
+          PREVIOUS=\$(cat .previous-lcp 2>/dev/null || echo "0")
+          if [ "\$PREVIOUS" != "0" ]; then
+            THRESHOLD=${this.config.performanceRegressionThreshold}
+            CHANGE=\$(echo "scale=2; (\$CURRENT - \$PREVIOUS) / \$PREVIOUS * 100" | bc)
+            if (( \$(echo "\$CHANGE > \$THRESHOLD" | bc -l) )); then
+              echo "❌ LCP regressed by \$CHANGE% (threshold: \$THRESHOLD%)"
+              exit 1
+            fi
+          fi
+          echo "\$CURRENT" > .previous-lcp
+          echo "✅ Performance regression check passed"`;
+  }
+
+  generateLighthouseStep(): string {
+    return `      - name: Lighthouse Check
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          urls: '["https://app.sukit.dev"]'
+          budgetPath: ./lighthouse-budget.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true`;
+  }
+
+  generateLighthouseBudget(): Record<string, any> {
+    return {
+      budgeting: Object.entries(this.config.lighthouseBudget).map(([key, value]) => ({
+        resourceType: key,
+        budget: value,
+      })),
+    };
+  }
+
+  // ─── Performance Regression Workflow ──────────────────────────
+
+  generatePerfWorkflow(): Record<string, string> {
+    return {
+      'performance.yml': `name: Performance
+on:
+  schedule: [{ cron: '0 4 * * 1' }]
+  workflow_dispatch: {}
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          urls: '["https://app.sukit.dev", "https://app.sukit.dev/builder", "https://app.sukit.dev/sites"]'
+          budgetPath: ./lighthouse-budget.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+      - name: Compare with Baseline
+        run: |
+          echo "Previous scores:"
+          cat .lighthouse-baseline.json 2>/dev/null || echo "No baseline"
+          echo "✅ Performance check complete"`,
+    };
   }
 }

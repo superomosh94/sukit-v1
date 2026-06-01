@@ -1,6 +1,11 @@
 import type { Module, KernelForModule } from '@sukit/core';
 import manifest from '../manifest.json';
 
+export { ExportFormatSelector } from './components/ExportFormatSelector';
+export type { ExportFormat } from './components/ExportFormatSelector';
+export { ExportScheduler } from './components/ExportScheduler';
+export { ExportNotifications } from './components/ExportNotifications';
+
 const exportEngineModule: Module = {
   manifest: manifest as any,
 

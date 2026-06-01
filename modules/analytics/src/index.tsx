@@ -1,6 +1,11 @@
 import type { Module, KernelForModule } from '@sukit/core';
 import manifest from '../manifest.json';
 
+export { useAnalyticsStore } from './stores/analyticsStore';
+export { AnalyticsDashboard } from './components/AnalyticsDashboard';
+export { ReportBuilder } from './components/ReportBuilder';
+export { UserActivityLog } from './components/UserActivityLog';
+
 const analyticsModule: Module = {
   manifest: manifest as any,
 

@@ -285,4 +285,188 @@ export class AdvancedSecurity {
     }
     return { isAnomaly: score >= 50, riskScore: score, reasons };
   }
+
+  // ─── Zero-Trust Network Architecture ───────────────────────
+
+  private zeroTrustPolicies: Map<string, { enforce: boolean; mfaRequired: boolean; deviceTrustRequired: boolean; continuousVerification: boolean; microsegmentation: boolean; sessionDuration: number; leastPrivilege: boolean; justInTimeAccess: boolean }> = new Map();
+
+  setZeroTrustPolicy(orgId: string, policy: {
+    enforce: boolean;
+    mfaRequired?: boolean;
+    deviceTrustRequired?: boolean;
+    continuousVerification?: boolean;
+    microsegmentation?: boolean;
+    sessionDuration?: number;
+    leastPrivilege?: boolean;
+    justInTimeAccess?: boolean;
+  }): void {
+    const existing = this.zeroTrustPolicies.get(orgId) || {
+      enforce: false, mfaRequired: true, deviceTrustRequired: true,
+      continuousVerification: true, microsegmentation: true,
+      sessionDuration: 28800, leastPrivilege: true, justInTimeAccess: false,
+    };
+    this.zeroTrustPolicies.set(orgId, { ...existing, ...policy });
+  }
+
+  getZeroTrustPolicy(orgId: string): {
+    enforce: boolean; mfaRequired: boolean; deviceTrustRequired: boolean;
+    continuousVerification: boolean; microsegmentation: boolean;
+    sessionDuration: number; leastPrivilege: boolean; justInTimeAccess: boolean;
+  } {
+    return this.zeroTrustPolicies.get(orgId) || {
+      enforce: false, mfaRequired: true, deviceTrustRequired: true,
+      continuousVerification: true, microsegmentation: true,
+      sessionDuration: 28800, leastPrivilege: true, justInTimeAccess: false,
+    };
+  }
+
+  evaluateZeroTrust(orgId: string, context: {
+    userId: string; ip: string; location: string; device: { os: string; version: string; hasCertificate: boolean; hasMDM: boolean };
+    mfaVerified: boolean; resource: string; time: string;
+  }): { allowed: boolean; requirements: string[]; reason?: string } {
+    const policy = this.getZeroTrustPolicy(orgId);
+    if (!policy.enforce) return { allowed: true, requirements: [] };
+    const requirements: string[] = [];
+    if (policy.mfaRequired && !context.mfaVerified) requirements.push('MFA verification required');
+    if (policy.deviceTrustRequired) {
+      const dt = this.checkDeviceTrust(orgId, context.device);
+      if (!dt.trusted) requirements.push(...dt.reasons);
+    }
+    if (policy.continuousVerification && context.location && context.location !== 'known') {
+      requirements.push('Continuous verification: new location detected');
+    }
+    if (this.checkIP('org_default', context.ip)) {
+      const geoCheck = this.checkGeoFence(orgId, context.location);
+      if (!geoCheck) requirements.push('Location blocked by geo-fencing policy');
+    }
+    if (!this.checkTimeAccess(orgId)) requirements.push('Access outside allowed time window');
+    return {
+      allowed: requirements.length === 0,
+      requirements,
+      reason: requirements.length > 0 ? `Zero-trust blocked: ${requirements.join('; ')}` : undefined,
+    };
+  }
+
+  generateZeroTrustReport(orgId: string): { status: string; policies: any; activeViolations: number; lastEvaluated: string } {
+    const policy = this.getZeroTrustPolicy(orgId);
+    return {
+      status: policy.enforce ? 'enforcing' : 'disabled',
+      policies: policy,
+      activeViolations: 0,
+      lastEvaluated: new Date().toISOString(),
+    };
+  }
+
+  // ─── DLP Network-Level Enforcement ──────────────────────────
+
+  private dlpNetworkRules: Map<string, { enabled: boolean; inspectHttpBody: boolean; inspectHttpHeaders: boolean; inspectWebSocket: boolean; blockActions: boolean; patterns: { regex: string; action: 'block' | 'alert' | 'mask'; maskChar: string }[]; allowedDomains: string[]; excludedPaths: string[] }> = new Map();
+
+  setDlpNetworkRule(orgId: string, rule: {
+    enabled?: boolean;
+    inspectHttpBody?: boolean;
+    inspectHttpHeaders?: boolean;
+    inspectWebSocket?: boolean;
+    blockActions?: boolean;
+    patterns?: { regex: string; action: 'block' | 'alert' | 'mask'; maskChar?: string }[];
+    allowedDomains?: string[];
+    excludedPaths?: string[];
+  }): void {
+    const existing = this.dlpNetworkRules.get(orgId) || {
+      enabled: false, inspectHttpBody: true, inspectHttpHeaders: true,
+      inspectWebSocket: false, blockActions: true,
+      patterns: [
+        { regex: '\\b\\d{3}-\\d{2}-\\d{4}\\b', action: 'block', maskChar: '*' },
+        { regex: '\\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14})\\b', action: 'mask', maskChar: '*' },
+        { regex: 'sk_live_[a-zA-Z0-9]{24,}', action: 'block', maskChar: '*' },
+        { regex: '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}', action: 'alert', maskChar: '*' },
+      ],
+      allowedDomains: ['*.sukit.dev', '*.stripe.com', 'api.github.com'],
+      excludedPaths: ['/api/health', '/metrics', '/favicon.ico'],
+    };
+    this.dlpNetworkRules.set(orgId, { ...existing, ...rule });
+  }
+
+  getDlpNetworkRule(orgId: string): { enabled: boolean; inspectHttpBody: boolean; inspectHttpHeaders: boolean; inspectWebSocket: boolean; blockActions: boolean; patterns: { regex: string; action: string; maskChar: string }[]; allowedDomains: string[]; excludedPaths: string[] } {
+    return this.dlpNetworkRules.get(orgId) || {
+      enabled: false, inspectHttpBody: true, inspectHttpHeaders: true,
+      inspectWebSocket: false, blockActions: true,
+      patterns: [
+        { regex: '\\b\\d{3}-\\d{2}-\\d{4}\\b', action: 'block', maskChar: '*' },
+        { regex: '\\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14})\\b', action: 'mask', maskChar: '*' },
+        { regex: 'sk_live_[a-zA-Z0-9]{24,}', action: 'block', maskChar: '*' },
+      ],
+      allowedDomains: ['*.sukit.dev'],
+      excludedPaths: [],
+    };
+  }
+
+  evaluateDlpNetwork(orgId: string, request: { method: string; path: string; body: string; headers: Record<string, string>; destination: string }): { blocked: boolean; matchedPatterns: string[]; actions: string[] } {
+    const rule = this.getDlpNetworkRule(orgId);
+    if (!rule.enabled) return { blocked: false, matchedPatterns: [], actions: [] };
+
+    const matchedPatterns: string[] = [];
+    const actions: string[] = [];
+
+    if (rule.excludedPaths.some(p => request.path.startsWith(p))) {
+      return { blocked: false, matchedPatterns: [], actions: [] };
+    }
+
+    const domainAllowed = rule.allowedDomains.some(d => {
+      const pattern = d.replace(/\./g, '\\.').replace(/\*/g, '.*');
+      return new RegExp(pattern).test(request.destination);
+    });
+
+    for (const pattern of rule.patterns) {
+      const regex = new RegExp(pattern.regex, 'gi');
+      if (rule.inspectHttpBody && regex.test(request.body)) {
+        matchedPatterns.push(pattern.regex);
+        actions.push(pattern.action);
+      }
+      if (rule.inspectHttpHeaders) {
+        for (const [key, value] of Object.entries(request.headers)) {
+          regex.lastIndex = 0;
+          if (regex.test(value)) {
+            matchedPatterns.push(`${pattern.regex} (header: ${key})`);
+            actions.push(pattern.action);
+          }
+        }
+      }
+    }
+
+    const blocked = rule.blockActions && actions.includes('block');
+    return { blocked, matchedPatterns: [...new Set(matchedPatterns)], actions: [...new Set(actions)] };
+  }
+
+  generateDlpMiddlewareCode(): string {
+    return `import { createHash } from 'crypto';
+
+const SSN_REGEX = /\\b\\d{3}-\\d{2}-\\d{4}\\b/g;
+const CC_REGEX = /\\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13}|6(?:011|5[0-9]{2})[0-9]{12})\\b/g;
+const API_KEY_REGEX = /sk_live_[a-zA-Z0-9]{24,}|suk_[a-zA-Z0-9]{32,}/g;
+const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}/g;
+
+export function dlpMiddleware(req: { method: string; url: string; body: string; headers: Record<string, string> }, patterns?: { regex: RegExp; action: string }[]) {
+  const defaultPatterns = patterns || [
+    { regex: SSN_REGEX, action: 'block' },
+    { regex: CC_REGEX, action: 'mask' },
+    { regex: API_KEY_REGEX, action: 'block' },
+    { regex: EMAIL_REGEX, action: 'alert' },
+  ];
+  const violations: { pattern: string; location: string }[] = [];
+  for (const p of defaultPatterns) {
+    p.regex.lastIndex = 0;
+    let match;
+    while ((match = p.regex.exec(req.body)) !== null) {
+      violations.push({ pattern: p.regex.source.substring(0, 20), location: 'body' });
+    }
+    for (const [key, value] of Object.entries(req.headers)) {
+      p.regex.lastIndex = 0;
+      while ((match = p.regex.exec(value)) !== null) {
+        violations.push({ pattern: p.regex.source.substring(0, 20), location: 'header:' + key });
+      }
+    }
+  }
+  return { blocked: violations.some(v => v.pattern.includes('block')), violations };
+}`;
+  }
 }
