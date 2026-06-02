@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils/cn';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   LayoutDashboard,
   Globe,
@@ -100,17 +100,6 @@ const navItems: NavGroup[] = [
     ],
   },
 
-  // Appearance
-  {
-    label: 'Appearance',
-    icon: Palette,
-    href: '/themes',
-    children: [
-      { label: 'Themes', icon: Palette, href: '/themes' },
-      { label: 'Widgets', icon: Layout, href: '/widgets' },
-    ],
-  },
-
   // Developer section
   {
     label: 'Developer',
@@ -163,6 +152,8 @@ const navItems: NavGroup[] = [
     children: [
       { label: 'Profile', icon: User, href: '/settings/profile' },
       { label: 'Account', icon: Shield, href: '/settings/account' },
+      { label: 'Themes', icon: Palette, href: '/themes' },
+      { label: 'Widgets', icon: Layout, href: '/widgets' },
       { label: 'API Keys', icon: Key, href: '/settings/api-keys' },
     ],
   },
@@ -173,6 +164,16 @@ export function DashboardSidebar() {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(
     () => new Set([])
   );
+
+  useEffect(() => {
+    const next = new Set<string>();
+    for (const item of navItems) {
+      if (item.children?.some((c) => isActive(c.href))) {
+        next.add(item.label);
+      }
+    }
+    setExpandedItems(next);
+  }, [pathname]);
 
   const toggleExpand = (label: string) => {
     setExpandedItems((prev) => {
@@ -269,8 +270,15 @@ export function DashboardSidebar() {
                 )}
               </div>
 
-              {hasChildren && expanded && (
-                <div className="ml-4 mt-0.5 space-y-0.5 border-l pl-2">
+              {hasChildren && (
+                <div
+                  className={cn(
+                    'ml-4 mt-0.5 space-y-0.5 border-l pl-2 overflow-hidden transition-all duration-200 ease-in-out',
+                    expanded
+                      ? 'max-h-96 opacity-100'
+                      : 'max-h-0 opacity-0 pointer-events-none'
+                  )}
+                >
                   {item.children!.map((child) => {
                     const ChildIcon = child.icon;
                     const childActive = isActive(child.href);

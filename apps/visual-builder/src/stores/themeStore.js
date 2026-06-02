@@ -10,6 +10,7 @@ const defaultTheme = {
         danger: '#EF4444',
         background: '#0F172A',
         surface: '#1E293B',
+        'surface-light': '#334155',
         text: '#F8FAFC',
         textSecondary: '#94A3B8',
         border: '#334155',

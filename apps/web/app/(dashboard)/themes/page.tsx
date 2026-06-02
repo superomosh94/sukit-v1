@@ -89,6 +89,22 @@ export default function ThemesPage() {
     })();
   }, []);
 
+  const fetchThemes = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/themes');
+      if (!res.ok) throw new Error('Failed to fetch themes');
+      const data = await res.json();
+      setThemes(data.themes || []);
+      setActiveSlug(data.active?.slug || null);
+      setAvailableThemes(data.available || []);
+    } catch {
+      toast.error('Failed to refresh themes');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const handleActivate = (slug: string) => {
     setThemes((prev) => prev.map((t) => ({ ...t, active: t.slug === slug })));
     setActiveSlug(slug);

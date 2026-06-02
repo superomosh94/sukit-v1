@@ -8,12 +8,6 @@ export const useProjectStore = create(persist((set) => ({
     deleteProject: (id) => set((s) => ({ projects: s.projects.filter(p => p.id !== id) })),
 }), { name: 'sukit-projects' }));
 
-// Theme Store
-export const useThemeStore = create(persist((set) => ({
-    isDark: true,
-    colors: { primary: '#3B82F6', secondary: '#38BDF8', success: '#10B981', warning: '#F59E0B', danger: '#EF4444' },
-    toggleDarkMode: () => set((s) => ({ isDark: !s.isDark })),
-}), { name: 'sukit-theme' }));
 
 // Form Store
 export const useFormStore = create((set) => ({

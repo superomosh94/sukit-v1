@@ -1,39 +1,40 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useState } from 'react';
+import { signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { PasswordInput } from '@/components/ui/password-input';
 
 export function LoginForm() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
+    setError('');
     setLoading(true);
 
-    const result = await signIn("credentials", {
+    const result = await signIn('credentials', {
       email,
       password,
       redirect: false,
     });
 
     if (result?.error) {
-      setError("Invalid email or password");
+      setError('Invalid email or password');
       setLoading(false);
       return;
     }
 
-    router.push("/dashboard");
+    router.push('/dashboard');
   }
 
   async function handleOAuth(provider: string) {
-    await signIn(provider, { callbackUrl: "/dashboard" });
+    await signIn(provider, { callbackUrl: '/dashboard' });
   }
 
   return (
@@ -63,13 +64,12 @@ export function LoginForm() {
         <label htmlFor="password" className="block text-sm font-medium">
           Password
         </label>
-        <input
+        <PasswordInput
           id="password"
-          type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          className="mt-1 block w-full rounded-lg border bg-background px-3 py-2 text-sm"
+          className="mt-1 block w-full"
           placeholder="Enter your password"
         />
       </div>
@@ -88,7 +88,7 @@ export function LoginForm() {
         disabled={loading}
         className="w-full rounded-lg bg-primary py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
       >
-        {loading ? "Signing in..." : "Sign In"}
+        {loading ? 'Signing in...' : 'Sign In'}
       </button>
 
       <div className="relative">
@@ -96,21 +96,23 @@ export function LoginForm() {
           <span className="w-full border-t" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+          <span className="bg-card px-2 text-muted-foreground">
+            Or continue with
+          </span>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <button
           type="button"
-          onClick={() => handleOAuth("github")}
+          onClick={() => handleOAuth('github')}
           className="flex items-center justify-center gap-2 rounded-lg border py-2 text-sm font-medium hover:bg-accent"
         >
           GitHub
         </button>
         <button
           type="button"
-          onClick={() => handleOAuth("google")}
+          onClick={() => handleOAuth('google')}
           className="flex items-center justify-center gap-2 rounded-lg border py-2 text-sm font-medium hover:bg-accent"
         >
           Google
@@ -118,8 +120,11 @@ export function LoginForm() {
       </div>
 
       <p className="text-center text-xs text-muted-foreground">
-        Don&apos;t have an account?{" "}
-        <Link href="/register" className="font-medium text-primary hover:underline">
+        Don&apos;t have an account?{' '}
+        <Link
+          href="/register"
+          className="font-medium text-primary hover:underline"
+        >
           Sign up
         </Link>
       </p>

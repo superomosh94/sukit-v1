@@ -121,7 +121,7 @@ export default async function DashboardPage() {
     userId ? prisma.popup.count({ where: { site: { userId } } }) : 0,
     userId ? prisma.media.count({ where: { site: { userId } } }) : 0,
     userId
-      ? prisma.post.count({ where: { site: { userId } }, status: 'PUBLISHED' })
+      ? prisma.post.count({ where: { site: { userId }, status: 'PUBLISHED' } })
       : 0,
     userId ? prisma.comment.count({ where: { site: { userId } } }) : 0,
     userId

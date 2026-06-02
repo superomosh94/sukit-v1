@@ -13,6 +13,7 @@ export { StatusFilter } from './components/StatusFilter';
 export { CollisionPresence } from './components/CollisionPresence';
 export { PageLockIndicator } from './components/PageLockIndicator';
 export { PermissionOverrides } from './components/PermissionOverrides';
+export { TrashView } from './components/TrashView';
 export { CodeInjection } from './components/CodeInjection';
 export { BackupSettings } from './components/BackupSettings';
 export { useKeyboardNavigation } from './hooks/useKeyboardNavigation';
