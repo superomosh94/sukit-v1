@@ -18,7 +18,6 @@ export default function AdminHealthPage() {
   const [uptime, setUptime] = useState(0);
 
   const runChecks = useCallback(async () => {
-    setRunning(true);
     const start = Date.now();
     try {
       const res = await fetch('/api/admin/health');
@@ -32,8 +31,18 @@ export default function AdminHealthPage() {
   }, []);
 
   useEffect(() => {
-    runChecks();
-  }, [runChecks]);
+    (async () => {
+      const start = Date.now();
+      try {
+        const res = await fetch('/api/admin/health');
+        const results: HealthCheck[] = await res.json();
+        setChecks(results);
+      } catch {
+        setChecks([]);
+      }
+      setUptime(Math.floor((Date.now() - start) / 1000));
+    })();
+  }, []);
 
   useEffect(() => {
     if (!autoRefresh) return;

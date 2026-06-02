@@ -26,7 +26,6 @@ export default function AdminAuditPage() {
   const [exportFormat, setExportFormat] = useState<'csv' | 'json'>('csv');
 
   const fetchLogs = useCallback(async () => {
-    setLoading(true);
     try {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
@@ -45,8 +44,24 @@ export default function AdminAuditPage() {
   }, [search, actionFilter, userFilter, dateFrom, dateTo]);
 
   useEffect(() => {
-    fetchLogs();
-  }, [fetchLogs]);
+    (async () => {
+      try {
+        const params = new URLSearchParams();
+        if (search) params.set('search', search);
+        if (actionFilter) params.set('action', actionFilter);
+        if (userFilter) params.set('userName', userFilter);
+        if (dateFrom) params.set('dateFrom', dateFrom);
+        if (dateTo) params.set('dateTo', dateTo);
+        const res = await fetch(`/api/admin/audit?${params}`);
+        const data = await res.json();
+        setLogs(data);
+      } catch {
+        setLogs([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [search, actionFilter, userFilter, dateFrom, dateTo]);
 
   const uniqueActions = [...new Set(logs.map((l) => l.action))];
   const uniqueUsers = [

@@ -23,7 +23,6 @@ export default function CommentsPage() {
 
   useEffect(() => {
     if (!selectedSiteId) return;
-    setLoading(true);
     const params = new URLSearchParams({ siteId: selectedSiteId });
     if (statusFilter) params.set('status', statusFilter);
     fetch(`/api/comments?${params}`)

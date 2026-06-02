@@ -41,7 +41,17 @@ export default function CICDPage() {
   };
 
   useEffect(() => {
-    loadPipelines();
+    (async () => {
+      try {
+        const res = await fetch('/api/pipelines');
+        const data = await res.json();
+        setPipelines(Array.isArray(data) ? data : []);
+      } catch {
+        setPipelines([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
   const toggleStatus = async (id: string) => {
