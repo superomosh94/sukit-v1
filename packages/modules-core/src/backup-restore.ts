@@ -1,6 +1,17 @@
-import { readJson, writeJson, pathExists, ensureDir, readdir, stat, copy, remove, readFile } from 'fs-extra';
+import {
+  readJson,
+  writeJson,
+  pathExists,
+  ensureDir,
+  readdir,
+  stat,
+  copy,
+  remove,
+  readFile,
+} from 'fs-extra';
 import { join, basename } from 'path';
-import { createWriteStream } from 'fs';
+import { createWriteStream, createReadStream } from 'fs';
+import { execSync } from 'child_process';
 import { StateManager } from './state-manager';
 
 export class BackupRestore {
@@ -14,7 +25,9 @@ export class BackupRestore {
     this.stateManager = new StateManager(projectPath);
   }
 
-  async createBackup(name: string | null = null): Promise<{ path: string; name: string; size: number }> {
+  async createBackup(
+    name: string | null = null
+  ): Promise<{ path: string; name: string; size: number }> {
     await ensureDir(this.backupDir);
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -50,7 +63,9 @@ export class BackupRestore {
       manifest.files.push('.env');
     }
 
-    archive.append(JSON.stringify(manifest, null, 2), { name: 'manifest.json' });
+    archive.append(JSON.stringify(manifest, null, 2), {
+      name: 'manifest.json',
+    });
 
     await archive.finalize();
     await new Promise<void>((resolve, reject) => {
@@ -70,26 +85,55 @@ export class BackupRestore {
     return this.restoreFromDirectory(backupName);
   }
 
-  private async restoreFromArchive(backupPath: string): Promise<Record<string, any>> {
-    if (!await pathExists(backupPath)) {
+  private async restoreFromArchive(
+    backupPath: string
+  ): Promise<Record<string, any>> {
+    if (!(await pathExists(backupPath))) {
       throw new Error(`Backup ${backupPath} not found`);
     }
 
-    const tempDir = join(this.projectPath, '.sukit', 'temp', Date.now().toString());
+    const tempDir = join(
+      this.projectPath,
+      '.sukit',
+      'temp',
+      Date.now().toString()
+    );
     await ensureDir(tempDir);
 
     console.log(`Restoring from ${backupPath}`);
+    execSync(`tar -xzf "${backupPath}" -C "${tempDir}"`, { stdio: 'pipe' });
+
+    const manifestPath = join(tempDir, 'manifest.json');
+    let manifest: Record<string, any> = {};
+    if (await pathExists(manifestPath)) {
+      manifest = await readJson(manifestPath);
+    }
+
+    const entries = await readdir(tempDir);
+    for (const entry of entries) {
+      const sourcePath = join(tempDir, entry);
+      const destPath = join(this.projectPath, entry);
+      if (entry === 'manifest.json') continue;
+      if (await pathExists(sourcePath)) {
+        await copy(sourcePath, destPath, { overwrite: true });
+      }
+    }
+
     await remove(tempDir);
 
-    return { success: true };
+    return { ...manifest, success: true, restoredFrom: backupPath };
   }
 
-  private async restoreFromDirectory(backupDir: string): Promise<Record<string, any>> {
+  private async restoreFromDirectory(
+    backupDir: string
+  ): Promise<Record<string, any>> {
     const backupPath = join(this.backupDir, backupDir);
-    if (!await pathExists(backupPath)) throw new Error(`Backup directory ${backupDir} not found`);
+    if (!(await pathExists(backupPath)))
+      throw new Error(`Backup directory ${backupDir} not found`);
 
     const manifestPath = join(backupPath, 'manifest.json');
-    if (!await pathExists(manifestPath)) throw new Error('Invalid backup: manifest.json not found');
+    if (!(await pathExists(manifestPath)))
+      throw new Error('Invalid backup: manifest.json not found');
 
     const manifest = await readJson(manifestPath);
 
@@ -104,11 +148,18 @@ export class BackupRestore {
     return manifest;
   }
 
-  async listBackups(): Promise<{ name: string; type: string; createdAt: Date; size: number }[]> {
-    if (!await pathExists(this.backupDir)) return [];
+  async listBackups(): Promise<
+    { name: string; type: string; createdAt: Date; size: number }[]
+  > {
+    if (!(await pathExists(this.backupDir))) return [];
 
     const items = await readdir(this.backupDir);
-    const backups: { name: string; type: string; createdAt: Date; size: number }[] = [];
+    const backups: {
+      name: string;
+      type: string;
+      createdAt: Date;
+      size: number;
+    }[] = [];
 
     for (const item of items) {
       const itemPath = join(this.backupDir, item);
@@ -122,12 +173,16 @@ export class BackupRestore {
       });
     }
 
-    return backups.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return backups.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
   }
 
   async deleteBackup(backupName: string): Promise<boolean> {
     const backupPath = join(this.backupDir, backupName);
-    if (!await pathExists(backupPath)) throw new Error(`Backup ${backupName} not found`);
+    if (!(await pathExists(backupPath)))
+      throw new Error(`Backup ${backupName} not found`);
     await remove(backupPath);
     return true;
   }

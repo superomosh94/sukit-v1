@@ -9,25 +9,6 @@ interface ModuleSearchProps {
   loading?: boolean;
 }
 
-const categories: { value: ModuleCategory | ''; label: string }[] = [
-  { value: '', label: 'All Categories' },
-  { value: 'ecommerce', label: 'E-Commerce' },
-  { value: 'seo', label: 'SEO' },
-  { value: 'forms', label: 'Forms' },
-  { value: 'analytics', label: 'Analytics' },
-  { value: 'media', label: 'Media' },
-  { value: 'social', label: 'Social' },
-  { value: 'marketing', label: 'Marketing' },
-  { value: 'content', label: 'Content' },
-  { value: 'performance', label: 'Performance' },
-  { value: 'security', label: 'Security' },
-  { value: 'ai', label: 'AI' },
-  { value: 'automation', label: 'Automation' },
-  { value: 'integration', label: 'Integration' },
-  { value: 'theme', label: 'Theme' },
-  { value: 'tool', label: 'Tool' },
-];
-
 export function ModuleSearch({
   onSearch,
   suggestions = [],
@@ -38,7 +19,25 @@ export function ModuleSearch({
   const [sortBy, setSortBy] =
     useState<ModuleSearchOptions['sortBy']>('relevance');
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [categories, setCategories] = useState<
+    { value: ModuleCategory | ''; label: string }[]
+  >([{ value: '', label: 'All Categories' }]);
   const searchRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/config');
+        const data = await res.json();
+        if (data.marketplaceCategories) {
+          setCategories([
+            { value: '', label: 'All Categories' },
+            ...data.marketplaceCategories,
+          ]);
+        }
+      } catch {}
+    })();
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

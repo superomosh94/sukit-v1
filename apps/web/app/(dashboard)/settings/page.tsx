@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { User, Shield, Key, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
+import { useEffect, useState } from 'react';
 
 const settingsTabs = [
   {
@@ -28,6 +29,23 @@ const settingsTabs = [
 
 export default function SettingsPage() {
   const pathname = usePathname();
+  const [sysInfo, setSysInfo] = useState<{
+    sukit: string;
+    node: string;
+    platform: string;
+  } | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/system/version');
+        const data = await res.json();
+        setSysInfo(data);
+      } catch {
+        setSysInfo(null);
+      }
+    })();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -69,9 +87,15 @@ export default function SettingsPage() {
       <div className="rounded-xl border bg-card p-6">
         <h2 className="text-sm font-medium mb-2">System Information</h2>
         <div className="space-y-1 text-xs text-muted-foreground">
-          <p>SUKIT v1.0.0</p>
-          <p>Node.js 26.2.0</p>
-          <p>Next.js 16.0.0</p>
+          {sysInfo ? (
+            <>
+              <p>SUKIT v{sysInfo.sukit}</p>
+              <p>{sysInfo.node}</p>
+              <p>{sysInfo.platform}</p>
+            </>
+          ) : (
+            <p>Loading...</p>
+          )}
         </div>
       </div>
     </div>

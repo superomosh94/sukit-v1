@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db/prisma';
 import { emit } from '@/lib/marketplace/utils/events';
 import { audit } from '@/lib/marketplace/utils/audit';
 import { generateLicenseKey } from '@/lib/marketplace/utils/crypto';
+import Stripe from 'stripe';
 
 const PLATFORM_FEE = 0.3; // 30% platform, 70% developer
 
@@ -344,6 +345,20 @@ export async function cancelSubscription(userId: string, subId: string) {
   const sub = await prisma.subscription.findUnique({ where: { id: subId } });
   if (!sub) throw new Error('Subscription not found');
   if (sub.userId !== userId) throw new Error('Not your subscription');
+
+  if (sub.gatewaySubscriptionId && STRIPE_KEY) {
+    try {
+      const sdk = new Stripe(STRIPE_KEY, {
+        apiVersion: '2025-02-24.acacia' as any,
+      });
+      await sdk.subscriptions.update(sub.gatewaySubscriptionId, {
+        cancel_at_period_end: true,
+      });
+    } catch (err) {
+      console.error('[stripe] cancel failed:', err);
+    }
+  }
+
   const updated = await prisma.subscription.update({
     where: { id: subId },
     data: { cancelAtPeriodEnd: true, canceledAt: new Date() },
@@ -410,11 +425,24 @@ export async function listBilling(userId: string, page = 1, pageSize = 20) {
       orderBy: { createdAt: 'desc' },
       skip,
       take: pageSize,
+      include: { module: true },
     }),
     prisma.transaction.count({ where: { buyerId: userId } }),
   ]);
   return {
-    entries,
+    entries: entries.map((t) => ({
+      id: t.id,
+      amount: t.amount,
+      currency: t.currency || 'usd',
+      status: t.status,
+      type: t.type || 'payment',
+      createdAt: t.createdAt,
+      module: { name: t.module?.name || 'Unknown' },
+      paymentId: t.paymentId,
+      receiptUrl: t.paymentId
+        ? `https://dashboard.stripe.com/invoices/${t.paymentId}`
+        : undefined,
+    })),
     total,
     page,
     pageSize,
@@ -595,32 +623,111 @@ export async function issueAdminRefund(
 }
 
 export async function createStripeCheckoutSession(opts: {
-  moduleIds: string[];
-  customerEmail: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  items: CheckoutItem[];
   successUrl: string;
   cancelUrl: string;
+  couponCode?: string;
 }) {
+  const { prisma } = await import('@/lib/db/prisma');
+  const moduleIds = opts.items.map((i) => i.moduleId);
+  const mods = await prisma.marketplaceModule.findMany({
+    where: { OR: [{ id: { in: moduleIds } }, { moduleId: { in: moduleIds } }] },
+  });
+
+  if (mods.length === 0) {
+    return {
+      sessionId: '',
+      url: '',
+      mode: 'sandbox',
+      error: 'No modules found',
+    };
+  }
+
+  const lineItems: any[] = [];
+  const plans: Record<string, string> = {};
+  let total = 0;
+
+  for (const item of opts.items) {
+    const m = mods.find(
+      (mod) => mod.id === item.moduleId || mod.moduleId === item.moduleId
+    );
+    if (!m) continue;
+
+    const plan = item.plan || 'monthly';
+    plans[item.moduleId] = plan;
+
+    let unitAmount = Math.round((m.price || 0) * 100);
+    if (m.priceModel === 'subscription') {
+      unitAmount =
+        plan === 'yearly'
+          ? Math.round((m.subscriptionPriceYearly || (m.price || 0) * 12) * 100)
+          : Math.round((m.subscriptionPriceMonthly || m.price || 0) * 100);
+    }
+
+    total += unitAmount * (item.quantity || 1);
+    lineItems.push({
+      price_data: {
+        currency: 'usd',
+        product_data: {
+          name: m.name,
+          description: m.description?.slice(0, 100),
+        },
+        unit_amount: unitAmount,
+        recurring:
+          m.priceModel === 'subscription'
+            ? {
+                interval:
+                  plan === 'yearly' ? ('year' as const) : ('month' as const),
+              }
+            : undefined,
+      },
+      quantity: item.quantity || 1,
+    });
+  }
+
+  const metadata: Record<string, string> = {
+    userId: opts.userId,
+    userName: opts.userName,
+    userEmail: opts.userEmail,
+    moduleIds: opts.items.map((i) => i.moduleId).join(','),
+    plans: JSON.stringify(plans),
+  };
+  if (opts.couponCode) metadata.couponCode = opts.couponCode;
+
   if (!STRIPE_KEY) {
     return {
       sessionId: `cs_dev_${Date.now()}`,
-      url: opts.successUrl + '?session_id=cs_dev_placeholder',
+      url: opts.successUrl + '?session_id=' + `cs_dev_${Date.now()}`,
       mode: 'sandbox',
+      items: lineItems,
+      total: total / 100,
     };
   }
-  const params = new URLSearchParams();
-  params.append('mode', 'payment');
-  params.append('success_url', opts.successUrl);
-  params.append('cancel_url', opts.cancelUrl);
-  params.append('customer_email', opts.customerEmail);
-  for (const id of opts.moduleIds) {
-    params.append('line_items[][quantity]', '1');
-    params.append('line_items[][price_data][currency]', 'usd');
-    params.append('line_items[][price_data][unit_amount]', '1000');
-    params.append('line_items[][price_data][product_data][name]', id);
+
+  const sessionParams: any = {
+    mode: mods.some((m) => m.priceModel === 'subscription')
+      ? 'subscription'
+      : 'payment',
+    line_items: lineItems,
+    success_url: opts.successUrl + '?session_id={CHECKOUT_SESSION_ID}',
+    cancel_url: opts.cancelUrl,
+    customer_email: opts.userEmail,
+    client_reference_id: opts.userId,
+    metadata,
+    ...(opts.couponCode ? { discounts: [{ coupon: opts.couponCode }] } : {}),
+  };
+
+  try {
+    const sdk = new Stripe(STRIPE_KEY, {
+      apiVersion: '2025-02-24.acacia' as any,
+    });
+    const session = await sdk.checkout.sessions.create(sessionParams);
+    return { sessionId: session.id, url: session.url || '', mode: 'live' };
+  } catch (err: any) {
+    console.error('[stripe] createCheckoutSession failed:', err);
+    return { sessionId: '', url: '', mode: 'error', error: err.message };
   }
-  const res = await stripeRequest('/checkout/sessions', {
-    method: 'POST',
-    body: params.toString(),
-  });
-  return { sessionId: res.id, url: res.url };
 }

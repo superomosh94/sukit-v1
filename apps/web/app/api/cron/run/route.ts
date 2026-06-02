@@ -1,18 +1,18 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db/prisma";
-import { auth } from "@/lib/auth/auth";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/db/prisma';
+import { auth } from '@/lib/auth/auth';
 
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const body = await req.json();
   const { jobId } = body;
 
   if (!jobId) {
-    return NextResponse.json({ error: "jobId required" }, { status: 400 });
+    return NextResponse.json({ error: 'jobId required' }, { status: 400 });
   }
 
   const job = await prisma.cronJob.findFirst({
@@ -20,15 +20,15 @@ export async function POST(req: Request) {
   });
 
   if (!job) {
-    return NextResponse.json({ error: "Job not found" }, { status: 404 });
+    return NextResponse.json({ error: 'Job not found' }, { status: 404 });
   }
 
-  if (job.hook === "backup") {
+  if (job.hook === 'backup') {
     const args = job.args as { siteId: string; name?: string | null };
 
     await prisma.cronJob.update({
       where: { id: jobId },
-      data: { status: "RUNNING" },
+      data: { status: 'RUNNING' },
     });
 
     try {
@@ -38,12 +38,12 @@ export async function POST(req: Request) {
         where: { siteId },
         include: {
           sections: {
-            orderBy: { sortOrder: "asc" },
+            orderBy: { sortOrder: 'asc' },
             include: {
               columns: {
-                orderBy: { sortOrder: "asc" },
+                orderBy: { sortOrder: 'asc' },
                 include: {
-                  blocks: { orderBy: { sortOrder: "asc" } },
+                  blocks: { orderBy: { sortOrder: 'asc' } },
                 },
               },
             },
@@ -71,10 +71,14 @@ export async function POST(req: Request) {
         },
       });
 
+      const { enforceBackupRetention } =
+        await import('@/lib/core/services/backup-service');
+      await enforceBackupRetention(siteId).catch(() => {});
+
       const completed = await prisma.cronJob.update({
         where: { id: jobId },
         data: {
-          status: "COMPLETED",
+          status: 'COMPLETED',
           lastRun: new Date(),
           error: null,
         },
@@ -85,8 +89,8 @@ export async function POST(req: Request) {
       const failed = await prisma.cronJob.update({
         where: { id: jobId },
         data: {
-          status: "FAILED",
-          error: error instanceof Error ? error.message : "Unknown error",
+          status: 'FAILED',
+          error: error instanceof Error ? error.message : 'Unknown error',
           lastRun: new Date(),
         },
       });
@@ -96,7 +100,7 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json(
-    { error: { message: `Unknown hook: ${job.hook}`, code: "UNKNOWN_HOOK" } },
-    { status: 400 },
+    { error: { message: `Unknown hook: ${job.hook}`, code: 'UNKNOWN_HOOK' } },
+    { status: 400 }
   );
 }

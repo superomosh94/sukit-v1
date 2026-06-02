@@ -5,6 +5,7 @@
     "sukit": "node packages/cli/bin/sukit.js",
     "sukit:dev": "node packages/cli/bin/sukit.js dev",
     "sukit:build": "node packages/cli/bin/sukit.js build",
+    "sukit:ddev": "pnpx nodemon --watch apps --watch packages --ext ts,tsx,js,jsx,json,tsx,css --exec \"pnpm dev:watch\"",
     "sukit:export": "node packages/cli/bin/sukit.js export",
     "sukit:new": "node packages/cli/bin/sukit.js new",
     "dev": "pnpm dev:watch",

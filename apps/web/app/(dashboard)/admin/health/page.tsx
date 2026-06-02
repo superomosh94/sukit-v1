@@ -20,164 +20,21 @@ export default function AdminHealthPage() {
   const runChecks = useCallback(async () => {
     setRunning(true);
     const start = Date.now();
-
-    const results: HealthCheck[] = [
-      {
-        name: 'database',
-        status: 'healthy',
-        latency: 12,
-        details: {
-          version: 'PostgreSQL 15.4',
-          connections: 5,
-          maxConnections: 100,
-        },
-        lastChecked: new Date().toISOString(),
-      },
-      {
-        name: 'redis',
-        status: 'healthy',
-        latency: 3,
-        details: { version: '7.2', connectedClients: 2, usedMemory: '2.1MB' },
-        lastChecked: new Date().toISOString(),
-      },
-      {
-        name: 'storage',
-        status: 'healthy',
-        latency: 45,
-        details: { provider: 'S3', bucket: 'sukit-media', objects: 1243 },
-        lastChecked: new Date().toISOString(),
-      },
-      {
-        name: 'modules',
-        status: 'healthy',
-        latency: 0,
-        details: { loaded: 8, active: 8, errors: 0 },
-        lastChecked: new Date().toISOString(),
-      },
-      {
-        name: 'queue',
-        status: 'healthy',
-        latency: 2,
-        details: { pending: 0, processing: 0, failed: 0 },
-        lastChecked: new Date().toISOString(),
-      },
-      {
-        name: 'disk',
-        status: 'healthy',
-        latency: 5,
-        details: {
-          total: '50GB',
-          used: '12GB',
-          available: '38GB',
-          percent: '24%',
-        },
-        lastChecked: new Date().toISOString(),
-      },
-      {
-        name: 'memory',
-        status: 'healthy',
-        latency: 0,
-        details: {
-          heapUsed: '128MB',
-          heapTotal: '512MB',
-          percent: '25%',
-          rss: '180MB',
-        },
-        lastChecked: new Date().toISOString(),
-      },
-      {
-        name: 'version',
-        status: 'healthy',
-        latency: 0,
-        details: { current: '1.0.0', latest: '1.0.0', upToDate: true },
-        lastChecked: new Date().toISOString(),
-      },
-    ];
-
-    setChecks(results);
+    try {
+      const res = await fetch('/api/admin/health');
+      const results: HealthCheck[] = await res.json();
+      setChecks(results);
+    } catch {
+      setChecks([]);
+    }
     setUptime(Math.floor((Date.now() - start) / 1000));
     setRunning(false);
   }, []);
 
   useEffect(() => {
-    (async () => {
-      const start = Date.now();
-      const results: HealthCheck[] = [
-        {
-          name: 'database',
-          status: 'healthy',
-          latency: 12,
-          details: {
-            version: 'PostgreSQL 15.4',
-            connections: 5,
-            maxConnections: 100,
-          },
-          lastChecked: new Date().toISOString(),
-        },
-        {
-          name: 'redis',
-          status: 'healthy',
-          latency: 3,
-          details: { version: '7.2', connectedClients: 2, usedMemory: '2.1MB' },
-          lastChecked: new Date().toISOString(),
-        },
-        {
-          name: 'storage',
-          status: 'healthy',
-          latency: 45,
-          details: { provider: 'S3', bucket: 'sukit-media', objects: 1243 },
-          lastChecked: new Date().toISOString(),
-        },
-        {
-          name: 'modules',
-          status: 'healthy',
-          latency: 0,
-          details: { loaded: 8, active: 8, errors: 0 },
-          lastChecked: new Date().toISOString(),
-        },
-        {
-          name: 'queue',
-          status: 'healthy',
-          latency: 2,
-          details: { pending: 0, processing: 0, failed: 0 },
-          lastChecked: new Date().toISOString(),
-        },
-        {
-          name: 'disk',
-          status: 'healthy',
-          latency: 5,
-          details: {
-            total: '50GB',
-            used: '12GB',
-            available: '38GB',
-            percent: '24%',
-          },
-          lastChecked: new Date().toISOString(),
-        },
-        {
-          name: 'memory',
-          status: 'healthy',
-          latency: 0,
-          details: {
-            heapUsed: '128MB',
-            heapTotal: '512MB',
-            percent: '25%',
-            rss: '180MB',
-          },
-          lastChecked: new Date().toISOString(),
-        },
-        {
-          name: 'version',
-          status: 'healthy',
-          latency: 0,
-          details: { current: '1.0.0', latest: '1.0.0', upToDate: true },
-          lastChecked: new Date().toISOString(),
-        },
-      ];
-      setChecks(results);
-      setUptime(Math.floor((Date.now() - start) / 1000));
-    })();
-  }, []);
+    runChecks();
+  }, [runChecks]);
+
   useEffect(() => {
     if (!autoRefresh) return;
     const interval = setInterval(runChecks, 30000);
@@ -289,35 +146,6 @@ export default function AdminHealthPage() {
             </div>
           );
         })}
-      </div>
-
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <h3 className="text-sm font-semibold text-gray-900 mb-3">
-          API Endpoints
-        </h3>
-        <div className="space-y-2 text-sm">
-          {[
-            { path: '/api/health', method: 'GET', status: 'responds 200' },
-            { path: '/api/live', method: 'GET', status: 'responds 200' },
-            { path: '/api/ready', method: 'GET', status: 'responds 200' },
-            {
-              path: '/api/health/detailed',
-              method: 'GET',
-              status: 'responds 200',
-            },
-          ].map((endpoint) => (
-            <div
-              key={endpoint.path}
-              className="flex items-center gap-3 text-xs"
-            >
-              <span className="bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-mono">
-                {endpoint.method}
-              </span>
-              <code className="flex-1 text-gray-600">{endpoint.path}</code>
-              <span className="text-green-600">{endpoint.status}</span>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );

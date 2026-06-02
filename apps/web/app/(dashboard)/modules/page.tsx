@@ -1,10 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Package,
-  ExternalLink,
   Trash2,
   Check,
   Globe,
@@ -17,97 +16,28 @@ import {
   ModulePreviewModal,
   type ModuleItem,
 } from '@/components/modules/ModulePreviewModal';
-import { cn } from '@/lib/utils/cn';
-
-const ALL_MODULES: ModuleItem[] = [
-  {
-    id: 'visual-builder',
-    name: 'Visual Builder',
-    description: 'Drag-and-drop page builder',
-    author: 'SUKIT Core',
-    version: '1.0.0',
-    downloads: 5400,
-    rating: 4.8,
-    price: 0,
-    icon: 'code',
-    category: 'builder',
-    longDescription: 'Build beautiful pages without code.',
-    features: ['35+ block types', 'Responsive design', 'Drag-and-drop canvas'],
-  },
-  {
-    id: 'site-manager',
-    name: 'Site Manager',
-    description: 'Multi-site management and team collaboration',
-    author: 'SUKIT Core',
-    version: '1.0.0',
-    downloads: 3200,
-    rating: 4.6,
-    price: 0,
-    icon: 'globe',
-    category: 'management',
-    longDescription: 'Manage multiple sites from one dashboard.',
-    features: ['Unlimited sites', 'Page tree', 'Team roles'],
-  },
-  {
-    id: 'media-library',
-    name: 'Media Library',
-    description: 'Upload, optimize, and manage images',
-    author: 'SUKIT Core',
-    version: '1.0.0',
-    downloads: 2800,
-    rating: 4.7,
-    price: 0,
-    icon: 'shield',
-    category: 'media',
-    longDescription: 'Complete media management solution.',
-    features: ['Drag-drop upload', 'WebP/AVIF conversion', 'Image editing'],
-  },
-  {
-    id: 'seo',
-    name: 'SEO Optimizer',
-    description: 'Meta tags, sitemaps, and SEO analysis',
-    author: 'SUKIT',
-    version: '1.2.0',
-    downloads: 1200,
-    rating: 4.5,
-    price: 0,
-    icon: 'shield',
-    category: 'seo',
-  },
-  {
-    id: 'popup-builder',
-    name: 'Popup Builder',
-    description: 'Create popups and notification bars',
-    author: 'SUKIT',
-    version: '1.0.0',
-    downloads: 890,
-    rating: 4.3,
-    price: 0,
-    icon: 'zap',
-    category: 'marketing',
-  },
-  {
-    id: 'analytics',
-    name: 'Analytics Dashboard',
-    description: 'Visitor analytics with charts',
-    author: 'SUKIT',
-    version: '1.0.0',
-    downloads: 780,
-    rating: 4.8,
-    price: 0,
-    icon: 'zap',
-    category: 'analytics',
-  },
-];
 
 export default function ModulesPage() {
+  const [allModules, setAllModules] = useState<ModuleItem[]>([]);
   const [previewMod, setPreviewMod] = useState<ModuleItem | null>(null);
   const { installedIds, isInstalled, install, uninstall } =
     useModuleInstaller();
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/modules');
+        const data = await res.json();
+        setAllModules(data);
+      } catch {
+        setAllModules([]);
+      }
+    })();
+  }, []);
+
   const installedModules = useMemo(
-    () => ALL_MODULES.filter((m) => installedIds.includes(m.id)),
-    [installedIds]
+    () => allModules.filter((m) => installedIds.includes(m.id)),
+    [allModules, installedIds]
   );
 
   const iconMap: Record<string, typeof Globe> = {

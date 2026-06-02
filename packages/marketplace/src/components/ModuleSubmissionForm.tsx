@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { ModuleCategory, SubmissionStep, SubmissionDraft } from '../types';
 import { SubmissionStatus } from './SubmissionStatus';
 
@@ -20,7 +20,7 @@ interface ModuleSubmissionFormProps {
   submitting?: boolean;
 }
 
-const categories: { value: ModuleCategory; label: string }[] = [
+const _defaultCategories: { value: ModuleCategory; label: string }[] = [
   { value: 'ecommerce', label: 'E-Commerce' },
   { value: 'seo', label: 'SEO' },
   { value: 'forms', label: 'Forms' },
@@ -69,6 +69,43 @@ export function ModuleSubmissionForm({
   const [docs, setDocs] = useState(draft?.documentation || {});
   const [error, setError] = useState('');
   const [tagInput, setTagInput] = useState('');
+  const [categories, setCategories] = useState(_defaultCategories);
+  const [priceOptions, setPriceOptions] = useState([
+    { value: 'free' as const, label: 'Free', desc: 'No cost to users' },
+    {
+      value: 'one-time' as const,
+      label: 'One-Time',
+      desc: 'Single payment for lifetime access',
+    },
+    {
+      value: 'subscription' as const,
+      label: 'Subscription',
+      desc: 'Recurring monthly/yearly',
+    },
+    {
+      value: 'tiered' as const,
+      label: 'Tiered',
+      desc: 'Multiple pricing tiers',
+    },
+  ]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/config');
+        const data = await res.json();
+        if (data.marketplaceCategories?.length) {
+          const mapped = data.marketplaceCategories
+            .filter((c: any) => c.value)
+            .map((c: any) => ({
+              value: c.value as ModuleCategory,
+              label: c.label,
+            }));
+          if (mapped.length) setCategories(mapped);
+        }
+      } catch {}
+    })();
+  }, []);
 
   const steps: SubmissionStep[] = [
     'basic-info',
@@ -273,24 +310,7 @@ export function ModuleSubmissionForm({
                 Price Model
               </label>
               <div className="grid grid-cols-2 gap-3">
-                {[
-                  { value: 'free', label: 'Free', desc: 'No cost to users' },
-                  {
-                    value: 'one-time',
-                    label: 'One-Time',
-                    desc: 'Single payment for lifetime access',
-                  },
-                  {
-                    value: 'subscription',
-                    label: 'Subscription',
-                    desc: 'Recurring monthly/yearly',
-                  },
-                  {
-                    value: 'tiered',
-                    label: 'Tiered',
-                    desc: 'Multiple pricing tiers',
-                  },
-                ].map((option) => (
+                {priceOptions.map((option) => (
                   <button
                     key={option.value}
                     onClick={() =>

@@ -1,3 +1,4 @@
+import { createVerify } from 'crypto';
 import type { Module, ModuleManifest, ActiveModule } from '../types';
 import { EventBus } from './event-bus';
 import { PermissionManager } from './permission-manager';
@@ -189,15 +190,16 @@ export class ModuleLoader {
         }
       }
 
-      // Permission resolution
+      // Permission resolution — pre-grant declared permissions, then verify
       const perms = manifest.sukit.permissions ?? [];
+      const modulePerms = this.kernel.forModule(moduleId).permissions;
+      modulePerms.setDefaults(perms);
+      modulePerms.applyDefaults();
       for (const perm of perms) {
-        const granted = await this.kernel
-          .forModule(moduleId)
-          .permissions.request(
-            perm,
-            `Module ${manifest.name} requires ${perm}`
-          );
+        const granted = await modulePerms.request(
+          perm,
+          `Module ${manifest.name} requires ${perm}`
+        );
         if (!granted) {
           throw new Error(
             `Permission "${perm}" denied for module "${moduleId}"`
@@ -511,11 +513,28 @@ export class ModuleLoader {
     ]);
   }
 
+  private publicKeyPem: string | null = null;
+
+  setPublicKey(pem: string): void {
+    this.publicKeyPem = pem;
+  }
+
   private async verifySignature(manifest: ModuleManifest): Promise<boolean> {
-    const sig = (manifest as any).signature;
+    const sig = (manifest as any).signature as string | undefined;
     if (!sig) return false;
-    // In production, verify using public key
-    return true;
+    if (!this.publicKeyPem) return false;
+
+    const { signature, ...rest } = manifest as any;
+    const data = JSON.stringify(rest);
+
+    try {
+      const verifier = createVerify('sha256');
+      verifier.update(data);
+      verifier.end();
+      return verifier.verify(this.publicKeyPem, sig, 'base64');
+    } catch {
+      return false;
+    }
   }
 
   private async handleRecovery(

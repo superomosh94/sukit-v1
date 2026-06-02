@@ -1,20 +1,20 @@
-import manifest from "../manifest.json";
-export { useChatStore } from "./stores/chatStore";
-export { TrainingConfig } from "./components/TrainingConfig";
-export { LeadCapture } from "./components/LeadCapture";
-export { ChatAnalytics } from "./components/ChatAnalytics";
-export { ConversationList } from "./components/ConversationList";
+import manifest from '../manifest.json';
+export { useChatStore } from './stores/chatStore';
+export { TrainingConfig } from './components/TrainingConfig';
+export { LeadCapture } from './components/LeadCapture';
+export { ChatAnalytics } from './components/ChatAnalytics';
+export { ConversationList } from './components/ConversationList';
 const chatModule = {
     manifest: manifest,
     async activate(kernel) {
-        kernel.log.info("[Chat] Activating...");
+        kernel.log.info('[Chat] Activating...');
     },
     async deactivate(kernel) {
-        kernel.log.info("[Chat] Deactivating...");
+        kernel.log.info('[Chat] Deactivating...');
     },
 };
 export default chatModule;
-export { ChatWidget } from "./widget";
-export { ChatSettings } from "./settings";
-export { handleMessage, handleUpload } from "./api";
+export { ChatWidget } from './widget';
+export { ChatSettings } from './settings';
+export { handleMessage, handleUpload } from './api';
 //# sourceMappingURL=index.js.map

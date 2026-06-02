@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface LogEntry {
   id: string;
@@ -14,66 +14,9 @@ interface LogEntry {
   ipAddress: string | null;
 }
 
-const SAMPLE_LOGS: LogEntry[] = [
-  {
-    id: '1',
-    timestamp: new Date(Date.now() - 60000).toISOString(),
-    userId: 'user_1',
-    userName: 'Alice',
-    action: 'site:create',
-    resourceType: 'site',
-    resourceId: 'site_123',
-    changes: { name: 'My Blog' },
-    ipAddress: '192.168.1.1',
-  },
-  {
-    id: '2',
-    timestamp: new Date(Date.now() - 120000).toISOString(),
-    userId: 'user_2',
-    userName: 'Bob',
-    action: 'page:publish',
-    resourceType: 'page',
-    resourceId: 'page_456',
-    changes: { slug: 'hello-world' },
-    ipAddress: '10.0.0.1',
-  },
-  {
-    id: '3',
-    timestamp: new Date(Date.now() - 300000).toISOString(),
-    userId: 'user_1',
-    userName: 'Alice',
-    action: 'module:install',
-    resourceType: 'module',
-    resourceId: '@sukit/seo',
-    changes: { version: '1.2.0' },
-    ipAddress: '192.168.1.1',
-  },
-  {
-    id: '4',
-    timestamp: new Date(Date.now() - 3600000).toISOString(),
-    userId: null,
-    userName: 'System',
-    action: 'backup:complete',
-    resourceType: 'backup',
-    resourceId: 'backup_789',
-    changes: { size: '2.4GB' },
-    ipAddress: null,
-  },
-  {
-    id: '5',
-    timestamp: new Date(Date.now() - 7200000).toISOString(),
-    userId: 'user_3',
-    userName: 'Carol',
-    action: 'settings:update',
-    resourceType: 'settings',
-    resourceId: null,
-    changes: { theme: 'dark' },
-    ipAddress: '203.0.113.1',
-  },
-];
-
 export default function AdminAuditPage() {
-  const [logs, setLogs] = useState<LogEntry[]>(SAMPLE_LOGS);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState('');
   const [userFilter, setUserFilter] = useState('');
@@ -82,42 +25,41 @@ export default function AdminAuditPage() {
   const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
   const [exportFormat, setExportFormat] = useState<'csv' | 'json'>('csv');
 
-  const filtered = useMemo(() => {
-    return logs.filter((l) => {
-      if (search) {
-        const q = search.toLowerCase();
-        if (
-          !l.action.toLowerCase().includes(q) &&
-          !l.resourceType.toLowerCase().includes(q) &&
-          !l.resourceId?.toLowerCase().includes(q)
-        )
-          return false;
-      }
-      if (actionFilter && l.action !== actionFilter) return false;
-      if (userFilter && l.userName !== userFilter) return false;
-      if (dateFrom && new Date(l.timestamp) < new Date(dateFrom)) return false;
-      if (dateTo && new Date(l.timestamp) > new Date(dateTo + 'T23:59:59'))
-        return false;
-      return true;
-    });
-  }, [logs, search, actionFilter, userFilter, dateFrom, dateTo]);
+  const fetchLogs = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (search) params.set('search', search);
+      if (actionFilter) params.set('action', actionFilter);
+      if (userFilter) params.set('userName', userFilter);
+      if (dateFrom) params.set('dateFrom', dateFrom);
+      if (dateTo) params.set('dateTo', dateTo);
+      const res = await fetch(`/api/admin/audit?${params}`);
+      const data = await res.json();
+      setLogs(data);
+    } catch {
+      setLogs([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [search, actionFilter, userFilter, dateFrom, dateTo]);
 
-  const uniqueActions = useMemo(
-    () => [...new Set(logs.map((l) => l.action))],
-    [logs]
-  );
-  const uniqueUsers = useMemo(
-    () => [...new Set(logs.filter((l) => l.userName).map((l) => l.userName!))],
-    [logs]
-  );
+  useEffect(() => {
+    fetchLogs();
+  }, [fetchLogs]);
+
+  const uniqueActions = [...new Set(logs.map((l) => l.action))];
+  const uniqueUsers = [
+    ...new Set(logs.filter((l) => l.userName).map((l) => l.userName!)),
+  ];
 
   const handleExport = () => {
     const data =
       exportFormat === 'json'
-        ? JSON.stringify(filtered, null, 2)
+        ? JSON.stringify(logs, null, 2)
         : [
             'Timestamp,User,Action,Resource Type,Resource ID,IP Address',
-            ...filtered.map(
+            ...logs.map(
               (l) =>
                 `"${l.timestamp}","${l.userName || 'System'}","${l.action}","${l.resourceType}","${l.resourceId || ''}","${l.ipAddress || ''}"`
             ),
@@ -167,6 +109,7 @@ export default function AdminAuditPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && fetchLogs()}
               placeholder="Search actions, resources..."
               className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm"
             />
@@ -210,17 +153,22 @@ export default function AdminAuditPage() {
             />
           </div>
         </div>
+        <div className="flex justify-end">
+          <button
+            onClick={fetchLogs}
+            className="px-3 py-1 text-xs bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200"
+          >
+            Apply Filters
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center justify-between text-sm text-gray-500">
-        <span>
-          {filtered.length} of {logs.length} log entries
-        </span>
-        <span className="text-xs">Retention: 90 days</span>
+        <span>{loading ? 'Loading...' : `${logs.length} log entries`}</span>
       </div>
 
       <div className="space-y-1">
-        {filtered.map((log) => (
+        {logs.map((log) => (
           <div
             key={log.id}
             onClick={() => setSelectedLog(log)}
@@ -271,10 +219,13 @@ export default function AdminAuditPage() {
             </div>
           </div>
         ))}
-        {filtered.length === 0 && (
+        {!loading && logs.length === 0 && (
           <p className="text-sm text-gray-500 text-center py-8">
             No matching log entries found.
           </p>
+        )}
+        {loading && (
+          <p className="text-sm text-gray-500 text-center py-8">Loading...</p>
         )}
       </div>
 
@@ -300,8 +251,8 @@ export default function AdminAuditPage() {
               <div className="grid grid-cols-3 gap-2">
                 <span className="text-gray-500">User</span>
                 <span className="col-span-2">
-                  {selectedLog.userName || 'System'}{' '}
-                  {selectedLog.userId && `(${selectedLog.userId})`}
+                  {selectedLog.userName || 'System'}
+                  {selectedLog.userId && ` (${selectedLog.userId})`}
                 </span>
               </div>
               <div className="grid grid-cols-3 gap-2">

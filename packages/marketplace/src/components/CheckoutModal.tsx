@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { CheckoutSession, CheckoutItem, PaymentGateway } from '../types';
 
 interface CheckoutModalProps {
@@ -9,6 +9,7 @@ interface CheckoutModalProps {
   onApplyCoupon: (code: string) => Promise<void>;
   onRemoveItem: (moduleId: string) => void;
   onPay: (method: PaymentGateway) => Promise<void>;
+  onStripeCheckout?: () => Promise<void>;
   onClose: () => void;
   processing?: boolean;
 }
@@ -19,6 +20,7 @@ export function CheckoutModal({
   onApplyCoupon,
   onRemoveItem,
   onPay,
+  onStripeCheckout,
   onClose,
   processing,
 }: CheckoutModalProps) {
@@ -26,6 +28,19 @@ export function CheckoutModal({
   const [selectedMethod, setSelectedMethod] =
     useState<PaymentGateway>('stripe');
   const [couponApplied, setCouponApplied] = useState(false);
+  const [paymentMethods, setPaymentMethods] = useState<
+    { id: PaymentGateway; label: string; icon: string }[]
+  >([{ id: 'stripe' as PaymentGateway, label: 'Credit Card', icon: '💳' }]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/config');
+        const data = await res.json();
+        if (data.paymentMethods) setPaymentMethods(data.paymentMethods);
+      } catch {}
+    })();
+  }, []);
 
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const total = session?.total ?? subtotal;
@@ -118,15 +133,7 @@ export function CheckoutModal({
               Payment Method
             </h3>
             <div className="grid grid-cols-3 gap-2">
-              {[
-                {
-                  id: 'stripe' as PaymentGateway,
-                  label: 'Credit Card',
-                  icon: '💳',
-                },
-                { id: 'paypal' as PaymentGateway, label: 'PayPal', icon: '🅿️' },
-                { id: 'paddle' as PaymentGateway, label: 'Paddle', icon: '🛡️' },
-              ].map((method) => (
+              {paymentMethods.map((method) => (
                 <button
                   key={method.id}
                   onClick={() => setSelectedMethod(method.id)}
@@ -169,13 +176,21 @@ export function CheckoutModal({
           </div>
 
           <button
-            onClick={() => onPay(selectedMethod)}
+            onClick={async () => {
+              if (selectedMethod === 'stripe' && onStripeCheckout) {
+                await onStripeCheckout();
+              } else {
+                await onPay(selectedMethod);
+              }
+            }}
             disabled={processing}
             className="w-full py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors text-sm"
           >
             {processing
               ? 'Processing...'
-              : `Pay $${total.toFixed(2)} via ${selectedMethod === 'stripe' ? 'Credit Card' : selectedMethod === 'paypal' ? 'PayPal' : 'Paddle'}`}
+              : selectedMethod === 'stripe' && onStripeCheckout
+                ? 'Continue to Stripe'
+                : `Pay $${total.toFixed(2)} via ${selectedMethod === 'stripe' ? 'Credit Card' : selectedMethod === 'paypal' ? 'PayPal' : 'Paddle'}`}
           </button>
 
           <p className="text-xs text-gray-400 text-center mt-3">

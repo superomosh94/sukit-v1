@@ -29,6 +29,7 @@ export class PermissionManager {
     action: string;
     timestamp: number;
     by?: string;
+    reason?: string;
   }> = [];
   private cacheEnabled = true;
   private cache = new Map<string, { result: boolean; expiresAt: number }>();
@@ -66,15 +67,14 @@ export class PermissionManager {
     if (existing && (!existing.expiresAt || existing.expiresAt > Date.now()))
       return true;
 
-    this.grant(moduleId, permission, 'once', undefined, 'system');
     this.auditLog.push({
       moduleId,
       permission,
-      action: 'granted',
+      action: 'denied',
       timestamp: Date.now(),
-      by: 'system',
+      reason,
     });
-    return true;
+    return false;
   }
 
   grant(

@@ -15,10 +15,15 @@ export function setCacheAdapter(adapter: CacheAdapter): void {
 export function createCacheAPI(adapter?: CacheAdapter) {
   const a = () => adapter ?? _adapter;
   const events = new Map<string, Array<(event: string, key: string) => void>>();
+  let statsHits = 0;
+  let statsMisses = 0;
 
   return {
     async get<T>(key: string): Promise<T | null> {
-      return a()!.get<T>(key);
+      const val = await a()!.get<T>(key);
+      if (val !== null) statsHits++;
+      else statsMisses++;
+      return val;
     },
 
     async set<T>(key: string, value: T, ttl?: number): Promise<void> {
@@ -76,7 +81,11 @@ export function createCacheAPI(adapter?: CacheAdapter) {
 
     /* --- Stats --- */
     getStats(): { hits: number; misses: number; entries: number } {
-      return { hits: 0, misses: 0, entries: 0 };
+      return {
+        hits: statsHits,
+        misses: statsMisses,
+        entries: this.tagIndex.size,
+      };
     },
 
     /* --- Events --- */

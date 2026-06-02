@@ -296,6 +296,27 @@ const handlers: Record<
       await createCheckoutSession(user.id, user.email, body?.items || [])
     );
   },
+  async 'POST /checkout/stripe'(params, body) {
+    const { createStripeCheckoutSession } =
+      await import('@/lib/marketplace/services/payments');
+    const { requireUser } = await import('@/lib/marketplace/utils/auth');
+    const req = new Request(params.url);
+    const user = await requireUser(req);
+    const result = await createStripeCheckoutSession({
+      userId: user.id,
+      userName: user.name,
+      userEmail: user.email,
+      items: body?.items || [],
+      successUrl:
+        body?.successUrl ||
+        `${process.env.APP_URL || 'http://localhost:3042'}/billing?success=1`,
+      cancelUrl:
+        body?.cancelUrl ||
+        `${process.env.APP_URL || 'http://localhost:3042'}/checkout?canceled=1`,
+      couponCode: body?.couponCode,
+    });
+    return NextResponse.json(result);
+  },
   async 'POST /checkout/coupon'(params, body) {
     const { applyCoupon } = await import('@/lib/marketplace/services/payments');
     return NextResponse.json(
@@ -431,6 +452,62 @@ const handlers: Record<
         body?.method || ''
       )
     );
+  },
+
+  // ─── Stripe Customer Portal ─────────────────────────────────────
+  async 'POST /billing/portal'(params, body) {
+    const { requireUser } = await import('@/lib/marketplace/utils/auth');
+    const req = new Request(params.url);
+    const user = await requireUser(req);
+    const STRIPE_KEY = process.env.STRIPE_SECRET_KEY || '';
+    if (!STRIPE_KEY) {
+      return NextResponse.json({ url: '/billing' });
+    }
+    try {
+      const { default: Stripe } = await import('stripe');
+      const stripe = new Stripe(STRIPE_KEY, {
+        apiVersion: '2025-02-24.acacia' as any,
+      });
+      const session = await stripe.billingPortal.sessions.create({
+        customer: body?.customerId || user.id,
+        return_url:
+          body?.returnUrl ||
+          `${process.env.APP_URL || 'http://localhost:3042'}/billing`,
+      });
+      return NextResponse.json({ url: session.url });
+    } catch (err: any) {
+      return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+  },
+
+  // ─── Stripe Checkout Success ─────────────────────────────────────
+  async 'GET /checkout/success'(params) {
+    const { searchParams } = new URL(params.url);
+    const sessionId = searchParams.get('session_id');
+    if (!sessionId) {
+      return NextResponse.json({ success: false, error: 'Missing session_id' });
+    }
+    const STRIPE_KEY = process.env.STRIPE_SECRET_KEY || '';
+    if (!STRIPE_KEY || sessionId.startsWith('cs_dev_')) {
+      return NextResponse.json({ success: true, mode: 'sandbox', sessionId });
+    }
+    try {
+      const { default: Stripe } = await import('stripe');
+      const stripe = new Stripe(STRIPE_KEY, {
+        apiVersion: '2025-02-24.acacia' as any,
+      });
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      return NextResponse.json({
+        success: session.payment_status === 'paid',
+        sessionId,
+        mode: 'live',
+        paymentStatus: session.payment_status,
+        customerEmail: session.customer_details?.email,
+        amountTotal: session.amount_total,
+      });
+    } catch (err: any) {
+      return NextResponse.json({ success: false, error: err.message });
+    }
   },
 
   // ─── Billing ────────────────────────────────────────────────────

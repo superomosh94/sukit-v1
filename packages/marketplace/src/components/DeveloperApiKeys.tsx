@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { DeveloperApiKeyData } from '../types';
 
 interface DeveloperApiKeysProps {
@@ -29,8 +29,7 @@ export function DeveloperApiKeys({
   const [newPermissions, setNewPermissions] = useState<string[]>(['read']);
   const [generatedKey, setGeneratedKey] = useState<string | null>(null);
   const [error, setError] = useState('');
-
-  const permissionOptions = [
+  const [permissionOptions, setPermissionOptions] = useState([
     { value: 'read', label: 'Read', desc: 'View module info and stats' },
     { value: 'write', label: 'Write', desc: 'Update module metadata' },
     {
@@ -38,7 +37,18 @@ export function DeveloperApiKeys({
       label: 'Publish',
       desc: 'Submit new versions and publish',
     },
-  ];
+  ]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/config');
+        const data = await res.json();
+        if (data.apiKeyPermissions)
+          setPermissionOptions(data.apiKeyPermissions);
+      } catch {}
+    })();
+  }, []);
 
   async function handleGenerate() {
     setError('');

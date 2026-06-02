@@ -1,15 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import {
-  Package,
-  Plus,
-  Trash2,
-  ExternalLink,
-  Check,
-  Download,
-} from 'lucide-react';
+import { Package, Trash2, Check, Download } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useModuleInstaller } from '@/components/modules/useModuleInstaller';
 import {
@@ -17,67 +10,28 @@ import {
   type ModuleItem,
 } from '@/components/modules/ModulePreviewModal';
 
-const AVAILABLE_PLUGINS: ModuleItem[] = [
-  {
-    id: 'sukit-gallery',
-    name: 'SUKIT Gallery',
-    description:
-      'Advanced image gallery with lightbox, filtering, and masonry layout',
-    author: 'SUKIT Labs',
-    version: '1.0.0',
-    downloads: 320,
-    rating: 4.6,
-    price: 0,
-    icon: 'shield',
-    category: 'media',
-  },
-  {
-    id: 'sukit-chat',
-    name: 'Live Chat',
-    description: 'Real-time chat widget with customer support features',
-    author: 'SUKIT Labs',
-    version: '0.9.0',
-    downloads: 180,
-    rating: 4.1,
-    price: 5,
-    icon: 'zap',
-    category: 'marketing',
-  },
-  {
-    id: 'sukit-forms-export',
-    name: 'Forms Export',
-    description: 'Export form submissions to CSV, Excel, Google Sheets',
-    author: 'SUKIT Labs',
-    version: '1.0.0',
-    downloads: 95,
-    rating: 4.3,
-    price: 3,
-    icon: 'code',
-    category: 'forms',
-  },
-  {
-    id: 'sukit-social-feed',
-    name: 'Social Feed',
-    description: 'Display Instagram, Twitter, and Facebook feeds on your site',
-    author: 'SUKIT Labs',
-    version: '0.8.0',
-    downloads: 210,
-    rating: 4.0,
-    price: 0,
-    icon: 'globe',
-    category: 'social',
-  },
-];
-
 export default function PluginsPage() {
+  const [allPlugins, setAllPlugins] = useState<ModuleItem[]>([]);
   const [tab, setTab] = useState<'installed' | 'available'>('installed');
   const [previewMod, setPreviewMod] = useState<ModuleItem | null>(null);
   const { installedIds, isInstalled, install, uninstall } =
     useModuleInstaller();
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/plugins');
+        const data = await res.json();
+        setAllPlugins(data);
+      } catch {
+        setAllPlugins([]);
+      }
+    })();
+  }, []);
+
   const installedPlugins = useMemo(
-    () => AVAILABLE_PLUGINS.filter((p) => installedIds.includes(p.id)),
-    [installedIds]
+    () => allPlugins.filter((p) => installedIds.includes(p.id)),
+    [allPlugins, installedIds]
   );
 
   return (
@@ -173,7 +127,7 @@ export default function PluginsPage() {
         )
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {AVAILABLE_PLUGINS.map((plugin) => {
+          {allPlugins.map((plugin) => {
             const installed = isInstalled(plugin.id);
             return (
               <div

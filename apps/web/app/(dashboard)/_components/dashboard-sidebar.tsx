@@ -298,7 +298,7 @@ export function DashboardSidebar() {
           );
         })}
       </nav>
-      <div className="border-t p-3 shrink-0">
+      <div className="border-t p-3 shrink-0 space-y-1">
         <Link
           href="/"
           className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent"
@@ -306,6 +306,13 @@ export function DashboardSidebar() {
           <Globe className="size-4" />
           <span>Back to Site</span>
         </Link>
+        <a
+          href="/blog"
+          className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent"
+        >
+          <FileText className="size-4" />
+          <span>Visit Blog</span>
+        </a>
       </div>
     </aside>
   );

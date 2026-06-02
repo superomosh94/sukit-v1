@@ -10,6 +10,7 @@ import { WhiteLabelManager } from './whitelabel';
 import { AdvancedSecurity } from './security';
 import { ScalingEngine } from './scaling';
 import { EnterpriseSupportPortal } from './support';
+import { EnterpriseBackupDR } from './backup-dr';
 
 export class EnterpriseOSLayer {
   public orgs: OrganizationManager;
@@ -20,6 +21,7 @@ export class EnterpriseOSLayer {
   public security: AdvancedSecurity;
   public scaling: ScalingEngine;
   public support: EnterpriseSupportPortal;
+  public backupDR: EnterpriseBackupDR;
 
   private kernel: SukitKernel;
   private initialized = false;
@@ -39,14 +41,17 @@ export class EnterpriseOSLayer {
     this.security = new AdvancedSecurity(kernel, production);
     this.scaling = new ScalingEngine(kernel);
     this.support = new EnterpriseSupportPortal(kernel);
+    this.backupDR = new EnterpriseBackupDR(kernel);
   }
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
     await this.kernel.events.emit('enterprise:initializing', {});
+    await this.backupDR.initialize();
     this.initialized = true;
     await this.kernel.events.emit('enterprise:initialized', {
       systems: [
+        'backup-dr',
         'orgs',
         'billing',
         'compliance',

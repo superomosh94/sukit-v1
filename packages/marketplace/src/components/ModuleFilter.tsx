@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { PriceModel } from '../types';
 
 interface ModuleFilterProps {
@@ -15,25 +15,6 @@ export interface FilterState {
   compatibleOnly: boolean;
 }
 
-const priceModels: { value: PriceModel | ''; label: string }[] = [
-  { value: '', label: 'Any Price' },
-  { value: 'free', label: 'Free' },
-  { value: 'one-time', label: 'One-Time' },
-  { value: 'subscription', label: 'Subscription' },
-];
-
-const popularTags = [
-  'analytics',
-  'contact-form',
-  'social-media',
-  'payment',
-  'ai',
-  'chat',
-  'calendar',
-  'maps',
-  'newsletter',
-];
-
 export function ModuleFilter({ onFilterChange }: ModuleFilterProps) {
   const [filters, setFilters] = useState<FilterState>({
     priceModel: '',
@@ -44,6 +25,25 @@ export function ModuleFilter({ onFilterChange }: ModuleFilterProps) {
   });
 
   const [expanded, setExpanded] = useState(true);
+  const [priceModels, setPriceModels] = useState<
+    { value: PriceModel | ''; label: string }[]
+  >([{ value: '', label: 'Any Price' }]);
+  const [popularTags, setPopularTags] = useState<string[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/config');
+        const data = await res.json();
+        if (data.priceModels)
+          setPriceModels([
+            { value: '', label: 'Any Price' },
+            ...data.priceModels,
+          ]);
+        if (data.popularTags) setPopularTags(data.popularTags);
+      } catch {}
+    })();
+  }, []);
 
   function updateFilter(partial: Partial<FilterState>) {
     const next = { ...filters, ...partial };

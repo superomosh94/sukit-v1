@@ -1,3 +1,10 @@
+import {
+  randomBytes,
+  createCipheriv,
+  createDecipheriv,
+  pbkdf2Sync,
+} from 'crypto';
+
 export interface StorageAdapter {
   get<T>(key: string): Promise<T | null>;
   set<T>(key: string, value: T): Promise<void>;
@@ -9,6 +16,44 @@ let _adapter: StorageAdapter | null = null;
 
 export function setStorageAdapter(adapter: StorageAdapter): void {
   _adapter = adapter;
+}
+
+const ALGORITHM = 'aes-256-gcm';
+const IV_LENGTH = 16;
+const TAG_LENGTH = 16;
+const SALT_LENGTH = 32;
+
+function deriveKey(password: string, salt: Buffer): Buffer {
+  return pbkdf2Sync(password, salt, 100000, 32, 'sha512');
+}
+
+function encrypt(plaintext: string, key: string): string {
+  const salt = randomBytes(SALT_LENGTH);
+  const iv = randomBytes(IV_LENGTH);
+  const derivedKey = deriveKey(key, salt);
+  const cipher = createCipheriv(ALGORITHM, derivedKey, iv);
+  const encrypted = Buffer.concat([
+    cipher.update(plaintext, 'utf-8'),
+    cipher.final(),
+  ]);
+  const tag = cipher.getAuthTag();
+  const payload = Buffer.concat([salt, iv, tag, encrypted]);
+  return payload.toString('base64');
+}
+
+function decrypt(ciphertext: string, key: string): string {
+  const payload = Buffer.from(ciphertext, 'base64');
+  const salt = payload.subarray(0, SALT_LENGTH);
+  const iv = payload.subarray(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
+  const tag = payload.subarray(
+    SALT_LENGTH + IV_LENGTH,
+    SALT_LENGTH + IV_LENGTH + TAG_LENGTH
+  );
+  const data = payload.subarray(SALT_LENGTH + IV_LENGTH + TAG_LENGTH);
+  const derivedKey = deriveKey(key, salt);
+  const decipher = createDecipheriv(ALGORITHM, derivedKey, iv);
+  decipher.setAuthTag(tag);
+  return decipher.update(data) + decipher.final('utf-8');
 }
 
 export function createStorageAPI(prefix: string, adapter?: StorageAdapter) {
@@ -57,12 +102,11 @@ export function createStorageAPI(prefix: string, adapter?: StorageAdapter) {
     },
 
     async clear(): Promise<void> {
-      // Clear TTLS
       for (const [, timer] of ttlTimers) clearTimeout(timer);
       ttlTimers.clear();
     },
 
-    /* --- Encryption (basic placeholder) --- */
+    /* --- Encryption (AES-256-GCM) --- */
     encryptionKey: null as string | null,
 
     setEncryption(key: string): void {
@@ -71,14 +115,14 @@ export function createStorageAPI(prefix: string, adapter?: StorageAdapter) {
 
     async setEncrypted(key: string, value: string): Promise<void> {
       if (!this.encryptionKey) throw new Error('Encryption key not set');
-      const encrypted = Buffer.from(value).toString('base64');
+      const encrypted = encrypt(value, this.encryptionKey);
       await ensure().set(prefixed(key), encrypted);
     },
 
     async getEncrypted(key: string): Promise<string | null> {
       const val = await ensure().get<string>(prefixed(key));
       if (!val) return null;
-      return Buffer.from(val, 'base64').toString('utf-8');
+      return decrypt(val, this.encryptionKey!);
     },
   };
 }

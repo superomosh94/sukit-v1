@@ -7,7 +7,6 @@ import {
   GitBranch,
   Key,
   ExternalLink,
-  Check,
   RefreshCw,
   Globe,
   ChevronRight,
@@ -15,7 +14,6 @@ import {
   AlertCircle,
   CheckCircle2,
   Loader2,
-  Plus,
   Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
@@ -25,8 +23,6 @@ interface ProviderType {
   name: string;
   description: string;
   docs: string;
-  connected: boolean;
-  lastDeploy?: string;
 }
 
 interface DeployRecord {
@@ -44,65 +40,10 @@ interface DeployRecord {
   completedAt?: string;
 }
 
-const PROVIDERS: ProviderType[] = [
-  {
-    id: 'vercel',
-    name: 'Vercel',
-    description:
-      'Zero-config deployment from Git. Auto SSL, preview URLs, and serverless functions.',
-    docs: 'https://vercel.com/docs',
-    connected: false,
-  },
-  {
-    id: 'netlify',
-    name: 'Netlify',
-    description:
-      'Continuous deployment from Git with branch previews, form handling, and edge functions.',
-    docs: 'https://netlify.com/docs',
-    connected: false,
-  },
-  {
-    id: 'cloudflare',
-    name: 'Cloudflare Pages',
-    description:
-      'Edge-deployed static sites with automatic HTTPS, DDoS protection, and Workers integration.',
-    docs: 'https://pages.cloudflare.com',
-    connected: false,
-  },
-  {
-    id: 'github-pages',
-    name: 'GitHub Pages',
-    description: 'Free static site hosting directly from GitHub repositories.',
-    docs: 'https://pages.github.com',
-    connected: false,
-  },
-  {
-    id: 'aws-s3',
-    name: 'AWS S3 + CloudFront',
-    description: 'Host on AWS S3 with CloudFront CDN.',
-    docs: 'https://aws.amazon.com/s3',
-    connected: false,
-  },
-  {
-    id: 'docker',
-    name: 'Docker / Self-Hosted',
-    description:
-      'Containerized deployment via Docker on your own infrastructure.',
-    docs: 'https://docker.com',
-    connected: false,
-  },
-];
-
 export default function DeployPage() {
   const [deployments, setDeployments] = useState<DeployRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [providers, setProviders] = useState<ProviderType[]>(() => {
-    const stored =
-      typeof window !== 'undefined'
-        ? localStorage.getItem('sukit-deploy-providers')
-        : null;
-    return stored ? JSON.parse(stored) : PROVIDERS;
-  });
+  const [providers, setProviders] = useState<ProviderType[]>([]);
 
   const loadDeployments = async () => {
     try {
@@ -111,17 +52,20 @@ export default function DeployPage() {
       setDeployments(Array.isArray(data) ? data : []);
     } catch {
       setDeployments([]);
-    } finally {
-      setLoading(false);
     }
   };
 
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/api/deploy');
-        const data = await res.json();
-        setDeployments(Array.isArray(data) ? data : []);
+        const [deployRes, providersRes] = await Promise.all([
+          fetch('/api/deploy'),
+          fetch('/api/deploy/providers'),
+        ]);
+        const deployData = await deployRes.json();
+        const providersData = await providersRes.json();
+        setDeployments(Array.isArray(deployData) ? deployData : []);
+        setProviders(Array.isArray(providersData) ? providersData : []);
       } catch {
         setDeployments([]);
       } finally {
@@ -129,26 +73,6 @@ export default function DeployPage() {
       }
     })();
   }, []);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('sukit-deploy-providers', JSON.stringify(providers));
-    }
-  }, [providers]);
-
-  const toggleProvider = async (id: string) => {
-    setProviders((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? {
-              ...p,
-              connected: !p.connected,
-              lastDeploy: !p.connected ? 'Just now' : undefined,
-            }
-          : p
-      )
-    );
-  };
 
   const deleteDeployment = async (id: string) => {
     try {
@@ -171,8 +95,6 @@ export default function DeployPage() {
     }
   };
 
-  const connectedCount = providers.filter((p) => p.connected).length;
-
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -182,26 +104,14 @@ export default function DeployPage() {
             Deploy your sites to hosting providers
           </p>
         </div>
-        <span className="flex items-center gap-1 text-sm text-muted-foreground">
-          <CheckCircle2 className="size-4 text-green-500" />
-          {connectedCount}/{PROVIDERS.length} connected
-        </span>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {providers.map((provider) => (
           <div
             key={provider.id}
-            className={cn(
-              'relative rounded-xl border bg-card p-5 transition-all',
-              provider.connected && 'border-green-500/30'
-            )}
+            className="relative rounded-xl border bg-card p-5 transition-all"
           >
-            {provider.connected && (
-              <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-green-500/10 px-2 py-0.5 text-[10px] font-medium text-green-600">
-                <Check className="size-3" /> Connected
-              </div>
-            )}
             <div className="flex items-start gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <Globe className="size-5" />
@@ -214,17 +124,6 @@ export default function DeployPage() {
               </div>
             </div>
             <div className="mt-4 flex items-center justify-between">
-              <button
-                onClick={() => toggleProvider(provider.id)}
-                className={cn(
-                  'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium',
-                  provider.connected
-                    ? 'border border-destructive/30 text-destructive hover:bg-destructive/10'
-                    : 'bg-primary text-primary-foreground hover:bg-primary/90'
-                )}
-              >
-                {provider.connected ? 'Disconnect' : 'Connect'}
-              </button>
               <a
                 href={provider.docs}
                 target="_blank"
@@ -261,7 +160,7 @@ export default function DeployPage() {
                 No deployments yet
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                Connect a provider and deploy your site to get started.
+                Deploy your site to get started.
               </p>
             </div>
           ) : (

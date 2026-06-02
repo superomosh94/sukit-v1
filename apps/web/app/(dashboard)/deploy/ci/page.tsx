@@ -10,9 +10,7 @@ import {
   Clock,
   Loader2,
   CheckCircle2,
-  AlertCircle,
 } from 'lucide-react';
-import { cn } from '@/lib/utils/cn';
 
 interface Pipeline {
   id: string;
@@ -26,20 +24,27 @@ interface Pipeline {
 }
 
 export default function CICDPage() {
-  const [pipelines, setPipelines] = useState<Pipeline[]>(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('sukit-pipelines');
-      return stored ? JSON.parse(stored) : [];
-    }
-    return [];
-  });
+  const [pipelines, setPipelines] = useState<Pipeline[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
 
-  useEffect(() => {
-    localStorage.setItem('sukit-pipelines', JSON.stringify(pipelines));
-  }, [pipelines]);
+  const loadPipelines = async () => {
+    try {
+      const res = await fetch('/api/pipelines');
+      const data = await res.json();
+      setPipelines(Array.isArray(data) ? data : []);
+    } catch {
+      setPipelines([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const toggleStatus = (id: string) => {
+  useEffect(() => {
+    loadPipelines();
+  }, []);
+
+  const toggleStatus = async (id: string) => {
     setPipelines((prev) =>
       prev.map((p) =>
         p.id === id
@@ -55,8 +60,11 @@ export default function CICDPage() {
     );
   };
 
-  const deletePipeline = (id: string) => {
-    setPipelines((prev) => prev.filter((p) => p.id !== id));
+  const deletePipeline = async (id: string) => {
+    try {
+      await fetch(`/api/pipelines/${id}`, { method: 'DELETE' });
+      setPipelines((prev) => prev.filter((p) => p.id !== id));
+    } catch {}
   };
 
   const createPipeline = async (
@@ -75,8 +83,15 @@ export default function CICDPage() {
       lastRun: new Date().toISOString(),
       lastStatus: 'success',
     };
-    setPipelines((prev) => [...prev, newPipeline]);
-    setShowCreate(false);
+    try {
+      await fetch('/api/pipelines', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newPipeline),
+      });
+      setPipelines((prev) => [...prev, newPipeline]);
+      setShowCreate(false);
+    } catch {}
   };
 
   const statusBadge = (status: string) => {
@@ -115,7 +130,11 @@ export default function CICDPage() {
         </button>
       </div>
 
-      {pipelines.length === 0 && !showCreate ? (
+      {loading ? (
+        <div className="flex items-center justify-center p-12">
+          <Loader2 className="size-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : pipelines.length === 0 && !showCreate ? (
         <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-16 text-center">
           <GitBranch className="mb-3 size-10 text-muted-foreground/40" />
           <p className="text-sm font-medium text-muted-foreground">
