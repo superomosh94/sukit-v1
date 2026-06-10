@@ -1,0 +1,23 @@
+{
+  "id": "@sukit/auth-module",
+  "name": "Authentication",
+  "version": "1.0.0",
+  "description": "Authentication module — login, registration, password management, MFA",
+  "author": "Sukit Team",
+  "license": "MIT",
+  "icon": "shield",
+  "entrypoints": {
+    "main": "./dist/index.js"
+  },
+  "sukit": {
+    "minVersion": "1.0.0",
+    "capabilities": ["api:routes", "pages:register"],
+    "permissions": ["auth:manage", "users:read"],
+    "entrypoints": {
+      "main": "src/index.ts"
+    },
+    "dependencies": {
+      "@sukit/core": ">=1.0.0"
+    }
+  }
+}

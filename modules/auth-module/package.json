@@ -1,7 +1,8 @@
 {
-  "name": "@sukit/export-engine",
+  "name": "@sukit/auth-module",
   "version": "1.0.0",
   "private": true,
+  "description": "Authentication module — login, registration, password management, MFA",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
@@ -11,10 +12,10 @@
   },
   "dependencies": {
     "@sukit/core": "workspace:*",
-    "@prisma/client": "^6.0.0",
-    "archiver": "^7.0.0"
+    "react": "^19.0.0"
   },
   "devDependencies": {
+    "@types/react": "^19.0.0",
     "typescript": "^5.6.0"
   }
 }

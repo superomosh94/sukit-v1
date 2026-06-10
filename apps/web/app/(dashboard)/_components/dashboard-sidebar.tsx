@@ -108,6 +108,7 @@ const navItems: NavGroup[] = [
     children: [
       { label: 'Code Editor', icon: Code2, href: '/code' },
       { label: 'Modules', icon: Puzzle, href: '/modules' },
+      { label: 'Blocks', icon: Blocks, href: '/blocks' },
       {
         label: 'Module Marketplace',
         icon: Store,

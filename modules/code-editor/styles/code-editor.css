@@ -1,0 +1,172 @@
+/* ══════════════════════════════════════════════════════════════
+   CODE EDITOR SUBSYSTEM STYLES
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Editor chrome ─────────────────────────────────────── */
+.code-editor {
+  background: hsl(var(--editor-bg));
+  color: hsl(var(--syntax-operator));
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+}
+
+.code-editor-gutter {
+  background: hsl(var(--editor-gutter-bg));
+  border-right: 1px solid hsl(var(--border));
+  min-width: 3.5rem;
+  text-align: right;
+  padding: 0 0.75rem;
+  color: hsl(var(--muted-foreground));
+  user-select: none;
+}
+
+.code-editor-active-line {
+  background: hsl(var(--editor-active-line));
+}
+
+/* ── Tabs ───────────────────────────────────────────────── */
+.editor-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  font-size: var(--text-xs);
+  border-right: 1px solid hsl(var(--border));
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.editor-tab[data-active="true"] {
+  background: hsl(var(--editor-tab-active));
+  color: hsl(var(--editor-tab-text-active));
+  border-bottom: 2px solid hsl(var(--editor-tab-border));
+}
+
+.editor-tab[data-active="false"] {
+  background: hsl(var(--editor-tab-inactive));
+  color: hsl(var(--editor-tab-text-inactive));
+}
+
+.editor-tab[data-active="false"]:hover {
+  background: hsl(var(--editor-tab-active));
+  color: hsl(var(--editor-tab-text-active));
+}
+
+/* ── Status bar ─────────────────────────────────────────── */
+.editor-status-bar {
+  background: hsl(var(--editor-status-bg));
+  color: hsl(var(--editor-status-text));
+  font-size: var(--text-xs);
+  padding: 0.25rem 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.editor-status-error {
+  color: hsl(var(--editor-status-error));
+}
+
+.editor-status-warning {
+  color: hsl(var(--editor-status-warning));
+}
+
+/* ── File tree ──────────────────────────────────────────── */
+.file-tree {
+  background: hsl(var(--filetree-bg));
+  font-size: var(--text-sm);
+  user-select: none;
+}
+
+.file-tree-item {
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  transition: background var(--duration-fast) var(--ease-standard);
+  border-radius: calc(var(--radius) - 4px);
+}
+
+.file-tree-item:hover {
+  background: hsl(var(--filetree-hover));
+}
+
+.file-tree-item[data-selected="true"] {
+  background: hsl(var(--filetree-selected));
+}
+
+.file-tree-filename {
+  color: hsl(var(--filetree-filename));
+}
+
+.file-tree-folder {
+  color: hsl(var(--filetree-folder));
+}
+
+/* ── Git indicators ─────────────────────────────────────── */
+.git-added {
+  color: hsl(var(--git-added));
+}
+
+.git-modified {
+  color: hsl(var(--git-modified));
+}
+
+.git-deleted {
+  color: hsl(var(--git-deleted));
+}
+
+.git-untracked {
+  color: hsl(var(--git-untracked));
+}
+
+.git-conflict {
+  color: hsl(var(--git-conflict));
+}
+
+.git-branch {
+  color: hsl(var(--git-branch));
+  font-weight: 600;
+}
+
+/* ── Terminal ───────────────────────────────────────────── */
+.editor-terminal {
+  background: hsl(var(--terminal-bg));
+  color: hsl(var(--terminal-text));
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: 0.75rem;
+  border-top: 1px solid hsl(var(--border));
+  min-height: 120px;
+  overflow-y: auto;
+}
+
+.editor-terminal-prompt {
+  color: hsl(var(--terminal-prompt));
+}
+
+.editor-terminal-error {
+  color: hsl(var(--terminal-error));
+}
+
+.editor-terminal-success {
+  color: hsl(var(--terminal-success));
+}
+
+/* ── Minimap ────────────────────────────────────────────── */
+.editor-minimap {
+  background: hsl(var(--editor-minimap-bg));
+  width: 60px;
+  overflow: hidden;
+}
+
+.editor-minimap-slider {
+  background: hsl(var(--editor-minimap-slider));
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+
+.editor-minimap-slider:hover {
+  background: hsl(var(--editor-minimap-hover));
+}

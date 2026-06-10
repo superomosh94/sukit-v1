@@ -1,0 +1,244 @@
+/* ══════════════════════════════════════════════════════════════
+   ANALYTICS SUBSYSTEM STYLES
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Metric cards ──────────────────────────────────────── */
+.analytics-metric {
+  background: hsl(var(--analytics-metric-bg));
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  border: 1px solid hsl(var(--border));
+}
+
+.analytics-metric-value {
+  color: hsl(var(--analytics-metric-value));
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  line-height: var(--leading-tight);
+}
+
+.analytics-metric-label {
+  color: hsl(var(--analytics-metric-label));
+  font-size: var(--text-sm);
+  font-weight: 500;
+  margin-top: 0.25rem;
+}
+
+.analytics-metric-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+.analytics-metric-change--positive {
+  color: hsl(var(--analytics-metric-change-positive));
+}
+
+.analytics-metric-change--negative {
+  color: hsl(var(--analytics-metric-change-negative));
+}
+
+/* ── Charts ─────────────────────────────────────────────── */
+.analytics-chart-grid line {
+  stroke: hsl(var(--chart-grid));
+  stroke-width: 1;
+}
+
+.analytics-chart-axis text {
+  fill: hsl(var(--chart-axis));
+  font-size: var(--text-xs);
+}
+
+.analytics-chart-label {
+  fill: hsl(var(--chart-label));
+  font-size: var(--text-xs);
+  font-weight: 500;
+}
+
+.analytics-chart-tick line {
+  stroke: hsl(var(--chart-tick));
+  stroke-width: 1;
+}
+
+/* ── Chart lines ────────────────────────────────────────── */
+.chart-line-primary {
+  stroke: hsl(var(--chart-primary));
+  stroke-width: 2;
+  fill: none;
+}
+
+.chart-line-secondary {
+  stroke: hsl(var(--chart-secondary));
+  stroke-width: 2;
+  fill: none;
+  stroke-dasharray: 4 2;
+}
+
+.chart-line-tertiary {
+  stroke: hsl(var(--chart-tertiary));
+  stroke-width: 2;
+  fill: none;
+  stroke-dasharray: 2 2;
+}
+
+.chart-area-current {
+  fill: hsla(var(--comparison-current), 0.15);
+}
+
+.chart-area-previous {
+  fill: hsla(var(--comparison-previous), 0.15);
+}
+
+/* ── Trend indicators ───────────────────────────────────── */
+.trend-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.trend-indicator--up {
+  color: hsl(var(--trend-up));
+}
+
+.trend-indicator--down {
+  color: hsl(var(--trend-down));
+}
+
+.trend-indicator--neutral {
+  color: hsl(var(--trend-neutral));
+}
+
+/* ── Funnel ─────────────────────────────────────────────── */
+.funnel-step {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-radius: calc(var(--radius) - 2px);
+  margin-bottom: 0.25rem;
+  font-size: var(--text-sm);
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.funnel-step:hover {
+  opacity: 0.85;
+}
+
+.funnel-step:nth-child(1) { background: hsl(var(--funnel-step-1)); color: white; }
+.funnel-step:nth-child(2) { background: hsl(var(--funnel-step-2)); color: white; }
+.funnel-step:nth-child(3) { background: hsl(var(--funnel-step-3)); color: hsl(var(--foreground)); }
+.funnel-step:nth-child(4) { background: hsl(var(--funnel-step-4)); }
+.funnel-step:nth-child(5) { background: hsl(var(--funnel-step-5)); }
+
+.funnel-dropoff {
+  background: hsl(var(--funnel-dropoff));
+  color: hsl(var(--danger));
+  font-size: var(--text-xs);
+  padding: 0.125rem 0.375rem;
+  border-radius: 9999px;
+}
+
+/* ── Heatmap ────────────────────────────────────────────── */
+.heatmap-cell {
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.heatmap-cell[data-intensity="min"] {
+  background: hsl(var(--heatmap-min));
+}
+
+.heatmap-cell[data-intensity="mid"] {
+  background: hsl(var(--heatmap-mid));
+}
+
+.heatmap-cell[data-intensity="max"] {
+  background: hsl(var(--heatmap-max));
+}
+
+/* ── Date range picker ──────────────────────────────────── */
+.analytics-date-range {
+  background: hsl(var(--analytics-date-range-bg));
+  border: 1px solid hsl(var(--analytics-date-range-border));
+  border-radius: var(--radius);
+  padding: 0.25rem;
+}
+
+.analytics-date-range button {
+  padding: 0.375rem 0.75rem;
+  border-radius: calc(var(--radius) - 4px);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.analytics-date-range button[data-selected="true"] {
+  background: hsl(var(--analytics-date-range-selected));
+  color: white;
+}
+
+.analytics-date-range button:not([data-selected="true"]) {
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+}
+
+.analytics-date-range button:not([data-selected="true"]):hover {
+  background: hsl(var(--analytics-date-range-selected-bg));
+}
+
+/* ── Live indicator ─────────────────────────────────────── */
+@keyframes analytics-live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+.analytics-live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: var(--text-xs);
+  font-weight: 500;
+}
+
+.analytics-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: hsl(var(--analytics-live-dot));
+  animation: analytics-live-pulse 2s var(--ease-standard) infinite;
+}
+
+/* ── Comparison ─────────────────────────────────────────── */
+.comparison-legend-current {
+  color: hsl(var(--comparison-current));
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.comparison-legend-previous {
+  color: hsl(var(--comparison-previous));
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+/* ── Export button ──────────────────────────────────────── */
+.analytics-export-button {
+  background: hsl(var(--analytics-export-bg));
+  color: white;
+  border: none;
+  border-radius: calc(var(--radius) - 2px);
+  padding: 0.5rem 1rem;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+
+.analytics-export-button:hover {
+  background: hsl(var(--analytics-export-hover));
+}

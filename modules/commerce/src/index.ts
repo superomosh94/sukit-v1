@@ -25,7 +25,7 @@ const commerceModule: Module = {
       type: 'productGrid',
       name: 'Product Grid',
       description: 'E-commerce product listing grid',
-      category: 'commerce',
+      category: 'widgets',
       icon: 'ShoppingBag',
       component: () => null,
       schema: {},

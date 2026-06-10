@@ -1,79 +1,90 @@
+/* ══════════════════════════════════════════════════════════════
+   VISUAL BUILDER SUBSYSTEM STYLES
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Canvas ────────────────────────────────────────────── */
 .builder-canvas {
   background-color: hsl(var(--builder-canvas));
   background-image:
-    radial-gradient(circle, hsl(var(--builder-grid)) 1px, transparent 1px);
+    radial-gradient(circle, hsl(var(--builder-canvas-grid)) 1px, transparent 1px);
   background-size: 20px 20px;
   flex: 1;
   overflow: auto;
 }
 
+/* ── Sections ──────────────────────────────────────────── */
 .builder-section {
   position: relative;
-  transition: box-shadow 0.15s ease, outline-color 0.15s ease;
+  transition: box-shadow var(--duration-fast) var(--ease-standard),
+              outline-color var(--duration-fast) var(--ease-standard);
   outline: 2px solid transparent;
 }
 
 .builder-section:hover {
-  outline-color: hsl(var(--builder-hover));
+  outline-color: hsl(var(--builder-block-hover));
 }
 
 .builder-section[data-selected="true"] {
-  outline-color: hsl(var(--builder-selected));
-  box-shadow: 0 0 0 4px hsla(var(--builder-selected), 0.15);
+  outline-color: hsl(var(--builder-block-selected));
+  box-shadow: 0 0 0 4px hsla(var(--builder-block-selected), 0.15);
 }
 
+/* ── Blocks ────────────────────────────────────────────── */
 .builder-block {
   position: relative;
   min-height: 24px;
-  transition: outline-color 0.1s ease;
+  transition: outline-color var(--duration-fast) var(--ease-standard);
   outline: 1px solid transparent;
   cursor: pointer;
 }
 
 .builder-block:hover {
-  outline-color: hsl(var(--builder-hover));
+  outline-color: hsl(var(--builder-block-hover));
 }
 
 .builder-block[data-selected="true"] {
-  outline-color: hsl(var(--builder-selected));
+  outline-color: hsl(var(--builder-block-selected));
   outline-width: 2px;
 }
 
+/* ── Drop zones ────────────────────────────────────────── */
 .builder-drop-zone {
   min-height: 40px;
   border: 2px dashed hsl(var(--border));
   border-radius: calc(var(--radius) - 2px);
-  transition: all 0.15s ease;
+  transition: all var(--duration-normal) var(--ease-standard);
 }
 
 .builder-drop-zone--active {
-  border-color: hsl(var(--builder-drop));
-  background-color: hsla(var(--builder-drop), 0.08);
+  border-color: hsl(var(--builder-block-drag-over));
+  background-color: hsla(var(--builder-block-drag-over), 0.08);
   min-height: 60px;
 }
 
 .builder-drop-zone--over {
-  border-color: hsl(var(--builder-drop));
-  background-color: hsla(var(--builder-drop), 0.15);
+  border-color: hsl(var(--builder-block-drag-over));
+  background-color: hsla(var(--builder-block-drag-over), 0.15);
   transform: scale(1.02);
 }
 
+/* ── Columns ───────────────────────────────────────────── */
 .builder-column {
   position: relative;
   min-height: 40px;
-  transition: outline-color 0.1s ease;
+  transition: outline-color var(--duration-fast) var(--ease-standard);
   outline: 1px solid transparent;
 }
 
 .builder-column:hover {
-  outline-color: hsl(var(--builder-hover));
+  outline-color: hsl(var(--builder-block-hover));
 }
 
 .builder-column[data-selected="true"] {
-  outline-color: hsl(var(--builder-selected));
+  outline-color: hsl(var(--builder-block-selected));
   outline-width: 2px;
 }
 
+/* ── Empty state ───────────────────────────────────────── */
 .builder-empty-state {
   display: flex;
   align-items: center;
@@ -85,6 +96,7 @@
   font-size: 0.875rem;
 }
 
+/* ── Drag preview ──────────────────────────────────────── */
 .builder-drag-preview {
   opacity: 0.9;
   transform: rotate(3deg);
@@ -92,6 +104,7 @@
   z-index: 9999;
 }
 
+/* ── Resize handles ────────────────────────────────────── */
 .builder-resize-handle {
   position: absolute;
   right: -3px;
@@ -105,9 +118,110 @@
 
 .builder-resize-handle:hover,
 .builder-resize-handle--active {
-  background: hsl(var(--builder-selected));
+  background: hsl(var(--builder-block-selected));
 }
 
+/* ── Layer panel ───────────────────────────────────────── */
+.builder-layer-panel {
+  background: hsl(var(--builder-layer-bg));
+}
+
+.builder-layer-item {
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+
+.builder-layer-item:hover {
+  background: hsl(var(--builder-layer-item-hover));
+}
+
+.builder-layer-item[data-selected="true"] {
+  background: hsl(var(--builder-layer-item-selected));
+  border-left: 2px solid hsl(var(--builder-layer-item-selected-border));
+}
+
+/* ── Property panel ────────────────────────────────────── */
+.builder-property-panel {
+  background: hsl(var(--builder-property-bg));
+  border-left: 1px solid hsl(var(--builder-property-border));
+}
+
+.builder-property-label {
+  color: hsl(var(--builder-property-label));
+  font-size: var(--text-xs);
+  font-weight: 500;
+}
+
+.builder-property-input {
+  border: 1px solid hsl(var(--builder-property-input-border));
+  border-radius: calc(var(--radius) - 2px);
+  padding: 0.375rem 0.5rem;
+  font-size: var(--text-sm);
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+.builder-property-input:focus {
+  border-color: hsl(var(--builder-property-input-focus));
+  outline: none;
+  box-shadow: 0 0 0 2px hsla(var(--builder-property-input-focus), 0.15);
+}
+
+/* ── Save indicator ────────────────────────────────────── */
+.builder-save-indicator[data-status="saved"] {
+  color: hsl(var(--builder-saved));
+}
+
+.builder-save-indicator[data-status="saving"] {
+  color: hsl(var(--builder-saving));
+}
+
+.builder-save-indicator[data-status="error"] {
+  color: hsl(var(--builder-error));
+}
+
+/* ── Danger actions ────────────────────────────────────── */
+.builder-danger-button {
+  background: hsl(var(--builder-danger));
+  color: hsl(var(--builder-danger-soft));
+  border-radius: calc(var(--radius) - 2px);
+  padding: 0.5rem 1rem;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.builder-danger-button:hover {
+  opacity: 0.9;
+}
+
+/* ── Device toolbar ────────────────────────────────────── */
+.builder-device-button[data-active="true"] {
+  color: hsl(var(--builder-device-desktop));
+  background: hsl(var(--builder-device-active-bg));
+}
+
+/* ── Palette sidebar ───────────────────────────────────── */
+.builder-palette {
+  background: hsl(var(--builder-palette-bg));
+}
+
+.builder-palette-category {
+  color: hsl(var(--builder-palette-category));
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.builder-palette-item {
+  transition: background var(--duration-fast) var(--ease-standard);
+  border-radius: calc(var(--radius) - 2px);
+}
+
+.builder-palette-item:hover {
+  background: hsl(var(--builder-palette-item-hover));
+}
+
+/* ── Responsive ────────────────────────────────────────── */
 @media (max-width: 768px) {
   .builder-grid {
     grid-template-columns: 1fr !important;

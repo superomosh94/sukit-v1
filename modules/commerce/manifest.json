@@ -1,0 +1,23 @@
+{
+  "id": "@sukit/commerce",
+  "name": "Commerce",
+  "version": "1.0.0",
+  "description": "E-commerce module — products, cart, checkout, orders",
+  "author": "Sukit Team",
+  "license": "MIT",
+  "icon": "shopping-cart",
+  "entrypoints": {
+    "main": "./dist/index.js"
+  },
+  "sukit": {
+    "minVersion": "1.0.0",
+    "capabilities": ["blocks:register", "api:routes"],
+    "permissions": ["commerce:manage"],
+    "entrypoints": {
+      "main": "src/index.ts"
+    },
+    "dependencies": {
+      "@sukit/core": ">=1.0.0"
+    }
+  }
+}
