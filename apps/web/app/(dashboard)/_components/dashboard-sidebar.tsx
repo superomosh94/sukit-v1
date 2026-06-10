@@ -67,6 +67,7 @@ const navItems: NavGroup[] = [
     children: [
       { label: 'All Sites', icon: Globe, href: '/sites' },
       { label: 'Builder', icon: Blocks, href: '/builder' },
+      { label: 'Themes', icon: Palette, href: '/themes' },
       { label: 'Pages', icon: FileText, href: '/sites/pages' },
       { label: 'Media', icon: Image, href: '/sites/media' },
       { label: 'Team', icon: Users, href: '/team' },
@@ -153,7 +154,6 @@ const navItems: NavGroup[] = [
     children: [
       { label: 'Profile', icon: User, href: '/settings/profile' },
       { label: 'Account', icon: Shield, href: '/settings/account' },
-      { label: 'Themes', icon: Palette, href: '/themes' },
       { label: 'Widgets', icon: Layout, href: '/widgets' },
       { label: 'API Keys', icon: Key, href: '/settings/api-keys' },
     ],
