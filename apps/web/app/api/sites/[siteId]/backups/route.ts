@@ -67,7 +67,10 @@ export async function POST(
 
   const media = await prisma.media.findMany({ where: { siteId } });
   const forms = await prisma.form.findMany({ where: { siteId } });
-  const menus = await prisma.menu.findMany({ where: { siteId } });
+  const menus = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
+    `SELECT * FROM "menus" WHERE "siteId" = $1`,
+    siteId
+  );
 
   const snapshot = JSON.stringify({
     exportedAt: new Date().toISOString(),

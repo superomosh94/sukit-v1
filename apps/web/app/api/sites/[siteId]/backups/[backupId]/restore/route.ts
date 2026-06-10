@@ -31,7 +31,7 @@ export async function POST(
     await tx.page.deleteMany({ where: { siteId } });
     await tx.media.deleteMany({ where: { siteId } });
     await tx.form.deleteMany({ where: { siteId } });
-    await tx.menu.deleteMany({ where: { siteId } });
+    await tx.$executeRawUnsafe(`DELETE FROM "menus" WHERE "siteId" = $1`, siteId);
 
     if (snapshot.pages) {
       for (const page of snapshot.pages) {
@@ -98,7 +98,14 @@ export async function POST(
 
     if (snapshot.menus) {
       for (const menu of snapshot.menus) {
-        await tx.menu.create({ data: menu });
+        const keys = Object.keys(menu);
+        const values = Object.values(menu);
+        const cols = keys.map((k) => `"${k}"`).join(', ');
+        const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
+        await tx.$executeRawUnsafe(
+          `INSERT INTO "menus" (${cols}) VALUES (${placeholders}) ON CONFLICT ("id") DO NOTHING`,
+          ...values
+        );
       }
     }
   });

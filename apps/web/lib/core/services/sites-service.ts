@@ -58,7 +58,7 @@ export const sitesService = {
   async exportJSON(siteId: string): Promise<object> {
     const site = await prisma.site.findUniqueOrThrow({
       where: { id: siteId },
-      include: { pages: true, media: true, menus: true, forms: true },
+      include: { pages: true, media: true, forms: true },
     });
     return site;
   },

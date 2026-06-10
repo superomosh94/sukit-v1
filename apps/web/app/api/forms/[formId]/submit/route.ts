@@ -47,11 +47,13 @@ export async function POST(
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "";
 
   if (ip) {
-    const lastSubmission = await prisma.formSubmission.findFirst({
-      where: { formId, ip },
-      orderBy: { createdAt: "desc" },
-    });
+    const lastSubmissions = await prisma.$queryRawUnsafe<any[]>(
+      `SELECT * FROM "form_submissions" WHERE "formId" = $1 AND "ip" = $2 ORDER BY "createdAt" DESC LIMIT 1`,
+      formId,
+      ip
+    );
 
+    const lastSubmission = lastSubmissions[0];
     if (lastSubmission) {
       const sixtySeconds = 60 * 1000;
       const elapsed = Date.now() - new Date(lastSubmission.createdAt).getTime();
@@ -64,14 +66,15 @@ export async function POST(
     }
   }
 
-  const submission = await prisma.formSubmission.create({
-    data: {
-      formId,
-      data: data ?? {},
-      ip: ip || null,
-      userAgent: request.headers.get("user-agent") || null,
-    },
-  });
+  const [submission] = await prisma.$queryRawUnsafe<any[]>(
+    `INSERT INTO "form_submissions" ("formId", "data", "ip", "userAgent", "createdAt")
+     VALUES ($1, $2::jsonb, $3, $4, NOW())
+     RETURNING *`,
+    formId,
+    JSON.stringify(data ?? {}),
+    ip || null,
+    request.headers.get("user-agent") || null
+  );
 
   return NextResponse.json({ success: true, id: submission.id }, { status: 201 });
 }

@@ -30,15 +30,19 @@ export async function GET(
     );
   }
 
-  const [submissions, total] = await Promise.all([
-    prisma.formSubmission.findMany({
-      where: { formId },
-      orderBy: { createdAt: "desc" },
-      take: limit,
-      skip: offset,
-    }),
-    prisma.formSubmission.count({ where: { formId } }),
+  const [submissions, totalResult] = await Promise.all([
+    prisma.$queryRawUnsafe<any[]>(
+      `SELECT * FROM "form_submissions" WHERE "formId" = $1 ORDER BY "createdAt" DESC LIMIT $2 OFFSET $3`,
+      formId,
+      limit,
+      offset
+    ),
+    prisma.$queryRawUnsafe<[{ count: bigint }]>(
+      `SELECT COUNT(*) as count FROM "form_submissions" WHERE "formId" = $1`,
+      formId
+    ),
   ]);
+  const total = Number(totalResult[0].count);
 
   return NextResponse.json({ submissions, total, limit, offset });
 }

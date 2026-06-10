@@ -7,7 +7,11 @@ export async function DELETE(
 ) {
   const { id } = await params;
   try {
-    await prisma.deployment.delete({ where: { id } });
+    const result = await prisma.$executeRawUnsafe(
+      `DELETE FROM "deployments" WHERE "id" = $1`,
+      id
+    );
+    if (result === 0) throw new Error('Not found');
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });

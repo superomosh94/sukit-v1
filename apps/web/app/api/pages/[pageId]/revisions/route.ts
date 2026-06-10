@@ -11,7 +11,7 @@ export async function GET(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const { pageId } = await params;
 
-  const revisions = await prisma.publishedPage.findMany({
+  const revisions = await prisma.pageRevision.findMany({
     where: { pageId },
     orderBy: { version: 'desc' },
     take: 50,
@@ -34,7 +34,7 @@ export async function POST(
   if (!version)
     return NextResponse.json({ error: 'version required' }, { status: 400 });
 
-  const revision = await prisma.publishedPage.findUnique({
+  const revision = await prisma.pageRevision.findUnique({
     where: { pageId_version: { pageId, version } },
   });
   if (!revision)

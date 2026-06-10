@@ -375,9 +375,11 @@ export class ModuleConfigCollector {
     siteId: string,
     modules: string[]
   ): Promise<ModuleConfigMap> {
-    const dbModules = await prisma.module.findMany({
-      where: { siteId, moduleId: { in: modules } },
-    });
+    const dbModules = await prisma.$queryRawUnsafe<any[]>(
+      `SELECT * FROM "modules" WHERE "siteId" = $1 AND "moduleId" = ANY($2::text[])`,
+      siteId,
+      modules
+    );
 
     const configs: ModuleConfigMap = {};
     for (const mod of modules) {

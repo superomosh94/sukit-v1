@@ -20,9 +20,11 @@ export const exportService = {
       password?: string;
     }
   ): Promise<string> {
-    const exp = await prisma.export.create({
-      data: { siteId, status: 'pending' },
-    });
+    const [exp] = await prisma.$queryRawUnsafe<any[]>(
+      `INSERT INTO "exports" ("siteId", "status", "createdAt", "updatedAt") VALUES ($1, $2, NOW(), NOW()) RETURNING *`,
+      siteId,
+      'pending'
+    );
     const exportId = exp.id;
     this._exports.set(exportId, {
       exportId,
@@ -62,17 +64,20 @@ export const exportService = {
       this.updateProgress(exportId, 'compressing', 90, 'Finalizing...');
       await new Promise((r) => setTimeout(r, 300));
 
-      await prisma.export.update({
-        where: { id: exportId },
-        data: { status: 'completed', size: pages.length * 1024 },
-      });
+      await prisma.$executeRawUnsafe(
+        `UPDATE "exports" SET "status" = $1, "size" = $2, "updatedAt" = NOW() WHERE "id" = $3`,
+        'completed',
+        pages.length * 1024,
+        exportId
+      );
 
       this.updateProgress(exportId, 'complete', 100, 'Export complete');
     } catch (error) {
-      await prisma.export.update({
-        where: { id: exportId },
-        data: { status: 'failed' },
-      });
+      await prisma.$executeRawUnsafe(
+        `UPDATE "exports" SET "status" = $1, "updatedAt" = NOW() WHERE "id" = $2`,
+        'failed',
+        exportId
+      );
       this.updateProgress(
         exportId,
         'failed',
@@ -96,19 +101,17 @@ export const exportService = {
   },
 
   async getHistory(siteId: string): Promise<any[]> {
-    return prisma.export.findMany({
-      where: { siteId },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-    });
+    return prisma.$queryRawUnsafe<any[]>(
+      `SELECT * FROM "exports" WHERE "siteId" = $1 ORDER BY "createdAt" DESC LIMIT 50`,
+      siteId
+    );
   },
 
   async getDeployments(siteId: string): Promise<any[]> {
-    return prisma.deployment.findMany({
-      where: { siteId },
-      orderBy: { createdAt: 'desc' },
-      take: 20,
-    });
+    return prisma.$queryRawUnsafe<any[]>(
+      `SELECT * FROM "deployments" WHERE "siteId" = $1 ORDER BY "createdAt" DESC LIMIT 20`,
+      siteId
+    );
   },
 
   async validate(

@@ -28,9 +28,12 @@ export class ExportQueue {
   ): Promise<string> {
     const exportId = crypto.randomUUID();
 
-    const exportRecord = await prisma.export.create({
-      data: { siteId, status: 'pending' },
-    });
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO "exports" ("id", "siteId", "status", "createdAt", "updatedAt") VALUES ($1, $2, $3, NOW(), NOW())`,
+      exportId,
+      siteId,
+      'pending'
+    );
 
     activeExports.set(exportId, { abort: false });
 
@@ -70,29 +73,30 @@ export class ExportQueue {
 
       await this.updateProgress(exportId, 'completed', 'Export complete', 100);
 
-      await prisma.export.update({
-        where: { id: exportId } as any,
-        data: {
-          status: 'completed',
-          size: buffer.length,
-        },
-      });
+      await prisma.$executeRawUnsafe(
+        `UPDATE "exports" SET "status" = $1, "size" = $2, "updatedAt" = NOW() WHERE "id" = $3`,
+        'completed',
+        buffer.length,
+        exportId
+      );
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Export failed';
       await this.updateProgress(exportId, 'failed', message, 0);
-      await prisma.export.update({
-        where: { id: exportId } as any,
-        data: { status: 'failed' },
-      });
+      await prisma.$executeRawUnsafe(
+        `UPDATE "exports" SET "status" = $1, "updatedAt" = NOW() WHERE "id" = $2`,
+        'failed',
+        exportId
+      );
     } finally {
       activeExports.delete(exportId);
     }
   }
 
   async getExportProgress(exportId: string): Promise<ExportProgress | null> {
-    const record = await prisma.export.findUnique({
-      where: { id: exportId } as any,
-    });
+    const [record] = await prisma.$queryRawUnsafe<any[]>(
+      `SELECT * FROM "exports" WHERE "id" = $1`,
+      exportId
+    );
 
     if (!record) return null;
 
@@ -123,18 +127,18 @@ export class ExportQueue {
       control.abort = true;
       activeExports.delete(exportId);
     }
-    await prisma.export.update({
-      where: { id: exportId } as any,
-      data: { status: 'failed' },
-    });
+    await prisma.$executeRawUnsafe(
+      `UPDATE "exports" SET "status" = $1, "updatedAt" = NOW() WHERE "id" = $2`,
+      'failed',
+      exportId
+    );
   }
 
   async listExports(siteId: string): Promise<ExportRecord[]> {
-    const records = await prisma.export.findMany({
-      where: { siteId } as any,
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-    });
+    const records = await prisma.$queryRawUnsafe<any[]>(
+      `SELECT * FROM "exports" WHERE "siteId" = $1 ORDER BY "createdAt" DESC LIMIT 50`,
+      siteId
+    );
 
     return records.map((r: any) => ({
       exportId: r.id,

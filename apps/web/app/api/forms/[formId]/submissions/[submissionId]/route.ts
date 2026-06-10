@@ -27,9 +27,11 @@ export async function DELETE(
     );
   }
 
-  await prisma.formSubmission.delete({
-    where: { id: submissionId, formId },
-  });
+  await prisma.$executeRawUnsafe(
+    `DELETE FROM "form_submissions" WHERE "id" = $1 AND "formId" = $2`,
+    submissionId,
+    formId
+  );
 
   return NextResponse.json({ success: true });
 }

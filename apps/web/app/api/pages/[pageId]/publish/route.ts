@@ -28,17 +28,20 @@ export async function POST(
     );
   }
 
-  const latestRevision = await prisma.publishedPage.findFirst({
+  const latestRevision = await prisma.pageRevision.findFirst({
     where: { pageId },
     orderBy: { version: "desc" },
   });
 
   const nextVersion = (latestRevision?.version ?? 0) + 1;
 
-  await prisma.publishedPage.create({
+  await prisma.pageRevision.create({
     data: {
       pageId,
       version: nextVersion,
+      title: page.title,
+      slug: page.slug,
+      authorId: session.user.id,
       content: JSON.parse(JSON.stringify({ sections: page.sections, pageSettings: page.pageSettings, metadata: page.metadata })),
     },
   });

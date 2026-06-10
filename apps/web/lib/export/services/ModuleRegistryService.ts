@@ -100,9 +100,10 @@ const MODULE_REGISTRY: Record<
 
 export class ModuleRegistryService {
   async getEnabledModules(siteId: string): Promise<EnabledModule[]> {
-    const dbModules = await prisma.module.findMany({
-      where: { siteId, enabled: true },
-    });
+    const dbModules = await prisma.$queryRawUnsafe<any[]>(
+      `SELECT * FROM "modules" WHERE "siteId" = $1 AND "enabled" = true`,
+      siteId
+    );
 
     const filesystemModules = this.getFilesystemModules();
 
@@ -159,9 +160,11 @@ export class ModuleRegistryService {
   }
 
   async isModuleAvailable(moduleId: string, siteId: string): Promise<boolean> {
-    const db = await prisma.module.findUnique({
-      where: { siteId_moduleId: { siteId, moduleId } },
-    });
+    const [db] = await prisma.$queryRawUnsafe<any[]>(
+      `SELECT * FROM "modules" WHERE "siteId" = $1 AND "moduleId" = $2 LIMIT 1`,
+      siteId,
+      moduleId
+    );
     if (db) return db.enabled;
     return (
       moduleId in MODULE_REGISTRY ||
