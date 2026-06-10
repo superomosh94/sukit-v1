@@ -200,7 +200,7 @@ export default async function DashboardPage() {
                 {sites.map((site) => (
                   <Link
                     key={site.id}
-                    href={`/sites/${site.id}` as any}
+                    href={`/sites/${site.id}/pages` as any}
                     className="flex items-center justify-between px-6 py-4 transition-colors hover:bg-accent/50 group"
                   >
                     <div className="flex items-center gap-3 min-w-0">
@@ -306,10 +306,10 @@ export default async function DashboardPage() {
                 {sites[0].name}
               </p>
               <Link
-                href={`/sites/${sites[0].id}` as any}
+                href={`/sites/${sites[0].id}/pages` as any}
                 className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
               >
-                Open Site
+                Open Pages
                 <ExternalLink className="size-3.5" />
               </Link>
             </div>

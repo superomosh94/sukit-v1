@@ -139,6 +139,10 @@ export default function ModuleDetailPage() {
   const mod = MODULE_DETAILS[moduleId];
   const [enabled, setEnabled] = useState(mod?.enabled ?? false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [settingsValues, setSettingsValues] = useState<Record<string, string>>(
+    () => Object.fromEntries((mod?.settings ?? []).map(s => [s.key, s.value]))
+  );
+  const [saving, setSaving] = useState(false);
 
   if (!mod) {
     return (
@@ -246,9 +250,17 @@ export default function ModuleDetailPage() {
         <section className="rounded-xl border bg-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold">Settings</h2>
-            <button className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90">
+            <button
+              onClick={async () => {
+                setSaving(true);
+                await new Promise(r => setTimeout(r, 600));
+                setSaving(false);
+              }}
+              disabled={saving}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            >
               <Settings2 className="size-3.5" />
-              Save
+              {saving ? 'Saving…' : 'Save'}
             </button>
           </div>
           <div className="space-y-4">
@@ -258,20 +270,22 @@ export default function ModuleDetailPage() {
                 {setting.type === 'boolean' ? (
                   <div className="flex items-center gap-3">
                     <button
+                      onClick={() => setSettingsValues(prev => ({ ...prev, [setting.key]: prev[setting.key] === 'true' ? 'false' : 'true' }))}
                       className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                        setting.value === 'true' ? 'bg-primary' : 'bg-input'
+                        settingsValues[setting.key] === 'true' ? 'bg-primary' : 'bg-input'
                       }`}
                     >
                       <span className={`inline-block size-3.5 rounded-full bg-white transition-transform ${
-                        setting.value === 'true' ? 'translate-x-[18px]' : 'translate-x-[2px]'
+                        settingsValues[setting.key] === 'true' ? 'translate-x-[18px]' : 'translate-x-[2px]'
                       }`} />
                     </button>
-                    <span className="text-sm">{setting.value === 'true' ? 'Enabled' : 'Disabled'}</span>
+                    <span className="text-sm">{settingsValues[setting.key] === 'true' ? 'Enabled' : 'Disabled'}</span>
                   </div>
                 ) : (
                   <input
                     type={setting.type === 'encrypted' ? 'password' : 'text'}
-                    defaultValue={setting.value}
+                    value={settingsValues[setting.key]}
+                    onChange={(e) => setSettingsValues(prev => ({ ...prev, [setting.key]: e.target.value }))}
                     className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                 )}
@@ -318,7 +332,12 @@ export default function ModuleDetailPage() {
           {showConfirm ? (
             <div className="flex items-center gap-2">
               <span className="text-xs text-destructive font-medium">Are you sure?</span>
-              <button className="inline-flex items-center gap-1.5 rounded-lg bg-destructive px-3 py-2 text-sm font-medium text-destructive-foreground hover:opacity-90">
+              <button
+                onClick={() => {
+                  router.push('/modules');
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-destructive px-3 py-2 text-sm font-medium text-destructive-foreground hover:opacity-90"
+              >
                 <Trash2 className="size-3.5" />
                 Uninstall
               </button>

@@ -1,26 +1,32 @@
 @layer base {
   :root {
     /* ── Core semantic tokens ──────────────────────────────── */
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 36 20% 95%;
+    --foreground: 220 10% 18%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 220 10% 18%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 220 10% 18%;
     --primary: 239 84% 57%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    --secondary: 36 15% 90%;
+    --secondary-foreground: 220 10% 25%;
+    --muted: 36 15% 90%;
+    --muted-foreground: 220 5% 42%;
     --accent: 14 91% 54%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
+    --border: 36 10% 84%;
+    --input: 36 10% 84%;
     --ring: 239 84% 57%;
     --radius: 0.5rem;
+
+    /* ── Shadows ───────────────────────────────────────────── */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.04);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.04);
 
     /* ── Master palette — extended ─────────────────────────── */
     --primary-hover: 239 84% 51%;
@@ -84,9 +90,9 @@
     --space-20: 5rem;
 
     /* ── Sidebar ───────────────────────────────────────────── */
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-border: 220 13% 91%;
+    --sidebar-background: 36 15% 92%;
+    --sidebar-foreground: 220 10% 30%;
+    --sidebar-border: 36 10% 84%;
     --sidebar-accent: 239 84% 57%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-ring: 239 84% 57%;
@@ -94,30 +100,30 @@
     /* ══════════════════════════════════════════════════════════
        SUBSYSTEM: Visual Builder
        ══════════════════════════════════════════════════════════ */
-    --builder-canvas: 0 0% 95%;
-    --builder-canvas-grid: 0 0% 88%;
+    --builder-canvas: 36 15% 92%;
+    --builder-canvas-grid: 36 10% 84%;
     --builder-block-selected: 239 84% 57%;
     --builder-block-hover: 239 84% 95%;
     --builder-block-drag-over: 142.1 76.2% 36.3%;
-    --builder-palette-bg: 0 0% 98%;
-    --builder-palette-item-hover: 220 14% 93%;
-    --builder-palette-category: 220 9% 46%;
+    --builder-palette-bg: 36 15% 92%;
+    --builder-palette-item-hover: 36 10% 84%;
+    --builder-palette-category: 220 5% 42%;
     --builder-property-bg: 0 0% 100%;
-    --builder-property-border: 220 13% 91%;
-    --builder-property-label: 215 25% 27%;
-    --builder-property-input-border: 220 13% 88%;
+    --builder-property-border: 36 10% 84%;
+    --builder-property-label: 220 10% 25%;
+    --builder-property-input-border: 36 10% 82%;
     --builder-property-input-focus: 239 84% 57%;
     --builder-layer-bg: 0 0% 100%;
-    --builder-layer-item-hover: 220 14% 96%;
+    --builder-layer-item-hover: 36 15% 92%;
     --builder-layer-item-selected: 239 84% 97%;
     --builder-layer-item-selected-border: 239 84% 57%;
-    --builder-layer-depth-marker: 220 13% 85%;
+    --builder-layer-depth-marker: 36 10% 80%;
     --builder-device-desktop: 239 84% 57%;
-    --builder-device-tablet: 220 9% 46%;
-    --builder-device-mobile: 220 9% 46%;
+    --builder-device-tablet: 220 5% 42%;
+    --builder-device-mobile: 220 5% 42%;
     --builder-device-active-bg: 239 84% 97%;
     --builder-history-available: 239 84% 57%;
-    --builder-history-unavailable: 220 13% 85%;
+    --builder-history-unavailable: 36 10% 80%;
     --builder-saved: 161 94% 30%;
     --builder-saving: 38 92% 50%;
     --builder-error: 0 84% 60%;
@@ -127,35 +133,35 @@
     /* ══════════════════════════════════════════════════════════
        SUBSYSTEM: Admin Dashboard
        ══════════════════════════════════════════════════════════ */
-    --dashboard-sidebar-bg: 222.2 84% 4.9%;
-    --dashboard-sidebar-text: 220 9% 56%;
+    --dashboard-sidebar-bg: 36 15% 92%;
+    --dashboard-sidebar-text: 220 5% 45%;
     --dashboard-sidebar-hover-bg: 239 84% 97%;
     --dashboard-sidebar-hover-text: 0 0% 100%;
     --dashboard-sidebar-active: 239 84% 57%;
     --dashboard-sidebar-active-text: 0 0% 100%;
     --dashboard-header-bg: 0 0% 100%;
-    --dashboard-header-border: 220 13% 91%;
+    --dashboard-header-border: 36 10% 84%;
     --dashboard-stat-bg: 0 0% 100%;
-    --dashboard-stat-border: 220 13% 91%;
-    --dashboard-stat-value: 222.2 84% 4.9%;
-    --dashboard-stat-label: 220 9% 46%;
+    --dashboard-stat-border: 36 10% 84%;
+    --dashboard-stat-value: 220 10% 18%;
+    --dashboard-stat-label: 220 5% 42%;
     --dashboard-stat-icon-bg: 239 84% 97%;
     --dashboard-stat-icon: 239 84% 57%;
-    --dashboard-table-header-bg: 220 14% 96%;
-    --dashboard-table-row-hover: 220 14% 96%;
-    --dashboard-table-border: 220 13% 91%;
+    --dashboard-table-header-bg: 36 15% 90%;
+    --dashboard-table-row-hover: 36 15% 92%;
+    --dashboard-table-border: 36 10% 84%;
     --dashboard-badge-active: 161 94% 30%;
     --dashboard-badge-pending: 38 92% 50%;
     --dashboard-badge-inactive: 220 9% 46%;
     --dashboard-badge-suspended: 0 84% 60%;
     --dashboard-quick-action: 239 84% 57%;
     --dashboard-quick-action-danger: 0 84% 60%;
-    --dashboard-search-bg: 220 14% 96%;
-    --dashboard-search-border: 220 13% 91%;
-    --dashboard-search-text: 222.2 84% 4.9%;
-    --dashboard-search-placeholder: 220 9% 46%;
+    --dashboard-search-bg: 36 15% 90%;
+    --dashboard-search-border: 36 10% 84%;
+    --dashboard-search-text: 220 10% 18%;
+    --dashboard-search-placeholder: 220 5% 42%;
     --dashboard-filter-active: 239 84% 57%;
-    --dashboard-filter-inactive: 220 9% 46%;
+    --dashboard-filter-inactive: 220 5% 42%;
 
     /* ══════════════════════════════════════════════════════════
        SUBSYSTEM: M-Pesa Payments
@@ -239,19 +245,19 @@
     /* ══════════════════════════════════════════════════════════
        SUBSYSTEM: Media Library
        ══════════════════════════════════════════════════════════ */
-    --media-grid-bg: 0 0% 95%;
+    --media-grid-bg: 36 15% 92%;
     --media-item-bg: 0 0% 100%;
-    --media-item-border: 220 13% 91%;
-    --media-item-hover: 220 14% 96%;
+    --media-item-border: 36 10% 84%;
+    --media-item-hover: 36 15% 92%;
     --media-item-selected-bg: 239 84% 97%;
     --media-item-selected-border: 239 84% 57%;
     --media-selection-checkbox: 239 84% 57%;
     --media-selection-count-bg: 239 84% 97%;
-    --media-folder-bg: 220 14% 93%;
+    --media-folder-bg: 36 10% 85%;
     --media-folder-color: 38 92% 50%;
-    --media-folder-hover: 220 14% 88%;
-    --media-tag-bg: 220 14% 93%;
-    --media-tag-text: 215 25% 27%;
+    --media-folder-hover: 36 10% 80%;
+    --media-tag-bg: 36 10% 85%;
+    --media-tag-text: 220 10% 25%;
     --media-tag-hover-bg: 239 84% 97%;
     --media-tag-selected: 239 84% 57%;
     --media-tag-selected-text: 0 0% 100%;
@@ -260,13 +266,13 @@
     --media-upload-progress: 239 84% 57%;
     --media-upload-success: 161 94% 30%;
     --media-upload-error: 0 84% 60%;
-    --media-editor-toolbar-bg: 215 25% 27%;
-    --media-editor-tool-icon: 220 9% 56%;
+    --media-editor-toolbar-bg: 220 10% 25%;
+    --media-editor-tool-icon: 220 5% 55%;
     --media-editor-tool-active: 239 84% 57%;
     --media-bulk-bar-bg: 239 84% 57%;
     --media-bulk-bar-text: 0 0% 100%;
-    --media-empty-icon: 220 13% 85%;
-    --media-empty-text: 220 9% 46%;
+    --media-empty-icon: 36 10% 80%;
+    --media-empty-text: 220 5% 42%;
 
     /* ══════════════════════════════════════════════════════════
        SUBSYSTEM: Analytics Dashboard
@@ -277,22 +283,22 @@
     --chart-quaternary: 271 81% 66%;
     --chart-quinary: 330 80% 60%;
     --chart-senary: 173 80% 40%;
-    --chart-grid: 220 13% 88%;
-    --chart-axis: 220 9% 56%;
-    --chart-label: 215 25% 27%;
-    --chart-tick: 220 13% 85%;
+    --chart-grid: 36 10% 82%;
+    --chart-axis: 220 5% 50%;
+    --chart-label: 220 10% 25%;
+    --chart-tick: 36 10% 80%;
     --trend-up: 161 94% 30%;
     --trend-down: 0 84% 60%;
-    --trend-neutral: 220 9% 46%;
+    --trend-neutral: 220 5% 42%;
     --trend-up-bg: 160 84% 96%;
     --trend-down-bg: 0 84% 97%;
     --analytics-metric-bg: 0 0% 100%;
-    --analytics-metric-value: 222.2 84% 4.9%;
-    --analytics-metric-label: 220 9% 46%;
+    --analytics-metric-value: 220 10% 18%;
+    --analytics-metric-label: 220 5% 42%;
     --analytics-metric-change-positive: 161 94% 30%;
     --analytics-metric-change-negative: 0 84% 60%;
     --analytics-date-range-bg: 0 0% 100%;
-    --analytics-date-range-border: 220 13% 91%;
+    --analytics-date-range-border: 36 10% 84%;
     --analytics-date-range-selected: 239 84% 57%;
     --analytics-date-range-selected-bg: 239 84% 97%;
     --funnel-step-1: 239 84% 57%;
@@ -317,8 +323,8 @@
        SUBSYSTEM: Module Manager
        ══════════════════════════════════════════════════════════ */
     --module-card-bg: 0 0% 100%;
-    --module-card-border: 220 13% 91%;
-    --module-card-hover: 220 14% 96%;
+    --module-card-border: 36 10% 84%;
+    --module-card-hover: 36 15% 92%;
     --module-active: 161 94% 30%;
     --module-inactive: 220 9% 46%;
     --module-error: 0 84% 60%;
@@ -345,26 +351,32 @@
      ══════════════════════════════════════════════════════════════ */
   .dark {
     /* ── Core semantic tokens ──────────────────────────────── */
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --background: 36 15% 10%;
+    --foreground: 36 15% 88%;
+    --card: 36 12% 14%;
+    --card-foreground: 36 15% 88%;
+    --popover: 36 12% 14%;
+    --popover-foreground: 36 15% 88%;
     --primary: 239 84% 67%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
+    --secondary: 36 10% 18%;
+    --secondary-foreground: 36 15% 88%;
+    --muted: 36 10% 18%;
+    --muted-foreground: 36 8% 55%;
     --accent: 14 91% 64%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
+    --destructive-foreground: 0 0% 93%;
+    --border: 36 8% 22%;
+    --input: 36 8% 22%;
     --ring: 239 84% 67%;
     --radius: 0.5rem;
+
+    /* ── Shadows (softer in dark mode) ─────────────────────── */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.35), 0 2px 4px -2px rgb(0 0 0 / 0.25);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.2);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.2);
 
     /* ── Master palette — extended ─────────────────────────── */
     --primary-hover: 239 84% 76%;
@@ -392,9 +404,9 @@
     --interactive-muted: 239 50% 15%;
 
     /* ── Sidebar ───────────────────────────────────────────── */
-    --sidebar-background: 222.2 84% 4.9%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-border: 217 33% 17%;
+    --sidebar-background: 36 15% 9%;
+    --sidebar-foreground: 36 10% 75%;
+    --sidebar-border: 36 8% 20%;
     --sidebar-accent: 239 84% 67%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-ring: 239 84% 67%;
@@ -402,30 +414,30 @@
     /* ══════════════════════════════════════════════════════════
        SUBSYSTEM: Visual Builder (dark)
        ══════════════════════════════════════════════════════════ */
-    --builder-canvas: 0 0% 8%;
-    --builder-canvas-grid: 0 0% 15%;
+    --builder-canvas: 36 15% 10%;
+    --builder-canvas-grid: 36 8% 20%;
     --builder-block-selected: 239 84% 67%;
-    --builder-block-hover: 239 84% 15%;
+    --builder-block-hover: 239 84% 18%;
     --builder-block-drag-over: 142.1 76.2% 36.3%;
-    --builder-palette-bg: 222.2 84% 4.9%;
-    --builder-palette-item-hover: 217 33% 22%;
-    --builder-palette-category: 215 20% 65%;
-    --builder-property-bg: 217 33% 17%;
-    --builder-property-border: 217 33% 22%;
-    --builder-property-label: 210 40% 90%;
-    --builder-property-input-border: 217 33% 25%;
+    --builder-palette-bg: 36 15% 10%;
+    --builder-palette-item-hover: 36 10% 18%;
+    --builder-palette-category: 36 8% 55%;
+    --builder-property-bg: 36 12% 14%;
+    --builder-property-border: 36 8% 22%;
+    --builder-property-label: 36 10% 82%;
+    --builder-property-input-border: 36 8% 25%;
     --builder-property-input-focus: 239 84% 67%;
-    --builder-layer-bg: 217 33% 17%;
-    --builder-layer-item-hover: 217 33% 22%;
+    --builder-layer-bg: 36 12% 14%;
+    --builder-layer-item-hover: 36 10% 18%;
     --builder-layer-item-selected: 239 50% 20%;
     --builder-layer-item-selected-border: 239 84% 67%;
-    --builder-layer-depth-marker: 217 33% 25%;
+    --builder-layer-depth-marker: 36 8% 25%;
     --builder-device-desktop: 239 84% 67%;
-    --builder-device-tablet: 215 20% 65%;
-    --builder-device-mobile: 215 20% 65%;
+    --builder-device-tablet: 36 8% 55%;
+    --builder-device-mobile: 36 8% 55%;
     --builder-device-active-bg: 239 50% 18%;
     --builder-history-available: 239 84% 67%;
-    --builder-history-unavailable: 217 33% 25%;
+    --builder-history-unavailable: 36 8% 28%;
     --builder-saved: 161 94% 40%;
     --builder-saving: 38 92% 55%;
     --builder-error: 0 84% 65%;
@@ -435,35 +447,35 @@
     /* ══════════════════════════════════════════════════════════
        SUBSYSTEM: Admin Dashboard (dark)
        ══════════════════════════════════════════════════════════ */
-    --dashboard-sidebar-bg: 222.2 84% 4.9%;
-    --dashboard-sidebar-text: 215 20% 65%;
+    --dashboard-sidebar-bg: 36 15% 9%;
+    --dashboard-sidebar-text: 36 8% 55%;
     --dashboard-sidebar-hover-bg: 239 50% 20%;
     --dashboard-sidebar-hover-text: 0 0% 100%;
     --dashboard-sidebar-active: 239 84% 67%;
     --dashboard-sidebar-active-text: 0 0% 100%;
-    --dashboard-header-bg: 217 33% 17%;
-    --dashboard-header-border: 217 33% 22%;
-    --dashboard-stat-bg: 217 33% 17%;
-    --dashboard-stat-border: 217 33% 22%;
-    --dashboard-stat-value: 210 40% 98%;
-    --dashboard-stat-label: 215 20% 65%;
+    --dashboard-header-bg: 36 12% 14%;
+    --dashboard-header-border: 36 8% 22%;
+    --dashboard-stat-bg: 36 12% 14%;
+    --dashboard-stat-border: 36 8% 22%;
+    --dashboard-stat-value: 36 15% 88%;
+    --dashboard-stat-label: 36 8% 55%;
     --dashboard-stat-icon-bg: 239 50% 20%;
     --dashboard-stat-icon: 239 84% 67%;
-    --dashboard-table-header-bg: 217 33% 20%;
-    --dashboard-table-row-hover: 217 33% 22%;
-    --dashboard-table-border: 217 33% 22%;
+    --dashboard-table-header-bg: 36 10% 16%;
+    --dashboard-table-row-hover: 36 10% 18%;
+    --dashboard-table-border: 36 8% 22%;
     --dashboard-badge-active: 161 94% 40%;
     --dashboard-badge-pending: 38 92% 55%;
-    --dashboard-badge-inactive: 215 20% 65%;
+    --dashboard-badge-inactive: 36 8% 55%;
     --dashboard-badge-suspended: 0 84% 65%;
     --dashboard-quick-action: 239 84% 67%;
     --dashboard-quick-action-danger: 0 84% 65%;
-    --dashboard-search-bg: 217 33% 22%;
-    --dashboard-search-border: 217 33% 25%;
-    --dashboard-search-text: 210 40% 98%;
-    --dashboard-search-placeholder: 215 20% 65%;
+    --dashboard-search-bg: 36 10% 18%;
+    --dashboard-search-border: 36 8% 25%;
+    --dashboard-search-text: 36 15% 88%;
+    --dashboard-search-placeholder: 36 8% 55%;
     --dashboard-filter-active: 239 84% 67%;
-    --dashboard-filter-inactive: 215 20% 65%;
+    --dashboard-filter-inactive: 36 8% 55%;
 
     /* ══════════════════════════════════════════════════════════
        SUBSYSTEM: M-Pesa Payments (dark)
@@ -477,25 +489,25 @@
     --mpesa-status-pending-bg: 38 50% 18%;
     --mpesa-status-failed: 0 84% 65%;
     --mpesa-status-failed-bg: 0 50% 20%;
-    --mpesa-status-cancelled: 215 20% 65%;
-    --mpesa-status-cancelled-bg: 217 33% 20%;
+    --mpesa-status-cancelled: 36 8% 55%;
+    --mpesa-status-cancelled-bg: 36 10% 18%;
     --mpesa-table-amount-positive: 161 94% 40%;
     --mpesa-table-amount-negative: 0 84% 65%;
-    --mpesa-table-reference: 210 40% 85%;
-    --mpesa-table-date: 215 20% 65%;
+    --mpesa-table-reference: 36 10% 78%;
+    --mpesa-table-date: 36 8% 55%;
     --mpesa-callback-success: 161 94% 40%;
     --mpesa-callback-error: 0 84% 65%;
-    --mpesa-callback-payload-bg: 0 0% 5%;
-    --mpesa-callback-payload-text: 210 40% 85%;
+    --mpesa-callback-payload-bg: 36 15% 7%;
+    --mpesa-callback-payload-text: 36 8% 75%;
     --mpesa-reconcile-matched: 161 94% 40%;
     --mpesa-reconcile-mismatched: 38 92% 55%;
     --mpesa-reconcile-missing: 0 84% 65%;
     --mpesa-balance-positive: 161 94% 40%;
     --mpesa-balance-negative: 0 84% 65%;
-    --mpesa-balance-neutral: 210 40% 85%;
-    --mpesa-phone-input-border: 217 33% 25%;
+    --mpesa-balance-neutral: 36 10% 78%;
+    --mpesa-phone-input-border: 36 8% 25%;
     --mpesa-phone-input-focus: 239 84% 67%;
-    --mpesa-phone-prefix: 215 20% 65%;
+    --mpesa-phone-prefix: 36 8% 55%;
     --mpesa-stk-loading: 239 84% 67%;
     --mpesa-stk-success: 161 94% 40%;
     --mpesa-stk-timeout: 38 92% 55%;
@@ -503,63 +515,63 @@
     /* ══════════════════════════════════════════════════════════
        SUBSYSTEM: Code Editor (dark)
        ══════════════════════════════════════════════════════════ */
-    --editor-bg: 222.2 84% 4.9%;
-    --editor-gutter-bg: 215 25% 15%;
-    --editor-active-line: 239 84% 10%;
+    --editor-bg: 36 15% 9%;
+    --editor-gutter-bg: 36 10% 14%;
+    --editor-active-line: 239 84% 12%;
     --syntax-keyword: 207 82% 59%;
     --syntax-string: 20 50% 64%;
     --syntax-comment: 106 33% 50%;
     --syntax-function: 50 40% 75%;
     --syntax-variable: 197 94% 78%;
     --syntax-number: 100 32% 67%;
-    --syntax-operator: 0 0% 83%;
+    --syntax-operator: 36 10% 78%;
     --syntax-tag: 207 82% 59%;
     --syntax-attribute: 197 94% 78%;
     --git-added: 161 94% 40%;
     --git-modified: 38 92% 55%;
     --git-deleted: 0 84% 65%;
-    --git-untracked: 215 20% 65%;
+    --git-untracked: 36 8% 55%;
     --git-conflict: 0 68% 50%;
     --git-branch: 239 84% 67%;
-    --filetree-bg: 215 25% 15%;
-    --filetree-hover: 217 33% 20%;
+    --filetree-bg: 36 10% 12%;
+    --filetree-hover: 36 10% 18%;
     --filetree-selected: 239 50% 18%;
-    --filetree-filename: 210 40% 90%;
-    --filetree-folder: 215 20% 65%;
-    --terminal-bg: 0 0% 5%;
-    --terminal-text: 0 0% 80%;
+    --filetree-filename: 36 10% 82%;
+    --filetree-folder: 36 8% 55%;
+    --terminal-bg: 36 15% 5%;
+    --terminal-text: 36 8% 75%;
     --terminal-prompt: 239 84% 67%;
     --terminal-error: 0 84% 65%;
     --terminal-success: 161 94% 40%;
-    --editor-tab-active: 217 33% 20%;
-    --editor-tab-inactive: 215 25% 15%;
+    --editor-tab-active: 36 10% 18%;
+    --editor-tab-inactive: 36 10% 14%;
     --editor-tab-border: 239 84% 67%;
-    --editor-tab-text-active: 0 0% 100%;
-    --editor-tab-text-inactive: 215 20% 65%;
-    --editor-status-bg: 217 33% 17%;
-    --editor-status-text: 215 20% 65%;
+    --editor-tab-text-active: 36 15% 88%;
+    --editor-tab-text-inactive: 36 8% 55%;
+    --editor-status-bg: 36 10% 14%;
+    --editor-status-text: 36 8% 55%;
     --editor-status-error: 0 84% 65%;
     --editor-status-warning: 38 92% 55%;
-    --editor-minimap-bg: 215 25% 15%;
-    --editor-minimap-slider: 215 20% 40%;
-    --editor-minimap-hover: 215 20% 50%;
+    --editor-minimap-bg: 36 10% 14%;
+    --editor-minimap-slider: 36 8% 38%;
+    --editor-minimap-hover: 36 8% 48%;
 
     /* ══════════════════════════════════════════════════════════
        SUBSYSTEM: Media Library (dark)
        ══════════════════════════════════════════════════════════ */
-    --media-grid-bg: 222.2 84% 6%;
-    --media-item-bg: 217 33% 15%;
-    --media-item-border: 217 33% 20%;
-    --media-item-hover: 217 33% 20%;
+    --media-grid-bg: 36 15% 10%;
+    --media-item-bg: 36 12% 15%;
+    --media-item-border: 36 8% 22%;
+    --media-item-hover: 36 10% 18%;
     --media-item-selected-bg: 239 50% 18%;
     --media-item-selected-border: 239 84% 67%;
     --media-selection-checkbox: 239 84% 67%;
     --media-selection-count-bg: 239 50% 18%;
-    --media-folder-bg: 217 33% 20%;
+    --media-folder-bg: 36 10% 18%;
     --media-folder-color: 38 92% 55%;
-    --media-folder-hover: 217 33% 25%;
-    --media-tag-bg: 217 33% 20%;
-    --media-tag-text: 210 40% 85%;
+    --media-folder-hover: 36 10% 22%;
+    --media-tag-bg: 36 10% 18%;
+    --media-tag-text: 36 10% 78%;
     --media-tag-hover-bg: 239 50% 18%;
     --media-tag-selected: 239 84% 67%;
     --media-tag-selected-text: 0 0% 100%;
@@ -568,13 +580,13 @@
     --media-upload-progress: 239 84% 67%;
     --media-upload-success: 161 94% 40%;
     --media-upload-error: 0 84% 65%;
-    --media-editor-toolbar-bg: 215 25% 15%;
-    --media-editor-tool-icon: 215 20% 65%;
+    --media-editor-toolbar-bg: 36 10% 14%;
+    --media-editor-tool-icon: 36 8% 55%;
     --media-editor-tool-active: 239 84% 67%;
     --media-bulk-bar-bg: 239 84% 67%;
     --media-bulk-bar-text: 0 0% 100%;
-    --media-empty-icon: 217 33% 25%;
-    --media-empty-text: 215 20% 50%;
+    --media-empty-icon: 36 8% 28%;
+    --media-empty-text: 36 8% 48%;
 
     /* ══════════════════════════════════════════════════════════
        SUBSYSTEM: Analytics Dashboard (dark)
@@ -585,22 +597,22 @@
     --chart-quaternary: 271 81% 70%;
     --chart-quinary: 330 80% 70%;
     --chart-senary: 173 80% 50%;
-    --chart-grid: 217 33% 20%;
-    --chart-axis: 215 20% 50%;
-    --chart-label: 210 40% 85%;
-    --chart-tick: 217 33% 25%;
+    --chart-grid: 36 8% 22%;
+    --chart-axis: 36 8% 48%;
+    --chart-label: 36 10% 78%;
+    --chart-tick: 36 8% 25%;
     --trend-up: 161 94% 40%;
     --trend-down: 0 84% 65%;
-    --trend-neutral: 215 20% 65%;
+    --trend-neutral: 36 8% 55%;
     --trend-up-bg: 161 50% 15%;
     --trend-down-bg: 0 50% 20%;
-    --analytics-metric-bg: 217 33% 17%;
-    --analytics-metric-value: 210 40% 98%;
-    --analytics-metric-label: 215 20% 65%;
+    --analytics-metric-bg: 36 12% 14%;
+    --analytics-metric-value: 36 15% 88%;
+    --analytics-metric-label: 36 8% 55%;
     --analytics-metric-change-positive: 161 94% 40%;
     --analytics-metric-change-negative: 0 84% 65%;
-    --analytics-date-range-bg: 217 33% 17%;
-    --analytics-date-range-border: 217 33% 22%;
+    --analytics-date-range-bg: 36 12% 14%;
+    --analytics-date-range-border: 36 8% 22%;
     --analytics-date-range-selected: 239 84% 67%;
     --analytics-date-range-selected-bg: 239 50% 18%;
     --funnel-step-1: 239 84% 67%;
@@ -613,9 +625,9 @@
     --heatmap-mid: 239 84% 67%;
     --heatmap-max: 239 80% 75%;
     --comparison-current: 239 84% 67%;
-    --comparison-previous: 215 20% 50%;
+    --comparison-previous: 36 8% 48%;
     --comparison-current-area: 239 50% 20%;
-    --comparison-previous-area: 215 20% 18%;
+    --comparison-previous-area: 36 8% 18%;
     --analytics-live-dot: 0 84% 65%;
     --analytics-live-pulse: 0 84% 55%;
     --analytics-export-bg: 239 84% 67%;
@@ -624,11 +636,11 @@
     /* ══════════════════════════════════════════════════════════
        SUBSYSTEM: Module Manager (dark)
        ══════════════════════════════════════════════════════════ */
-    --module-card-bg: 217 33% 17%;
-    --module-card-border: 217 33% 22%;
-    --module-card-hover: 217 33% 20%;
+    --module-card-bg: 36 12% 14%;
+    --module-card-border: 36 8% 22%;
+    --module-card-hover: 36 10% 16%;
     --module-active: 161 94% 40%;
-    --module-inactive: 215 20% 65%;
+    --module-inactive: 0 0% 60%;
     --module-error: 0 84% 65%;
     --module-update-available: 38 92% 55%;
     --module-icon-bg: 239 50% 20%;
@@ -639,7 +651,7 @@
     --marketplace-installed: 161 94% 40%;
     --block-category: 239 84% 67%;
     --block-drag-over: 239 50% 18%;
-    --block-preview: 217 33% 20%;
+    --block-preview: 0 0% 18%;
 
     /* ── Legacy builder tokens (kept for backward compat) ──── */
     --builder-grid: var(--builder-canvas-grid);
@@ -651,9 +663,60 @@
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
   body {
-    @apply bg-background text-foreground;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  /* ── Cards: no lines, just shadows ──────────────────────── */
+  [class*="bg-card"],
+  [class*="bg-popover"],
+  [class*="bg-sidebar"]:not(.dark *) {
+    border: none !important;
+    box-shadow: var(--shadow-sm);
+  }
+
+  [class*="bg-card"].shadow-md,
+  [class*="bg-popover"].shadow-md,
+  [class*="bg-sidebar"].shadow-md:not(.dark *) {
+    box-shadow: var(--shadow-md);
+  }
+
+  /* ── Remaining borders: ultra-subtle blend ──────────────── */
+  .border {
+    border-color: hsl(var(--border) / 0.4) !important;
+  }
+
+  hr,
+  [class*="divide-"] > * {
+    border-color: hsl(var(--border) / 0.3) !important;
+  }
+
+  /* ── Keep inputs and tables clear but soft ──────────────── */
+  input.border,
+  select.border,
+  textarea.border,
+  th,
+  td {
+    border-color: hsl(var(--border) / 0.5) !important;
+  }
+
+  /* ── Explicit card-shadow utilities ─────────────────────── */
+  .card-shadow {
+    background: hsl(var(--card));
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+  }
+  .card-shadow-md {
+    background: hsl(var(--card));
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+  }
+  .card-shadow-lg {
+    background: hsl(var(--card));
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
   }
 }

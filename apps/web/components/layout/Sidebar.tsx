@@ -50,7 +50,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: 'Forms', icon: FormInput, href: '/sites/forms' },
     ],
   },
-  { label: 'Builder', icon: Blocks, href: '/builder/home' },
+  { label: 'Builder', icon: Blocks, href: '/builder' },
   {
     label: 'Popups', icon: Megaphone, href: '/popups',
     children: [
