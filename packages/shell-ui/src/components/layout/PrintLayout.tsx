@@ -10,7 +10,7 @@ export interface PrintLayoutProps {
 export function PrintLayout({ children, className }: PrintLayoutProps) {
   return (
     <div className={`print-layout p-8 bg-white text-black ${className || ''}`}>
-      <style jsx global>{`
+      <style>{`
         @media print {
           .print-layout {
             margin: 0;

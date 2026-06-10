@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { auth } from '@/lib/auth/auth';
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json(
@@ -46,7 +46,7 @@ export async function GET(request: Request) {
   return NextResponse.json(items);
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json(
@@ -126,7 +126,7 @@ export async function POST(request: Request) {
   return NextResponse.json({ success: true, favorited: true });
 }
 
-export async function DELETE(request: Request) {
+export async function DELETE(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json(

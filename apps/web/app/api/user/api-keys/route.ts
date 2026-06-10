@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET() {
   return NextResponse.json([
@@ -13,7 +13,7 @@ export async function GET() {
   ]);
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const body = await request.json();
   return NextResponse.json(
     {
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   );
 }
 
-export async function DELETE(request: Request) {
+export async function DELETE(request: NextRequest) {
   const url = new URL(request.url);
   const keyId = url.pathname.split('/').pop();
   return NextResponse.json({ success: true, id: keyId });

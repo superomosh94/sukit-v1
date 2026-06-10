@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 const handlers: Record<
   string,
@@ -23,7 +23,8 @@ const handlers: Record<
   async 'GET /modules/metrics'(params) {
     const { getSukitKernel } = await import('@/lib/core/create-core');
     const metrics = getSukitKernel().modules.getMetrics();
-    return NextResponse.json(Object.fromEntries(metrics ?? []));
+    const entries = metrics instanceof Map ? Object.fromEntries(metrics) : (metrics ?? {});
+    return NextResponse.json(entries);
   },
   async 'GET /modules/dependencies'(params) {
     const { getSukitKernel } = await import('@/lib/core/create-core');
@@ -34,7 +35,8 @@ const handlers: Record<
   async 'GET /events/metrics'(params) {
     const { getSukitKernel } = await import('@/lib/core/create-core');
     const metrics = getSukitKernel().events.getMetrics();
-    return NextResponse.json(metrics ? Object.fromEntries(metrics) : {});
+    const entries = metrics instanceof Map ? Object.fromEntries(metrics) : (metrics ?? {});
+    return NextResponse.json(entries);
   },
   async 'GET /events/traces'(params) {
     const { getSukitKernel } = await import('@/lib/core/create-core');
@@ -52,7 +54,7 @@ const handlers: Record<
     const moduleId =
       new URL(params.url).searchParams.get('moduleId') || undefined;
     return NextResponse.json(
-      getSukitKernel().permissions.getAuditLog(moduleId)
+      (getSukitKernel().permissions.getAuditLog as (id?: string) => any)(moduleId)
     );
   },
 
@@ -368,23 +370,23 @@ const handlers: Record<
   },
 };
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   return handleRequest(request);
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   return handleRequest(request);
 }
 
-export async function PUT(request: Request) {
+export async function PUT(request: NextRequest) {
   return handleRequest(request);
 }
 
-export async function DELETE(request: Request) {
+export async function DELETE(request: NextRequest) {
   return handleRequest(request);
 }
 
-async function handleRequest(request: Request): Promise<NextResponse> {
+async function handleRequest(request: NextRequest): Promise<NextResponse> {
   try {
     const url = new URL(request.url);
     const path = url.pathname.replace(/^\/api\/core\/?/, '');

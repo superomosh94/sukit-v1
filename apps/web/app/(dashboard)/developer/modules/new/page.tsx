@@ -32,7 +32,7 @@ export default function NewModulePage() {
         try {
           const result = await marketplace.submission.submitForReview(moduleId);
           if (result.success) {
-            router.push('/developer/dashboard');
+            router.push('/developer/dashboard' as any);
           }
           return result;
         } finally {

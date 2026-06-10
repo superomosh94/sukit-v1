@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/auth';
 import { exportFullStack } from '@/lib/export/export-adapter';
 
 export async function POST(
-  _request: Request,
+  _request: NextRequest,
   { params }: { params: Promise<{ siteId: string }> }
 ) {
   const session = await auth();
@@ -46,7 +46,7 @@ export async function POST(
 }
 
 export async function GET(
-  _request: Request,
+  _request: NextRequest,
   { params }: { params: Promise<{ siteId: string }> }
 ) {
   const session = await auth();

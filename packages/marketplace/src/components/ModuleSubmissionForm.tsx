@@ -443,7 +443,7 @@ export function ModuleSubmissionForm({
               {upload && (
                 <div className="mt-4 text-left bg-gray-50 rounded-lg p-3">
                   <p className="text-sm text-gray-700">
-                    File uploaded: {(upload.fileSize / 1024).toFixed(1)} KB
+                    File uploaded: {((upload.fileSize ?? 0) / 1024).toFixed(1)} KB
                   </p>
                   <p className="text-xs text-gray-500">
                     Version {upload.version || 'detecting...'}
@@ -662,7 +662,7 @@ export function ModuleSubmissionForm({
                 <span className="text-gray-500">File</span>
                 <span className="font-medium">
                   {upload
-                    ? `${(upload.fileSize / 1024).toFixed(1)} KB`
+                    ? `${((upload.fileSize ?? 0) / 1024).toFixed(1)} KB`
                     : 'Not uploaded'}
                 </span>
               </div>

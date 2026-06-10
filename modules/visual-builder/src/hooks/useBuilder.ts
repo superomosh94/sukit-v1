@@ -111,5 +111,5 @@ export function useBuilderActions(): BuilderActions {
       deleteTemplate: state.deleteTemplate,
       getTemplates: state.getTemplates,
     }))
-  );
+  ) as BuilderActions;
 }

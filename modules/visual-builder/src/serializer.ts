@@ -1,4 +1,4 @@
-import type { Section, PageSettings } from './types';
+import type { Section, PageSettings, ResponsiveOverrides, Animation } from './types';
 import { validateBlock, validateSection } from './validators';
 
 const SCENE_VERSION = 2;
@@ -46,8 +46,8 @@ function deserializeBlock(b: Record<string, unknown>): import('./types').Block {
     sortKey: (b.sortKey as string) ?? '',
     props: (b.props as Record<string, unknown>) ?? {},
     styles: (b.styles as Record<string, string | number>) ?? {},
-    responsive: (b.responsive as Record<string, unknown>) ?? {},
-    animation: (b.animation as Record<string, unknown>) ?? {
+    responsive: (b.responsive as ResponsiveOverrides) ?? {},
+    animation: (b.animation as Animation) ?? {
       type: 'none' as const,
       duration: 300,
       delay: 0,

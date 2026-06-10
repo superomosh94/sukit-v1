@@ -14,6 +14,7 @@
     "dev:watch": "concurrently -n web,server -c cyan,green \"pnpm dev:web\" \"pnpm dev:server\"",
     "build": "turbo run build",
     "start": "turbo run start",
+    "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "clean": "turbo run clean",

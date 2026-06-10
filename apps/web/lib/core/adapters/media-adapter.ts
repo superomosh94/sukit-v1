@@ -31,7 +31,6 @@ export const prismaMediaAdapter: MediaAdapter = {
         originalName: filename,
         mimeType,
         size,
-        url,
         uploadedBy: 'system',
       },
     });

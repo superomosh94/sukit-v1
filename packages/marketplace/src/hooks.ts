@@ -224,13 +224,13 @@ export function useModuleUpdates() {
 
   const updateModule = useCallback(
     async (moduleId: string, options?: { version?: string }) => {
-      setUpdatingModules((prev) => [...prev, moduleId]);
+      setUpdatingModules([...updatingModules, moduleId]);
       try {
         await marketplace.installer.updateModule(moduleId, options);
         const result = await marketplace.installer.checkForUpdates();
         setUpdatesAvailable(result);
       } finally {
-        setUpdatingModules((prev) => prev.filter((id) => id !== moduleId));
+        setUpdatingModules(updatingModules.filter((id) => id !== moduleId));
       }
     },
     [marketplace]

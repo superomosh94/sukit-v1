@@ -281,7 +281,7 @@ export default async function DashboardPage() {
               {quickActions.map(({ label, href, icon: Icon, description }) => (
                 <Link
                   key={label}
-                  href={href}
+                  href={href as any}
                   className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-accent group"
                 >
                   <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted">

@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import crypto from "crypto";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const body = await req.json();
   const { email } = body;
 
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
   await prisma.option.upsert({
     where: { key_siteId: { key: `reset_token_${user.id}`, siteId: "system" } },
     update: { value: { token, expires: expires.toISOString() } },
-    create: { key: `reset_token_${user.id}`, value: { token, expires: expires.toISOString() }, siteId: null },
+    create: { key: `reset_token_${user.id}`, value: { token, expires: expires.toISOString() }, siteId: 'system' },
   });
 
   const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/reset-password?token=${token}`;

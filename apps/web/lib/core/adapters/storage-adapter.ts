@@ -4,26 +4,26 @@ import type { StorageAdapter } from '@sukit/core';
 export const prismaStorageAdapter: StorageAdapter = {
   async get<T>(key: string): Promise<T | null> {
     const row = await prisma.option.findUnique({
-      where: { key_siteId: { key, siteId: null } },
+      where: { key_siteId: { key, siteId: '' } },
     });
     return row ? (row.value as T) : null;
   },
 
   async set<T>(key: string, value: T): Promise<void> {
     await prisma.option.upsert({
-      where: { key_siteId: { key, siteId: null } },
+      where: { key_siteId: { key, siteId: '' } },
       update: { value: value as any },
       create: { key, value: value as any, autoload: false },
     });
   },
 
   async delete(key: string): Promise<void> {
-    await prisma.option.deleteMany({ where: { key, siteId: null } });
+    await prisma.option.deleteMany({ where: { key, siteId: '' } });
   },
 
   async has(key: string): Promise<boolean> {
     const count = await prisma.option.count({
-      where: { key, siteId: null },
+      where: { key, siteId: '' },
     });
     return count > 0;
   },

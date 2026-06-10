@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/db/prisma';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const action = searchParams.get('action');
   const userName = searchParams.get('userName');

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/lib/auth/auth";
 
@@ -13,7 +13,7 @@ async function getSiteOrThrow(siteId: string, userId: string) {
 }
 
 export async function GET(
-  _request: Request,
+  _request: NextRequest,
   { params }: { params: Promise<{ siteId: string }> },
 ) {
   const session = await auth();
@@ -37,7 +37,7 @@ export async function GET(
 }
 
 export async function PUT(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ siteId: string }> },
 ) {
   const session = await auth();
@@ -66,7 +66,7 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: Request,
+  _request: NextRequest,
   { params }: { params: Promise<{ siteId: string }> },
 ) {
   const session = await auth();

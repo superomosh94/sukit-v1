@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { emit } from '@/lib/marketplace/utils/events';
 import { generateLicenseKey } from '@/lib/marketplace/utils/crypto';
@@ -16,7 +16,7 @@ function getWebhookSecret(): string {
   return process.env.STRIPE_WEBHOOK_SECRET || '';
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const signature = request.headers.get('stripe-signature');
   if (!signature) {
     return NextResponse.json({ error: 'Missing signature' }, { status: 400 });

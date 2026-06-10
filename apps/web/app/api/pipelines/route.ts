@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db/prisma';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET() {
   const pipelines = await prisma.option.findMany({
@@ -15,7 +15,7 @@ export async function GET() {
   return NextResponse.json(mapped);
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const body = await req.json();
   const { id, name, repo, branch, provider } = body;
 
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
   }
 
   await prisma.option.upsert({
-    where: { key_siteId: { key: `pipeline:${id}`, siteId: null } },
+    where: { key_siteId: { key: `pipeline:${id}`, siteId: '' } },
     update: {
       value: {
         name,

@@ -1,0 +1,35 @@
+{
+  "id": "@sukit/mpesa",
+  "name": "M-Pesa Payments",
+  "version": "1.0.0",
+  "description": "Accept M-Pesa payments via Safaricom Daraja API — STK Push, B2C, account balance, transaction status, and reversals",
+  "author": { "name": "SUKIT Core Team" },
+  "license": "MIT",
+  "icon": "Smartphone",
+  "sukit": {
+    "minVersion": "1.0.0",
+    "capabilities": ["api:routes", "settings:panel"],
+    "permissions": ["database:read", "database:write", "http:outbound"],
+    "entrypoints": { "main": "./dist/index.js" },
+    "settings": {
+      "consumerKey": { "type": "encrypted", "label": "Daraja Consumer Key", "required": true },
+      "consumerSecret": { "type": "encrypted", "label": "Daraja Consumer Secret", "required": true },
+      "passkey": { "type": "encrypted", "label": "Daraja Passkey / Lipa Na M-PESA Online Passkey", "required": true },
+      "shortCode": { "type": "text", "label": "Business Short Code (e.g. 174379)", "required": true },
+      "environment": {
+        "type": "select",
+        "label": "Environment",
+        "default": "sandbox",
+        "options": [
+          { "label": "Sandbox (developer)", "value": "sandbox" },
+          { "label": "Production (live)", "value": "production" }
+        ]
+      },
+      "callbackUrl": { "type": "text", "label": "Callback URL (public HTTPS)", "required": false, "description": "Leave empty to auto-generate from NEXTAUTH_URL" },
+      "initiatorName": { "type": "text", "label": "Initiator Name (for B2C/Balance/Reversal)", "required": false },
+      "securityCredential": { "type": "encrypted", "label": "Security Credential (for B2C/Balance/Reversal)", "required": false }
+    },
+    "dependencies": { "@sukit/core": "^1.0.0" },
+    "peerDependencies": { "react": "^19.0.0" }
+  }
+}

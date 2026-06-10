@@ -163,7 +163,7 @@ export class ModuleSubmission {
     tags: string[];
   }): Promise<void> {
     const draft = (await this.loadDraft()) || { currentStep: 'basic-info' };
-    draft.basicInfo = data;
+    draft.basicInfo = data as SubmissionDraft['basicInfo'];
     draft.currentStep = 'pricing';
     await this.saveDraft(draft);
   }
@@ -176,7 +176,7 @@ export class ModuleSubmission {
   }): Promise<void> {
     const draft = await this.loadDraft();
     if (!draft) throw new Error('No draft found. Start with basic info first.');
-    draft.pricing = data;
+    draft.pricing = data as SubmissionDraft['pricing'];
     draft.currentStep = 'upload';
     await this.saveDraft(draft);
   }

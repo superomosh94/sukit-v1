@@ -2088,3 +2088,40 @@ model FormField {
   @@index([formId])
   @@map("form_fields")
 }
+
+// =============================================================================
+// LAYER 6: M-PESA PAYMENTS
+// =============================================================================
+
+model MpesaTransaction {
+  id                 String   @id @default(cuid())
+  siteId             String
+  orderId            String?
+  phoneNumber        String
+  amount             Float
+  currency           String   @default("KES")
+  accountReference   String
+  transactionDesc    String   @default("Payment")
+
+  merchantRequestId  String
+  checkoutRequestId  String
+
+  resultCode         Int      @default(-1)
+  resultDesc         String   @default("")
+
+  mpesaReceiptNumber String?
+  transactionDate    String?
+  phoneNumberPaid    String?
+
+  status             String   @default("PENDING")
+  rawCallback        String?
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([siteId, status])
+  @@index([checkoutRequestId])
+  @@index([mpesaReceiptNumber])
+  @@index([createdAt])
+  @@map("mpesa_transactions")
+}

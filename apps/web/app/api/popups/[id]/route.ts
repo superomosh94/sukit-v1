@@ -1,30 +1,34 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  return NextResponse.json({ id: params.id });
+  const { id } = await params;
+  return NextResponse.json({ id });
 }
 export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const body = await request.json();
-  return NextResponse.json({ id: params.id, ...body });
+  return NextResponse.json({ id, ...body });
 }
 export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  return NextResponse.json({ success: true });
+  const { id } = await params;
+  return NextResponse.json({ success: true, id });
 }
 
 export async function POST(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const url = new URL(request.url);
   const action = url.pathname.split('/').pop();
-  return NextResponse.json({ success: true, id: params.id, action });
+  return NextResponse.json({ success: true, id, action });
 }

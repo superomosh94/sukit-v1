@@ -10,9 +10,9 @@ export async function GET() {
     },
   });
 
-  const seoSettings = await prisma.seoSettings.findMany();
+  const seoSettings = await (prisma as any).seoSettings.findMany() as Array<Record<string, any>>;
 
-  const seoMap = new Map(seoSettings.map((s) => [s.siteId, s]));
+  const seoMap = new Map(seoSettings.map((s: any) => [s.siteId, s]));
 
   const stats = sites.map((site) => {
     const settings = seoMap.get(site.id);

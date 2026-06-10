@@ -255,8 +255,8 @@ export class ReviewModeration {
 
   private async getCurrentUserId(): Promise<string> {
     try {
-      const session = await this.kernel.auth.getSession();
-      return session?.userId || 'unknown';
+      const user = await this.kernel.auth.user();
+      return user?.id || 'unknown';
     } catch {
       return 'unknown';
     }

@@ -25,7 +25,7 @@ export interface SettingChange {
 export const settingsService = {
   async get<T>(key: string, defaultValue?: T): Promise<T> {
     const row = await prisma.option.findUnique({
-      where: { key_siteId: { key, siteId: null } },
+      where: { key_siteId: { key, siteId: '' } },
     });
     return (row?.value as T) ?? (defaultValue as T);
   },
@@ -33,7 +33,7 @@ export const settingsService = {
   async set<T>(key: string, value: T, changedBy = 'system'): Promise<void> {
     const old = await this.get(key, undefined);
     await prisma.option.upsert({
-      where: { key_siteId: { key, siteId: null } },
+      where: { key_siteId: { key, siteId: '' } },
       update: { value: value as any },
       create: { key, value: value as any, autoload: true },
     });
@@ -62,7 +62,7 @@ export const settingsService = {
     let count = 0;
     for (const [key, value] of Object.entries(data)) {
       await prisma.option.upsert({
-        where: { key_siteId: { key, siteId: null } },
+        where: { key_siteId: { key, siteId: '' } },
         update: { value: value as any },
         create: { key, value: value as any, autoload: true },
       });
@@ -72,7 +72,7 @@ export const settingsService = {
   },
 
   async reset(key: string): Promise<void> {
-    await prisma.option.deleteMany({ where: { key, siteId: null } });
+    await prisma.option.deleteMany({ where: { key, siteId: '' } });
   },
 
   async getCategories(): Promise<string[]> {

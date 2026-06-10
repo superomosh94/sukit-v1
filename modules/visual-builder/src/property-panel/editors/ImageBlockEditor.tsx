@@ -15,6 +15,7 @@ import {
   AssetPathInput,
   NumberInput,
 } from './shared';
+import { cn } from '../../utils/cn';
 import type { Block } from '../../types';
 
 const OBJECT_FIT_OPTIONS = [

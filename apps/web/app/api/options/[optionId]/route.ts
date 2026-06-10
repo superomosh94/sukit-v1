@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import { prisma } from "@/lib/db/prisma";
 
-export async function PUT(req: Request, { params }: { params: Promise<{ optionId: string }> }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ optionId: string }> }) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { optionId } = await params;
@@ -11,7 +11,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ optionId
   return NextResponse.json({ option });
 }
 
-export async function DELETE(req: Request, { params }: { params: Promise<{ optionId: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ optionId: string }> }) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { optionId } = await params;

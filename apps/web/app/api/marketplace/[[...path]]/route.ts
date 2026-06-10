@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 
 const handlers: Record<
@@ -121,7 +121,7 @@ const handlers: Record<
     const { installModule } =
       await import('@/lib/marketplace/services/installer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url, {
+    const req = new NextRequest(params.url, {
       method: 'POST',
       body: body ? JSON.stringify(body) : undefined,
     });
@@ -141,7 +141,7 @@ const handlers: Record<
     const { installFromUrl } =
       await import('@/lib/marketplace/services/installer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url, { method: 'POST' });
+    const req = new NextRequest(params.url, { method: 'POST' });
     const user = await requireUser(req);
     const result = await installFromUrl(body?.url, {
       userId: user.id,
@@ -154,7 +154,7 @@ const handlers: Record<
     const { installFromFile } =
       await import('@/lib/marketplace/services/installer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     const form = await req.formData().catch(() => null);
     const file = form?.get('file') as File | null;
@@ -169,7 +169,7 @@ const handlers: Record<
     const { rollbackInstall } =
       await import('@/lib/marketplace/services/installer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await rollbackInstall(params.moduleId, user.id));
   },
@@ -177,7 +177,7 @@ const handlers: Record<
     const { uninstallModule } =
       await import('@/lib/marketplace/services/installer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await uninstallModule(params.moduleId, user.id, {
@@ -191,7 +191,7 @@ const handlers: Record<
       await import('@/lib/marketplace/services/installer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
     const { searchParams } = new URL(params.url);
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await listInstalled(user.id, searchParams.get('siteId') || undefined)
@@ -201,7 +201,7 @@ const handlers: Record<
     const { createBackup } =
       await import('@/lib/marketplace/services/installer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await createBackup(params.moduleId, user.id));
   },
@@ -209,7 +209,7 @@ const handlers: Record<
     const { restoreBackup } =
       await import('@/lib/marketplace/services/installer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await restoreBackup(params.moduleId, user.id, body?.backupId)
@@ -220,7 +220,7 @@ const handlers: Record<
   async 'POST /update/:moduleId'(params, body) {
     const { applyUpdate } = await import('@/lib/marketplace/services/updates');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await applyUpdate(params.moduleId, user.id, {
@@ -232,7 +232,7 @@ const handlers: Record<
   async 'POST /update-all'(params, body) {
     const { updateAll } = await import('@/lib/marketplace/services/updates');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await updateAll(user.id, { channel: body?.channel })
@@ -242,7 +242,7 @@ const handlers: Record<
     const { rollbackInstall } =
       await import('@/lib/marketplace/services/installer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await rollbackInstall(params.moduleId, user.id));
   },
@@ -250,7 +250,7 @@ const handlers: Record<
     const { checkUpdates } = await import('@/lib/marketplace/services/updates');
     const { searchParams } = new URL(params.url);
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await checkUpdates(user.id, searchParams.get('siteId') || undefined)
@@ -260,7 +260,7 @@ const handlers: Record<
     const { setAutoUpdate } =
       await import('@/lib/marketplace/services/updates');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await setAutoUpdate(params.moduleId, user.id, body?.enabled ?? true)
@@ -269,7 +269,7 @@ const handlers: Record<
   async 'PUT /updates/pin/:moduleId'(params, body) {
     const { pinVersion } = await import('@/lib/marketplace/services/updates');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await pinVersion(params.moduleId, user.id, body?.version || null)
@@ -278,7 +278,7 @@ const handlers: Record<
   async 'PUT /updates/channel/:moduleId'(params, body) {
     const { setChannel } = await import('@/lib/marketplace/services/updates');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await setChannel(params.moduleId, user.id, body?.channel)
@@ -290,7 +290,7 @@ const handlers: Record<
     const { createCheckoutSession } =
       await import('@/lib/marketplace/services/payments');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await createCheckoutSession(user.id, user.email, body?.items || [])
@@ -300,7 +300,7 @@ const handlers: Record<
     const { createStripeCheckoutSession } =
       await import('@/lib/marketplace/services/payments');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     const result = await createStripeCheckoutSession({
       userId: user.id,
@@ -327,7 +327,7 @@ const handlers: Record<
     const { processPayment } =
       await import('@/lib/marketplace/services/payments');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await processPayment({
@@ -345,7 +345,7 @@ const handlers: Record<
     const { listPaymentMethods } =
       await import('@/lib/marketplace/services/payments');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await listPaymentMethods(user.id));
   },
@@ -353,7 +353,7 @@ const handlers: Record<
     const { savePaymentMethod } =
       await import('@/lib/marketplace/services/payments');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await savePaymentMethod(user.id, body));
   },
@@ -363,7 +363,7 @@ const handlers: Record<
     const { listLicenses } =
       await import('@/lib/marketplace/services/payments');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await listLicenses(user.id));
   },
@@ -385,7 +385,7 @@ const handlers: Record<
     const { transferLicense } =
       await import('@/lib/marketplace/services/payments');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await transferLicense(body?.key || '', user.id, body?.toUserId || '')
@@ -402,7 +402,7 @@ const handlers: Record<
     const { listSubscriptions } =
       await import('@/lib/marketplace/services/payments');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await listSubscriptions(user.id));
   },
@@ -410,7 +410,7 @@ const handlers: Record<
     const { cancelSubscription } =
       await import('@/lib/marketplace/services/payments');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await cancelSubscription(user.id, params.id));
   },
@@ -418,7 +418,7 @@ const handlers: Record<
     const { pauseSubscription } =
       await import('@/lib/marketplace/services/payments');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await pauseSubscription(user.id, params.id));
   },
@@ -426,14 +426,14 @@ const handlers: Record<
     const { resumeSubscription } =
       await import('@/lib/marketplace/services/payments');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await resumeSubscription(user.id, params.id));
   },
   async 'POST /subscriptions/:id/change-plan'(params, body) {
     const { changePlan } = await import('@/lib/marketplace/services/payments');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await changePlan(user.id, params.id, body?.plan || 'monthly')
@@ -443,7 +443,7 @@ const handlers: Record<
     const { updateSubscriptionPaymentMethod } =
       await import('@/lib/marketplace/services/payments');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await updateSubscriptionPaymentMethod(
@@ -457,7 +457,7 @@ const handlers: Record<
   // ─── Stripe Customer Portal ─────────────────────────────────────
   async 'POST /billing/portal'(params, body) {
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     const STRIPE_KEY = process.env.STRIPE_SECRET_KEY || '';
     if (!STRIPE_KEY) {
@@ -515,7 +515,7 @@ const handlers: Record<
     const { listBilling } = await import('@/lib/marketplace/services/payments');
     const { searchParams } = new URL(params.url);
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await listBilling(
@@ -539,7 +539,7 @@ const handlers: Record<
     const { requestRefund } =
       await import('@/lib/marketplace/services/payments');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await requestRefund({
@@ -579,7 +579,7 @@ const handlers: Record<
   async 'POST /modules/:moduleId/reviews'(params, body) {
     const { submitReview } = await import('@/lib/marketplace/services/reviews');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     const rev = await submitReview(
       params.moduleId,
@@ -608,7 +608,7 @@ const handlers: Record<
   async 'PUT /reviews/:reviewId'(params, body) {
     const { updateReview } = await import('@/lib/marketplace/services/reviews');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await updateReview(params.reviewId, user.id, body)
@@ -617,7 +617,7 @@ const handlers: Record<
   async 'DELETE /reviews/:reviewId'(params) {
     const { deleteReview } = await import('@/lib/marketplace/services/reviews');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await deleteReview(params.reviewId, user.id));
   },
@@ -633,7 +633,7 @@ const handlers: Record<
     const { respondToReview } =
       await import('@/lib/marketplace/services/reviews');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await respondToReview(
@@ -655,7 +655,7 @@ const handlers: Record<
   async 'POST /reviews/:reviewId/appeal'(params, body) {
     const { appealReview } = await import('@/lib/marketplace/services/reviews');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await appealReview(params.reviewId, user.id, body?.reason || '')
@@ -665,14 +665,14 @@ const handlers: Record<
     const { isReviewEditable } =
       await import('@/lib/marketplace/services/reviews');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await isReviewEditable(params.reviewId, user.id));
   },
   async 'POST /reviews/:reviewId/report'(params, body) {
     const { reportReview } = await import('@/lib/marketplace/services/reviews');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await reportReview(params.reviewId, user.id, body?.reason || '')
@@ -680,7 +680,7 @@ const handlers: Record<
   },
 
   // ─── Documentation ──────────────────────────────────────────────
-  async 'POST /modules/:moduleId/docs/generate'() {
+  async 'POST /modules/:moduleId/docs/generate'(params) {
     const { generateDocs } = await import('@/lib/marketplace/services/docs');
     return NextResponse.json(await generateDocs(params.moduleId));
   },
@@ -737,7 +737,7 @@ const handlers: Record<
   },
   async 'POST /modules/docs/upload/screenshot'(params) {
     const { saveUpload } = await import('@/lib/marketplace/storage');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const form = await req.formData().catch(() => null);
     const file = form?.get('file') as File | null;
     if (!file)
@@ -799,7 +799,7 @@ const handlers: Record<
     return NextResponse.json(await renderMarkdown(body?.content || ''));
   },
   async 'POST /modules/docs/upload/image'(params) {
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const form = await req.formData().catch(() => null);
     const file = form?.get('file') as File | null;
     if (!file)
@@ -837,7 +837,7 @@ const handlers: Record<
     const { getDeveloperProfile } =
       await import('@/lib/marketplace/services/developer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await getDeveloperProfile(user.id));
   },
@@ -845,7 +845,7 @@ const handlers: Record<
     const { registerDeveloper } =
       await import('@/lib/marketplace/services/developer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     const dev = await registerDeveloper({
       userId: user.id,
@@ -867,7 +867,7 @@ const handlers: Record<
     const { getDeveloperStatus } =
       await import('@/lib/marketplace/services/developer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await getDeveloperStatus(user.id));
   },
@@ -875,7 +875,7 @@ const handlers: Record<
     const { getDeveloperDashboard } =
       await import('@/lib/marketplace/services/developer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await getDeveloperDashboard(user.id));
   },
@@ -883,7 +883,7 @@ const handlers: Record<
     const { listDeveloperModules } =
       await import('@/lib/marketplace/services/developer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await listDeveloperModules(user.id));
   },
@@ -891,7 +891,7 @@ const handlers: Record<
     const { createDeveloperModule } =
       await import('@/lib/marketplace/services/developer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     const mod = await createDeveloperModule({
       userId: user.id,
@@ -909,7 +909,7 @@ const handlers: Record<
     const { updateDeveloperModule } =
       await import('@/lib/marketplace/services/developer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await updateDeveloperModule(user.id, params.moduleId, body)
@@ -919,7 +919,7 @@ const handlers: Record<
     const { deleteDeveloperModule } =
       await import('@/lib/marketplace/services/developer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await deleteDeveloperModule(user.id, params.moduleId)
@@ -930,7 +930,7 @@ const handlers: Record<
       await import('@/lib/marketplace/services/developer');
     const { searchParams } = new URL(params.url);
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await getDeveloperSales(user.id, searchParams.get('period') || 'month')
@@ -940,7 +940,7 @@ const handlers: Record<
     const { listDeveloperPayouts } =
       await import('@/lib/marketplace/services/payments');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     const dev = await getDeveloperByUserId(user.id);
     if (!dev)
@@ -951,7 +951,7 @@ const handlers: Record<
     const { requestPayout } =
       await import('@/lib/marketplace/services/payments');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     const dev = await getDeveloperByUserId(user.id);
     if (!dev)
@@ -965,7 +965,7 @@ const handlers: Record<
     const { listDeveloperPayouts } =
       await import('@/lib/marketplace/services/payments');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     const dev = await getDeveloperByUserId(user.id);
     if (!dev)
@@ -976,7 +976,7 @@ const handlers: Record<
     const { updatePayoutMethod } =
       await import('@/lib/marketplace/services/payments');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     const dev = await getDeveloperByUserId(user.id);
     if (!dev)
@@ -990,7 +990,7 @@ const handlers: Record<
     const { listDeveloperReviews } =
       await import('@/lib/marketplace/services/developer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await listDeveloperReviews(user.id));
   },
@@ -998,7 +998,7 @@ const handlers: Record<
     const { uploadAsset } =
       await import('@/lib/marketplace/services/developer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     const form = await req.formData().catch(() => null);
     const file = form?.get('file') as File | null;
@@ -1010,17 +1010,18 @@ const handlers: Record<
       file.name,
       Buffer.from(await file.arrayBuffer())
     );
+    const fileVersion = (form?.get('version') as string) || '1.0.0';
     return NextResponse.json({
       url,
       size: file.size,
-      version: body?.version || '1.0.0',
+      version: fileVersion,
     });
   },
   async 'POST /developer/modules/upload/screenshot'(params) {
     const { uploadAsset } =
       await import('@/lib/marketplace/services/developer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     const form = await req.formData().catch(() => null);
     const file = form?.get('file') as File | null;
@@ -1038,7 +1039,7 @@ const handlers: Record<
     const { uploadAsset } =
       await import('@/lib/marketplace/services/developer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     const form = await req.formData().catch(() => null);
     const file = form?.get('file') as File | null;
@@ -1056,7 +1057,7 @@ const handlers: Record<
     const { uploadAsset } =
       await import('@/lib/marketplace/services/developer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     const form = await req.formData().catch(() => null);
     const file = form?.get('file') as File | null;
@@ -1074,7 +1075,7 @@ const handlers: Record<
     const { getDeveloperNotifications } =
       await import('@/lib/marketplace/services/developer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await getDeveloperNotifications(user.id));
   },
@@ -1087,7 +1088,7 @@ const handlers: Record<
     const { getDeveloperSupportTickets } =
       await import('@/lib/marketplace/services/developer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await getDeveloperSupportTickets(user.id));
   },
@@ -1097,7 +1098,7 @@ const handlers: Record<
     const { listApiKeys } =
       await import('@/lib/marketplace/services/developer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     const dev = await getDeveloperByUserId(user.id);
     if (!dev) return NextResponse.json([]);
@@ -1107,7 +1108,7 @@ const handlers: Record<
     const { createApiKey } =
       await import('@/lib/marketplace/services/developer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     const dev = await getDeveloperByUserId(user.id);
     if (!dev)
@@ -1134,7 +1135,7 @@ const handlers: Record<
     const { revokeApiKey } =
       await import('@/lib/marketplace/services/developer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     const dev = await getDeveloperByUserId(user.id);
     if (!dev)
@@ -1148,7 +1149,7 @@ const handlers: Record<
     const { updateApiKey } =
       await import('@/lib/marketplace/services/developer');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     const dev = await getDeveloperByUserId(user.id);
     if (!dev)
@@ -1164,7 +1165,7 @@ const handlers: Record<
     const { getSubmissionStatus } =
       await import('@/lib/marketplace/services/submission');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await getSubmissionStatus(user.id, params.moduleId)
@@ -1174,7 +1175,7 @@ const handlers: Record<
     const { submitForReview } =
       await import('@/lib/marketplace/services/submission');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await submitForReview(user.id, params.moduleId));
   },
@@ -1182,7 +1183,7 @@ const handlers: Record<
     const { requestChanges } =
       await import('@/lib/marketplace/services/submission');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await requestChanges(user.id, params.moduleId));
   },
@@ -1190,17 +1191,17 @@ const handlers: Record<
     const { deprecateModule } =
       await import('@/lib/marketplace/services/submission');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await deprecateModule(user.id, params.moduleId, body?.reason)
     );
   },
-  async 'POST /developer/modules/:moduleId/version'(params) {
+  async 'POST /developer/modules/:moduleId/version'(params, body) {
     const { publishVersion } =
       await import('@/lib/marketplace/services/submission');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     const form = await req.formData().catch(() => null);
     const file = form?.get('file') as File | null;
@@ -1341,7 +1342,7 @@ const handlers: Record<
     const { approveSubmission } =
       await import('@/lib/marketplace/services/submission');
     const { requireAdminUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireAdminUser(req);
     return NextResponse.json(await approveSubmission(params.id, user.id));
   },
@@ -1349,7 +1350,7 @@ const handlers: Record<
     const { rejectSubmission } =
       await import('@/lib/marketplace/services/submission');
     const { requireAdminUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireAdminUser(req);
     return NextResponse.json(
       await rejectSubmission(
@@ -1362,7 +1363,7 @@ const handlers: Record<
   async 'PUT /admin/marketplace/modules/:moduleId/feature'(params, body) {
     const { setFeatured } = await import('@/lib/marketplace/services/registry');
     const { requireAdminUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireAdminUser(req);
     return NextResponse.json(
       await setFeatured(
@@ -1376,7 +1377,7 @@ const handlers: Record<
     const { deleteModule } =
       await import('@/lib/marketplace/services/registry');
     const { requireAdminUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireAdminUser(req);
     return NextResponse.json(await deleteModule(params.moduleId));
   },
@@ -1407,7 +1408,7 @@ const handlers: Record<
     const { issueAdminRefund } =
       await import('@/lib/marketplace/services/payments');
     const { requireAdminUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     await requireAdminUser(req);
     return NextResponse.json(
       await issueAdminRefund(params.id, body?.amount, body?.reason)
@@ -1431,7 +1432,7 @@ const handlers: Record<
     const { moderateReview } =
       await import('@/lib/marketplace/services/reviews');
     const { requireAdminUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireAdminUser(req);
     return NextResponse.json(
       await moderateReview(
@@ -1457,7 +1458,7 @@ const handlers: Record<
     const { searchParams } = new URL(params.url);
     const { listTickets } = await import('@/lib/marketplace/services/support');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await listTickets({
@@ -1471,7 +1472,7 @@ const handlers: Record<
   async 'POST /support/tickets'(params, body) {
     const { createTicket } = await import('@/lib/marketplace/services/support');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     if (!body?.moduleId || !body?.subject || !body?.message) {
       return NextResponse.json(
@@ -1495,7 +1496,7 @@ const handlers: Record<
   async 'GET /support/tickets/:ticketId'(params) {
     const { getTicket } = await import('@/lib/marketplace/services/support');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     const ticket = await getTicket(params.ticketId, user.id);
     if (!ticket)
@@ -1506,7 +1507,7 @@ const handlers: Record<
     const { respondToTicket } =
       await import('@/lib/marketplace/services/support');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await respondToTicket({
@@ -1524,14 +1525,14 @@ const handlers: Record<
     const { resolveTicket } =
       await import('@/lib/marketplace/services/support');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await resolveTicket(params.ticketId, user.id));
   },
   async 'POST /support/tickets/:ticketId/reopen'(params, body) {
     const { reopenTicket } = await import('@/lib/marketplace/services/support');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await reopenTicket(params.ticketId, user.id, body?.reason || '')
@@ -1540,7 +1541,7 @@ const handlers: Record<
   async 'PUT /support/tickets/:ticketId/close'(params) {
     const { closeTicket } = await import('@/lib/marketplace/services/support');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await closeTicket(params.ticketId, user.id));
   },
@@ -1553,7 +1554,7 @@ const handlers: Record<
     const { addPrivateNote } =
       await import('@/lib/marketplace/services/support');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await addPrivateNote(params.ticketId, user.id, body?.message || '')
@@ -1563,7 +1564,7 @@ const handlers: Record<
     const { escalateTicket } =
       await import('@/lib/marketplace/services/support');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await escalateTicket(params.ticketId, user.id, body?.reason || '')
@@ -1572,7 +1573,7 @@ const handlers: Record<
   async 'POST /support/tickets/:ticketId/request-info'(params, body) {
     const { requestInfo } = await import('@/lib/marketplace/services/support');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await requestInfo(params.ticketId, user.id, body?.question || '')
@@ -1582,7 +1583,7 @@ const handlers: Record<
     const { recordSatisfaction } =
       await import('@/lib/marketplace/services/support');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await recordSatisfaction(params.ticketId, user.id, body?.rating || 5)
@@ -1592,7 +1593,7 @@ const handlers: Record<
     const { getTicketHistory } =
       await import('@/lib/marketplace/services/support');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await getTicketHistory(user.id));
   },
@@ -1638,7 +1639,7 @@ const handlers: Record<
     const { createKbArticle } =
       await import('@/lib/marketplace/services/support');
     const { requireAdminUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireAdminUser(req);
     const article = await createKbArticle({
       title: body?.title || '',
@@ -1696,7 +1697,7 @@ const handlers: Record<
     const { getBusinessAnalytics } =
       await import('@/lib/marketplace/services/analytics');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await getBusinessAnalytics(user.id));
   },
@@ -1704,7 +1705,7 @@ const handlers: Record<
     const { getBusinessAnalytics } =
       await import('@/lib/marketplace/services/analytics');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     const data = await getBusinessAnalytics(user.id);
     return NextResponse.json({
@@ -1720,7 +1721,7 @@ const handlers: Record<
     const { getBusinessAnalytics } =
       await import('@/lib/marketplace/services/analytics');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     const data = await getBusinessAnalytics(user.id);
     return NextResponse.json({
@@ -1737,7 +1738,7 @@ const handlers: Record<
     const { exportAnalytics } =
       await import('@/lib/marketplace/services/analytics');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     const content = await exportAnalytics(
       user.id,
@@ -1750,7 +1751,7 @@ const handlers: Record<
   async 'POST /developer/analytics/report-url'(params, body) {
     const { reportUrl } = await import('@/lib/marketplace/services/analytics');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await reportUrl(user.id, body));
   },
@@ -1759,7 +1760,7 @@ const handlers: Record<
     const { getSalesChart } =
       await import('@/lib/marketplace/services/analytics');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await getSalesChart(user.id, parseInt(searchParams.get('days') || '30'))
@@ -1770,7 +1771,7 @@ const handlers: Record<
     const { getInstallsChart } =
       await import('@/lib/marketplace/services/analytics');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await getInstallsChart(
@@ -1784,7 +1785,7 @@ const handlers: Record<
     const { getRevenueChart } =
       await import('@/lib/marketplace/services/analytics');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(
       await getRevenueChart(user.id, parseInt(searchParams.get('days') || '30'))
@@ -1794,7 +1795,7 @@ const handlers: Record<
     const { comparePeriods } =
       await import('@/lib/marketplace/services/analytics');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await comparePeriods(user.id));
   },
@@ -1802,7 +1803,7 @@ const handlers: Record<
     const { getTopModules } =
       await import('@/lib/marketplace/services/analytics');
     const { requireUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireUser(req);
     return NextResponse.json(await getTopModules(user.id));
   },
@@ -1858,7 +1859,7 @@ const handlers: Record<
     const { approveDeveloper } =
       await import('@/lib/marketplace/services/developer');
     const { requireAdminUser } = await import('@/lib/marketplace/utils/auth');
-    const req = new Request(params.url);
+    const req = new NextRequest(params.url);
     const user = await requireAdminUser(req);
     return NextResponse.json(await approveDeveloper(params.id, user.id));
   },
@@ -1881,33 +1882,33 @@ const handlers: Record<
 };
 
 export async function GET(
-  request: Request,
-  { params }: { params: { path?: string[] } }
+  request: NextRequest,
+  { params }: { params: Promise<{ path?: string[] }> }
 ) {
   return handleRequest('GET', request);
 }
 export async function POST(
-  request: Request,
-  { params }: { params: { path?: string[] } }
+  request: NextRequest,
+  { params }: { params: Promise<{ path?: string[] }> }
 ) {
   return handleRequest('POST', request);
 }
 export async function PUT(
-  request: Request,
-  { params }: { params: { path?: string[] } }
+  request: NextRequest,
+  { params }: { params: Promise<{ path?: string[] }> }
 ) {
   return handleRequest('PUT', request);
 }
 export async function DELETE(
-  request: Request,
-  { params }: { params: { path?: string[] } }
+  request: NextRequest,
+  { params }: { params: Promise<{ path?: string[] }> }
 ) {
   return handleRequest('DELETE', request);
 }
 
 async function handleRequest(
   method: string,
-  request: Request
+  request: NextRequest
 ): Promise<NextResponse> {
   const url = new URL(request.url);
   if (!url.pathname.startsWith('/api/marketplace/')) {
@@ -1992,7 +1993,7 @@ function extractParams(path: string): Record<string, string> {
 async function getModuleForAuthedUser(params: any) {
   const { prisma } = await import('@/lib/db/prisma');
   const { requireUser } = await import('@/lib/marketplace/utils/auth');
-  const req = new Request(params.url);
+  const req = new NextRequest(params.url);
   const user = await requireUser(req);
   return prisma.marketplaceModule.findFirst({
     where: {

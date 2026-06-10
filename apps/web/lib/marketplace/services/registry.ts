@@ -200,7 +200,7 @@ export async function checkDependencies(moduleId: string) {
   });
   const depMap = new Map<
     string,
-    { id: string; moduleId: string; version: string }
+    { id: string; moduleId: string; version: string; name: string }
   >();
   for (const d of depModules) (depMap.set(d.id, d), depMap.set(d.moduleId, d));
   const { compareSemver } = await import('@/lib/marketplace/utils/semver');

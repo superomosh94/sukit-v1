@@ -1100,18 +1100,18 @@ export const useBuilderStore = create<BuilderStore>()(
       },
 
       setIsSaving: (saving: boolean) => {
-        set({ isSaving: saving });
+        set({ isSaving: saving } as any);
       },
 
       setIsLoading: (loading: boolean, message?: string) => {
-        set({ isLoading: loading, loadingMessage: message ?? null });
+        set({ isLoading: loading, loadingMessage: message ?? null } as any);
       },
 
       abortPendingSaves: () => {
-        const ctrl = get()._abortController;
+        const ctrl = (get() as any)._abortController;
         if (ctrl) {
           ctrl.abort();
-          set({ _abortController: null, isSaving: false });
+          set({ _abortController: null, isSaving: false } as any);
         }
       },
 
@@ -1357,12 +1357,12 @@ export const useBuilderStore = create<BuilderStore>()(
         showBorderRadius: state.showBorderRadius,
         themeColors: state.themeColors,
         lastSaved: state.lastSaved,
-        sceneVersion: state.sceneVersion,
-        remoteSceneVersion: state.remoteSceneVersion,
+        sceneVersion: (state as any).sceneVersion,
+        remoteSceneVersion: (state as any).remoteSceneVersion,
         isDirty: state.isDirty,
-        isSaving: state.isSaving,
-        isLoading: state.isLoading,
-        loadingMessage: state.loadingMessage,
+        isSaving: (state as any).isSaving,
+        isLoading: (state as any).isLoading,
+        loadingMessage: (state as any).loadingMessage,
       }),
     }
   )

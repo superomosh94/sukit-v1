@@ -242,7 +242,7 @@ function ContentTab({
                         }
                         className="h-8 text-xs"
                       />
-                    ) : propSchema.type === 'textarea' ? (
+                    ) : (propSchema.type as string) === 'textarea' ? (
                       <textarea
                         value={String(value)}
                         onChange={(e) =>
@@ -1308,7 +1308,7 @@ function SectionSettings({ section }: { section: Section }) {
             className="h-8 flex-1 text-xs font-mono"
             placeholder="https://example.com/video.mp4"
           />
-          {settings.backgroundVideoUrl && (
+          {(settings.backgroundVideoUrl as string) && (
             <button
               onClick={() => updateSetting('backgroundVideoUrl', '')}
               className="size-8 shrink-0 rounded-md border text-xs text-destructive hover:bg-destructive/10"
@@ -1318,7 +1318,7 @@ function SectionSettings({ section }: { section: Section }) {
             </button>
           )}
         </div>
-        {settings.backgroundVideoUrl && (
+        {(settings.backgroundVideoUrl as string) && (
           <video
             src={settings.backgroundVideoUrl as string}
             muted
@@ -1969,7 +1969,7 @@ function TemplateLibraryPanel() {
           {['All', ...categories].map((c) => (
             <button
               key={c}
-              onClick={() => setFilterCat(c)}
+              onClick={() => setFilterCat(c as string)}
               className={`shrink-0 rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
                 filterCat === c
                   ? 'bg-primary text-primary-foreground'

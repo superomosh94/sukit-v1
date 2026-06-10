@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { auth } from '@/lib/auth/auth';
 import { getStorageAdapter } from '@/lib/media/storage';
@@ -7,7 +7,7 @@ import { resizeImage } from '@/lib/media/image';
 const SRCSET_WIDTHS = [320, 640, 960, 1280, 1920];
 
 export async function POST(
-  _request: Request,
+  _request: NextRequest,
   { params }: { params: Promise<{ siteId: string; mediaId: string }> }
 ) {
   const session = await auth();

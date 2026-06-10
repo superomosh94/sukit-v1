@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(
-  request: Request,
-  { params }: { params: { moduleId: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ moduleId: string }> }
 ) {
-  const { moduleId } = params;
+  const { moduleId } = await params;
   const body = await request.json().catch(() => ({}));
   const { version, siteId, permissions } = body;
 
@@ -27,10 +27,10 @@ export async function POST(
 }
 
 export async function DELETE(
-  request: Request,
-  { params }: { params: { moduleId: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ moduleId: string }> }
 ) {
-  const { moduleId } = params;
+  const { moduleId } = await params;
 
   // TODO:
   // 1. Deactivate module via kernel.modules.unload(moduleId)

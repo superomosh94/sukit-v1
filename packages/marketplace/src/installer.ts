@@ -10,6 +10,7 @@ import type {
   UpdateCheckResult,
   UpdateOptions,
   ModuleInstallData,
+  MarketplaceModuleData,
 } from './types';
 
 export class ModuleInstaller {
@@ -89,6 +90,7 @@ export class ModuleInstaller {
       });
       await this.validateModule(downloadResult);
 
+      let depsResult: { installed: string[]; failed: string[] } | undefined;
       if (options.autoResolveDeps !== false) {
         progress({
           status: 'installing_deps',
@@ -97,7 +99,7 @@ export class ModuleInstaller {
           log: ['Checking dependencies'],
         });
 
-        const depsResult = await this.resolveAndInstallDependencies(
+        depsResult = await this.resolveAndInstallDependencies(
           moduleId,
           options
         );
@@ -116,7 +118,7 @@ export class ModuleInstaller {
       });
 
       const installedVersion = options.version || module.version;
-      await this.kernel.modules.load(moduleId);
+      await (this.kernel.modules.load as any)(moduleId);
 
       const result = await this.performInstall({
         moduleId,
@@ -221,8 +223,8 @@ export class ModuleInstaller {
       ? module.versions?.find((v) => v.version === version)
       : module.versions?.find((v) => v.isLatest);
 
-    const perms = versionData?.compatibility
-      ? (versionData.compatibility as any)?.permissions || module.permissions
+    const perms = (versionData as any)?.compatibility
+      ? (versionData as any).compatibility?.permissions || module.permissions
       : module.permissions;
 
     return perms.map((p: string) => ({
@@ -304,7 +306,7 @@ export class ModuleInstaller {
         log: ['Update applied'],
       });
 
-      await this.kernel.modules.reload(moduleId);
+      await (this.kernel.modules.reload as any)(moduleId);
       await this.kernel.events.emit('marketplace:moduleUpdated', {
         moduleId,
         fromVersion: result.previousVersion,
@@ -381,7 +383,7 @@ export class ModuleInstaller {
     });
     const result = await res.json();
 
-    await this.kernel.modules.reload(moduleId);
+    await (this.kernel.modules.reload as any)(moduleId);
     await this.kernel.events.emit('marketplace:moduleUpdated', {
       moduleId,
       fromVersion: result.previousVersion,
@@ -433,7 +435,7 @@ export class ModuleInstaller {
     };
   }
 
-  private async fetchModule(moduleId: string) {
+  private async fetchModule(moduleId: string): Promise<MarketplaceModuleData | null> {
     const res = await fetch(`/api/marketplace/modules/${moduleId}`);
     if (!res.ok) return null;
     return res.json();
@@ -517,8 +519,8 @@ export class ModuleInstaller {
 
   private async getCurrentUserId(): Promise<string> {
     try {
-      const session = await this.kernel.auth.getSession();
-      return session?.userId || 'anonymous';
+      const user = await this.kernel.auth.user();
+      return user?.id || 'anonymous';
     } catch {
       return 'anonymous';
     }

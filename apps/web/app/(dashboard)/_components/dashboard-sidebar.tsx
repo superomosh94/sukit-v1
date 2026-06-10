@@ -161,30 +161,6 @@ const navItems: NavGroup[] = [
 
 export function DashboardSidebar() {
   const pathname = usePathname();
-  const [expandedItems, setExpandedItems] = useState<Set<string>>(
-    () => new Set([])
-  );
-
-  useEffect(() => {
-    const next = new Set<string>();
-    for (const item of navItems) {
-      if (item.children?.some((c) => isActive(c.href))) {
-        next.add(item.label);
-      }
-    }
-    setExpandedItems(next);
-  }, [pathname]);
-
-  const toggleExpand = (label: string) => {
-    setExpandedItems((prev) => {
-      // Auto-collapse: only one section open at a time
-      if (prev.has(label)) {
-        prev.delete(label);
-        return new Set(prev);
-      }
-      return new Set([label]);
-    });
-  };
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + '/');
@@ -192,6 +168,33 @@ export function DashboardSidebar() {
   const isParentActive = (item: NavGroup): boolean => {
     if (isActive(item.href)) return true;
     return !!item.children?.some((c) => isActive(c.href));
+  };
+
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(
+    () => new Set([])
+  );
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      const next = new Set<string>();
+      for (const item of navItems) {
+        if (item.children?.some((c) => isActive(c.href))) {
+          next.add(item.label);
+        }
+      }
+      setExpandedItems(next);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [pathname]);
+
+  const toggleExpand = (label: string) => {
+    setExpandedItems((prev) => {
+      if (prev.has(label)) {
+        prev.delete(label);
+        return new Set(prev);
+      }
+      return new Set([label]);
+    });
   };
 
   return (
