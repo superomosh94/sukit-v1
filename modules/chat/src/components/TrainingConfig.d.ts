@@ -1,8 +1,6 @@
 interface TrainingConfigProps {
-  className?: string;
+    className?: string;
 }
-export declare function TrainingConfig({
-  className,
-}: TrainingConfigProps): import('react/jsx-runtime').JSX.Element;
+export declare function TrainingConfig({ className }: TrainingConfigProps): import("react/jsx-runtime").JSX.Element;
 export {};
 //# sourceMappingURL=TrainingConfig.d.ts.map

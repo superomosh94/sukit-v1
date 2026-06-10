@@ -56,8 +56,8 @@ interface CommerceStore {
   currentCheckoutStep: CheckoutStep;
   shippingAddress: Address;
   paymentConfig: {
-    stripe?: { publishableKey: string };
-    paypal?: { clientId: string };
+    stripe?: { publishableKey?: string; secretKey?: string };
+    paypal?: { clientId?: string; secret?: string };
   };
   setProducts: (products: Product[]) => void;
   addToCart: (item: CartItem) => void;

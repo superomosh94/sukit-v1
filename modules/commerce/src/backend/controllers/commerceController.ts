@@ -1,4 +1,4 @@
-import { prisma } from './db';
+import { prisma } from '../db';
 
 export async function listProducts(
   siteId: string,
@@ -68,7 +68,7 @@ export async function addToCart(
   const cart = await getCart(userId, siteId);
 
   const existing = cart.items.find(
-    (i) => i.productId === productId && i.variantId === (variantId || null)
+    (i: any) => i.productId === productId && i.variantId === (variantId || null)
   );
 
   if (existing) {
@@ -107,7 +107,7 @@ export async function checkout(
   if (cart.items.length === 0) throw new Error('Cart is empty');
 
   const total = cart.items.reduce(
-    (sum, item) => sum + item.product.price * item.quantity,
+    (sum: number, item: any) => sum + item.product.price * item.quantity,
     0
   );
 
@@ -120,7 +120,7 @@ export async function checkout(
       paymentMethodId,
       shippingAddress,
       items: {
-        create: cart.items.map((item) => ({
+        create: cart.items.map((item: any) => ({
           productId: item.productId,
           productName: item.product.name,
           quantity: item.quantity,

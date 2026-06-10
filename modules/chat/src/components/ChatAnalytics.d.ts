@@ -1,8 +1,6 @@
 interface ChatAnalyticsProps {
-  className?: string;
+    className?: string;
 }
-export declare function ChatAnalytics({
-  className,
-}: ChatAnalyticsProps): import('react/jsx-runtime').JSX.Element;
+export declare function ChatAnalytics({ className }: ChatAnalyticsProps): import("react/jsx-runtime").JSX.Element;
 export {};
 //# sourceMappingURL=ChatAnalytics.d.ts.map
