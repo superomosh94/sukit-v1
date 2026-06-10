@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { PasswordInput } from '@/components/ui/password-input';
 
 export default function RegisterPage() {
@@ -47,15 +48,33 @@ export default function RegisterPage() {
   }
 
   return (
-    <div>
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
       <div className="mb-6 text-center">
-        <h1 className="text-2xl font-bold">Create an account</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <motion.h1
+          className="text-2xl font-bold"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+        >
+          Create an account
+        </motion.h1>
+        <motion.p
+          className="mt-2 text-sm text-muted-foreground"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+        >
           Start building your website
-        </p>
+        </motion.p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <motion.form
+        onSubmit={handleSubmit}
+        className="space-y-4"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.25 }}
+      >
         {error && (
           <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
             {error}
@@ -141,7 +160,7 @@ export default function RegisterPage() {
             Sign in
           </Link>
         </p>
-      </form>
-    </div>
+      </motion.form>
+    </motion.div>
   );
 }

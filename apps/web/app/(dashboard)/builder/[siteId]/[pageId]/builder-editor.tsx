@@ -26,7 +26,9 @@ import {
   ChevronRight,
   Globe,
   Image,
+  Smartphone,
 } from 'lucide-react';
+import { QRCodeButton } from '@/components/builder/QRCodeButton';
 
 const SiteTreeComponent = dynamic(
   () => import('@sukit/site-manager').then((m) => ({ default: m.SiteTree })),
@@ -88,7 +90,12 @@ export function BuilderEditor({
 
   return (
     <div className="flex h-screen flex-col bg-background overflow-hidden">
-      <BuilderToolbar />
+      <div className="flex items-center justify-between border-b border-border bg-card px-2">
+        <BuilderToolbar />
+        <div className="flex items-center gap-1 pr-2">
+          <QRCodeButton url={`${typeof window !== 'undefined' ? window.location.origin : ''}/preview/${siteId}/${pageId}`} />
+        </div>
+      </div>
 
       <div className="flex flex-1 overflow-hidden">
         {/* Left Sidebar - Blocks & Layers */}

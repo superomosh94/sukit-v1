@@ -26,8 +26,18 @@ import {
   FormInput,
   Database,
   Store,
-  CreditCard,
   Shield,
+  Palette,
+  HardDrive,
+  Trash2,
+  Wrench,
+  BarChart3,
+  Webhook,
+  Search,
+  Timer,
+  BookOpen,
+  Tags,
+  MessageSquare,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -41,40 +51,53 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
+
   {
     label: 'Sites', icon: Globe, href: '/sites',
     children: [
       { label: 'All Sites', icon: Globe, href: '/sites' },
+      { label: 'Builder', icon: Blocks, href: '/builder' },
+      { label: 'Themes', icon: Palette, href: '/themes' },
       { label: 'Pages', icon: FileText, href: '/sites/pages' },
       { label: 'Media', icon: Image, href: '/sites/media' },
+      { label: 'Team', icon: Users, href: '/team' },
+      { label: 'Backups', icon: HardDrive, href: '/backups' },
+      { label: 'Trash', icon: Trash2, href: '/sites/trash' },
+    ],
+  },
+
+  {
+    label: 'Content', icon: BookOpen, href: '/posts',
+    children: [
+      { label: 'Posts', icon: FileText, href: '/posts' },
+      { label: 'Categories', icon: Tags, href: '/taxonomies?type=category' },
+      { label: 'Tags', icon: Tags, href: '/taxonomies?type=tag' },
+      { label: 'Comments', icon: MessageSquare, href: '/comments' },
       { label: 'Forms', icon: FormInput, href: '/sites/forms' },
     ],
   },
-  { label: 'Builder', icon: Blocks, href: '/builder' },
+
   {
     label: 'Popups', icon: Megaphone, href: '/popups',
     children: [
       { label: 'All Popups', icon: PanelTop, href: '/popups' },
-      { label: 'Analytics', icon: ClipboardList, href: '/popups/analytics' },
+      { label: 'Analytics', icon: BarChart3, href: '/popups/analytics' },
     ],
   },
+
   {
-    label: 'Modules', icon: Puzzle, href: '/modules',
+    label: 'Developer', icon: Code2, href: '/code',
     children: [
-      { label: 'Installed', icon: Package, href: '/modules' },
-      { label: 'Marketplace', icon: Store, href: '/modules/marketplace' },
+      { label: 'Code Editor', icon: Code2, href: '/code' },
+      { label: 'Modules', icon: Puzzle, href: '/modules' },
+      { label: 'Blocks', icon: Blocks, href: '/blocks' },
+      { label: 'Module Marketplace', icon: Store, href: '/modules/marketplace' },
+      { label: 'Plugins', icon: Package, href: '/plugins' },
+      { label: 'Plugin Registry', icon: Database, href: '/plugins/registry' },
+      { label: 'Webhooks', icon: Webhook, href: '/webhooks' },
     ],
   },
-  {
-    label: 'Plugins', icon: Package, href: '/plugins',
-    children: [
-      { label: 'Installed', icon: Package, href: '/plugins' },
-      { label: 'Add Plugin', icon: Package, href: '/plugins/add' },
-      { label: 'Create Plugin', icon: Code2, href: '/plugins/create' },
-      { label: 'Registry', icon: Database, href: '/plugins/registry' },
-    ],
-  },
-  { label: 'Code', icon: Code2, href: '/code' },
+
   {
     label: 'Deploy', icon: Rocket, href: '/deploy',
     children: [
@@ -83,13 +106,23 @@ const NAV_ITEMS: NavItem[] = [
       { label: 'Secrets', icon: Key, href: '/deploy/secrets' },
     ],
   },
-  { label: 'Team', icon: Users, href: '/team' },
-  { label: 'Audit', icon: ClipboardList, href: '/audit' },
+
+  {
+    label: 'Tools', icon: Wrench, href: '/audit',
+    children: [
+      { label: 'Audit Log', icon: ClipboardList, href: '/audit' },
+      { label: 'Search', icon: Search, href: '/search' },
+      { label: 'SEO', icon: BarChart3, href: '/seo' },
+      { label: 'Cron Jobs', icon: Timer, href: '/cron' },
+    ],
+  },
+
   {
     label: 'Settings', icon: Settings, href: '/settings',
     children: [
       { label: 'Profile', icon: User, href: '/settings/profile' },
       { label: 'Account', icon: Shield, href: '/settings/account' },
+      { label: 'Widgets', icon: LayoutDashboard, href: '/widgets' },
       { label: 'API Keys', icon: Key, href: '/settings/api-keys' },
     ],
   },

@@ -45,6 +45,13 @@ model User {
   comments                Comment[]
   posts                   Post[]
   notificationPreferences NotificationPreference[]
+  passwordResets          PasswordReset[]
+  socialAccounts          SocialAccount[]
+  userRoles               UserRole[]
+  carts                   Cart[]
+  orders                  Order[]
+  chatConversations       ChatConversation[]
+  uploadedMedia           Media[]
 
   @@map("users")
 }
@@ -124,8 +131,6 @@ model Site {
   pages                   Page[]
   media                   Media[]
   forms                   Form[]
-  modules                 Module[]
-  exports                 Export[]
   siteRoles               SiteRoleAssignment[]
   activities              UserActivity[]
   siteSymbols             SiteSymbol[]
@@ -134,12 +139,8 @@ model Site {
   siteSnapshots           SiteSnapshot[]
   siteUploads             SiteUpload[]
   pageTypes               PageType[]
-  customSections          CustomSection[]
-  menus                   Menu[]
   collaborationLocks      CollaborationLock[]
   presence                Presence[]
-  deployments             Deployment[]
-  popups                  Popup[]
   comments                Comment[]
   taxonomies              Taxonomy[]
   posts                   Post[]
@@ -154,6 +155,14 @@ model Site {
   webhooks                Webhook[]
   notificationPreferences NotificationPreference[]
   mediaAssets             MediaAsset[]
+  roles                   Role[]
+  userRoles               UserRole[]
+  folders                 Folder[]
+  tags                    Tag[]
+  products                Product[]
+  carts                   Cart[]
+  orders                  Order[]
+  seoSettings             SeoSettings[]
 
   @@map("sites")
 }
@@ -507,8 +516,6 @@ model Page {
 
   children           Page[]              @relation("PageHierarchy")
   sections           Section[]
-  publishedPages     PublishedPage[]
-  popups             Popup[]
   pageFields         PageField[]
   pageEntries        PageEntry[]
   pageSections       PageSection[]
@@ -721,7 +728,6 @@ model Media {
 
   site     Site           @relation(fields: [siteId], references: [id], onDelete: Cascade)
   folder   Folder?        @relation(fields: [folderId], references: [id])
-  tags     MediaTag[]
   versions MediaVersion[]
   uploader User?          @relation(fields: [uploadedById], references: [id])
 
@@ -739,7 +745,6 @@ model Form {
 
   site        Site             @relation(fields: [siteId], references: [id], onDelete: Cascade)
   fields      FormField[]
-  submissions FormSubmission[]
 
   @@index([siteId])
   @@map("deployments")
@@ -1772,22 +1777,6 @@ model PasswordReset {
   @@map("password_resets")
 }
 
-model Session {
-  id        String   @id @default(cuid())
-  userId    String
-  token     String   @unique
-  expiresAt DateTime
-  lastUsedAt DateTime @default(now())
-  createdAt DateTime  @default(now())
-  metadata  Json     @default("{}")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([token])
-  @@map("sessions")
-}
-
 model SocialAccount {
   id         String @id @default(cuid())
   userId     String
@@ -1857,23 +1846,10 @@ model Tag {
   name      String
   createdAt DateTime @default(now())
 
-  media MediaTag[]
-  site  Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
 
   @@unique([siteId, name])
   @@map("tags")
-}
-
-model MediaTag {
-  mediaId String
-  tagId   String
-  createdAt DateTime @default(now())
-
-  media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
-  tag   Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
-
-  @@id([mediaId, tagId])
-  @@map("media_tags")
 }
 
 model MediaVersion {

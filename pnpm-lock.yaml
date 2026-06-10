@@ -315,6 +315,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      framer-motion:
+        specifier: ^12.40.0
+        version: 12.40.0(react-dom@19.0.0)(react@19.0.0)
       lucide-react:
         specifier: ^0.460.0
         version: 0.460.0(react@19.0.0)
@@ -330,6 +333,9 @@ importers:
       openai:
         specifier: ^4.73.0
         version: 4.104.0(zod@3.25.76)
+      qrcode:
+        specifier: ^1.5.4
+        version: 1.5.4
       react:
         specifier: 19.0.0
         version: 19.0.0
@@ -370,6 +376,9 @@ importers:
       '@types/node':
         specifier: 20.17.0
         version: 20.17.0
+      '@types/qrcode':
+        specifier: ^1.5.6
+        version: 1.5.6
       '@types/react':
         specifier: 19.0.0
         version: 19.0.0
@@ -5724,6 +5733,12 @@ packages:
     resolution: {integrity: sha512-GUUEShf+PBCGW2KaXwcIt3Yk+e3pkKwWKb9GSyM9WQVE+ep2jzmHdGsHzu4wgcZy5fN9FBdVzjpBQsYlpfpgLA==}
     dependencies:
       undici-types: 7.16.0
+    dev: true
+
+  /@types/qrcode@1.5.6:
+    resolution: {integrity: sha512-te7NQcV2BOvdj2b1hCAHzAoMNuj65kNBMz0KBaxM6c3VGBOhU0dURQKOtH8CFNI/dsKkwlv32p26qYQTWoB5bw==}
+    dependencies:
+      '@types/node': 20.17.0
     dev: true
 
   /@types/qs@6.15.1:

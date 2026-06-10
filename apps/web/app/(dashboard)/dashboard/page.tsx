@@ -10,6 +10,7 @@ import {
   Settings,
   ChevronRight,
   ExternalLink,
+  Smartphone,
 } from 'lucide-react';
 import { auth } from '@/lib/auth/auth';
 import { prisma } from '@/lib/db/prisma';
@@ -52,25 +53,25 @@ const statCards = [
     bg: 'bg-emerald-500/10',
   },
   {
-    label: 'Comments',
-    key: 'commentCount',
-    icon: MessageSquare,
-    color: 'text-amber-500',
-    bg: 'bg-amber-500/10',
-  },
-  {
-    label: 'Popups',
-    key: 'popupCount',
-    icon: Layout,
-    color: 'text-rose-500',
-    bg: 'bg-rose-500/10',
-  },
-  {
     label: 'Media Files',
     key: 'mediaCount',
     icon: Image,
     color: 'text-cyan-500',
     bg: 'bg-cyan-500/10',
+  },
+  {
+    label: 'M-Pesa Transactions',
+    key: 'mpesaCount',
+    icon: Smartphone,
+    color: 'text-green-500',
+    bg: 'bg-green-500/10',
+  },
+  {
+    label: 'Comments',
+    key: 'commentCount',
+    icon: MessageSquare,
+    color: 'text-amber-500',
+    bg: 'bg-amber-500/10',
   },
 ] as const;
 
@@ -109,7 +110,6 @@ export default async function DashboardPage() {
   const [
     siteCount,
     pageCount,
-    popupCount,
     mediaCount,
     postCount,
     commentCount,
@@ -118,7 +118,6 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     userId ? prisma.site.count({ where: { userId } }) : 0,
     userId ? prisma.page.count({ where: { site: { userId } } }) : 0,
-    userId ? prisma.popup.count({ where: { site: { userId } } }) : 0,
     userId ? prisma.media.count({ where: { site: { userId } } }) : 0,
     userId
       ? prisma.post.count({ where: { site: { userId }, status: 'PUBLISHED' } })
@@ -142,12 +141,23 @@ export default async function DashboardPage() {
       : Promise.resolve([]),
   ]);
 
+  // Get M-Pesa transaction count separately
+  const userSiteIds = sites.map(s => s.id);
+  let mpesaCount = 0;
+  try {
+    if (userId && userSiteIds.length && (prisma as any).mpesaTransaction) {
+      mpesaCount = await (prisma as any).mpesaTransaction.count({ where: { siteId: { in: userSiteIds } } });
+    }
+  } catch {
+    // M-Pesa table may not exist yet
+  }
+
   const stats = {
     siteCount,
     pageCount,
-    popupCount,
     mediaCount,
     postCount,
+    mpesaCount,
     commentCount,
   };
 
@@ -299,17 +309,39 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-          {sites.length > 0 && sites[0] && (
+          {mpesaCount > 0 && (
             <div className="rounded-xl border bg-card p-6">
-              <h2 className="font-semibold mb-1">Latest Site</h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                {sites[0].name}
+              <h2 className="font-semibold mb-1">M-Pesa Summary</h2>
+              <div className="mt-3 flex items-center gap-3">
+                <div className="flex size-10 items-center justify-center rounded-lg bg-green-500/10">
+                  <Smartphone className="size-5 text-green-500" />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold tabular-nums">{mpesaCount}</div>
+                  <div className="text-xs text-muted-foreground">Total Transactions</div>
+                </div>
+              </div>
+              <a
+                href="#"
+                className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+              >
+                View Transactions
+                <ExternalLink className="size-3.5" />
+              </a>
+            </div>
+          )}
+
+          {!mpesaCount && (
+            <div className="rounded-xl border bg-card p-6">
+              <h2 className="font-semibold mb-1">Quick Tip</h2>
+              <p className="text-sm text-muted-foreground">
+                Add M-Pesa payments to your sites to start accepting mobile money from Kenyan customers.
               </p>
               <Link
-                href={`/sites/${sites[0].id}/pages` as any}
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+                href="/modules"
+                className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
               >
-                Open Pages
+                Enable M-Pesa
                 <ExternalLink className="size-3.5" />
               </Link>
             </div>
